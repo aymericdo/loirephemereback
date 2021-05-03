@@ -1,12 +1,13 @@
 import { Controller, Get } from '@nestjs/common';
 import { PastriesService } from './pastries.service';
+import { Pastry } from './pastry.interface';
 
-@Controller()
+@Controller('pastries')
 export class PastriesController {
   constructor(private readonly pastriesService: PastriesService) {}
 
   @Get()
-  getHello(): string {
-    return this.pastriesService.getHello();
+  findAll(): Pastry[] {
+    return this.pastriesService.getAll();
   }
 }
