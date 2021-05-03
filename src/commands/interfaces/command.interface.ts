@@ -1,4 +1,4 @@
-import { Pastry } from '../../../dist/pastries/pastry.interface';
+import { Pastry } from 'src/pastries/interfaces/pastry.interface';
 
 export interface Command {
   pastries: Pastry[];
