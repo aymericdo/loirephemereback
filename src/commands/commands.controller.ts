@@ -1,6 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { CommandsService } from './commands.service';
-import { Command } from './command.interface';
+import { Command } from './interfaces/command.interface';
 
 @Controller('commands')
 export class CommandsController {

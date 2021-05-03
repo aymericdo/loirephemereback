@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Command } from './command.interface';
+import { Command } from './interfaces/command.interface';
 
 @Injectable()
 export class CommandsService {

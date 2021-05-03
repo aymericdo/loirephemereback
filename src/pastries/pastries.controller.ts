@@ -1,6 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { PastriesService } from './pastries.service';
-import { Pastry } from './pastry.interface';
+import { Pastry } from './interfaces/pastry.interface';
 
 @Controller('pastries')
 export class PastriesController {
