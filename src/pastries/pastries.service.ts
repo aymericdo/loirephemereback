@@ -1,17 +1,15 @@
+import { Model } from 'mongoose';
 import { Injectable } from '@nestjs/common';
-import { Pastry } from './interfaces/pastry.interface';
+import { InjectModel } from '@nestjs/mongoose';
+import { Pastry, PastryDocument } from './schemas/pastry.schema';
 
 @Injectable()
 export class PastriesService {
-  getAll(): Pastry[] {
-    return [
-      {
-        name: 'Cookie',
-        price: 3,
-        description:
-          'Chocolat, noix de pécan, caramel au beurre salé, praliné pécan',
-        stock: 9,
-      },
-    ];
+  constructor(
+    @InjectModel(Pastry.name) private pastryModel: Model<PastryDocument>,
+  ) {}
+
+  async getAll(): Promise<Pastry[]> {
+    return this.pastryModel.find().exec();
   }
 }

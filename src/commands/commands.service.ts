@@ -1,23 +1,21 @@
 import { Injectable } from '@nestjs/common';
-import { Command } from './interfaces/command.interface';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { CreateCommandDto } from './dto/create-command.dto';
+import { Command, CommandDocument } from './schemas/command.schema';
 
 @Injectable()
 export class CommandsService {
-  getAll(): Command[] {
-    return [
-      {
-        pastries: [
-          {
-            name: 'Cookie',
-            price: 3,
-            description:
-              'Chocolat, noix de pécan, caramel au beurre salé, praliné pécan',
-            stock: 9,
-          },
-        ],
-        table: 'table 12',
-        dateTime: '2021-02-18T15:35:28.433Z',
-      },
-    ];
+  constructor(
+    @InjectModel(Command.name) private commandModel: Model<CommandDocument>,
+  ) {}
+
+  async create(createCommandDto: CreateCommandDto): Promise<Command> {
+    const createdCommand = new this.commandModel(createCommandDto);
+    return createdCommand.save();
+  }
+
+  async getAll(): Promise<Command[]> {
+    return this.commandModel.find().exec();
   }
 }

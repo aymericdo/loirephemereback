@@ -1,14 +1,19 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
-import { PastriesController } from './pastries/pastries.controller';
 import { AppService } from './app.service';
-import { PastriesService } from './pastries/pastries.service';
-import { CommandsController } from './commands/commands.controller';
-import { CommandsService } from './commands/commands.service';
+import { MongooseModule } from '@nestjs/mongoose';
+import { ConfigModule } from '@nestjs/config';
+import { PastriesModule } from './pastries/pastries.module';
+import { CommandsModule } from './commands/commands.module';
 
 @Module({
-  imports: [],
-  controllers: [AppController, PastriesController, CommandsController],
-  providers: [AppService, PastriesService, CommandsService],
+  imports: [
+    ConfigModule.forRoot(),
+    MongooseModule.forRoot(process.env.MONGODB_URI),
+    PastriesModule,
+    CommandsModule,
+  ],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}
