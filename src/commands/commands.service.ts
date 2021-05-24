@@ -22,6 +22,10 @@ export class CommandsService {
   }
 
   async findAll(): Promise<Command[]> {
-    return this.commandModel.find().exec();
+    return this.commandModel
+      .find()
+      .sort({ createdAt: -1 })
+      .populate('pastries')
+      .exec();
   }
 }
