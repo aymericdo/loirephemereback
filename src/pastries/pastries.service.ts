@@ -9,7 +9,7 @@ export class PastriesService {
     @InjectModel(Pastry.name) private pastryModel: Model<PastryDocument>,
   ) {}
 
-  async getAll(): Promise<Pastry[]> {
-    return this.pastryModel.find().exec();
+  async findAll(): Promise<Pastry[]> {
+    return this.pastryModel.find().lean().exec();
   }
 }

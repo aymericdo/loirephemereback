@@ -4,7 +4,7 @@ import { Pastry } from 'src/pastries/schemas/pastry.schema';
 
 export type CommandDocument = Command & Document;
 
-@Schema()
+@Schema({ timestamps: true })
 export class Command {
   @Prop({ type: [{ type: MongooseSchema.Types.ObjectId, ref: 'Pastry' }] })
   pastries: Pastry[];
@@ -12,8 +12,11 @@ export class Command {
   @Prop({ type: String, required: true })
   table: string;
 
-  @Prop({ type: Date, required: true })
-  dateTime: Date;
+  @Prop({ type: String, required: true })
+  name: string;
+
+  @Prop({ type: Boolean, required: true, default: false })
+  isDone: boolean;
 }
 
 export const CommandSchema = SchemaFactory.createForClass(Command);
