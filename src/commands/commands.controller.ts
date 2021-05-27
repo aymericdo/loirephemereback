@@ -6,7 +6,9 @@ import {
   Post,
   Put,
   Res,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from './auth.guard';
 import { CommandsService } from './commands.service';
 import { CreateCommandDto } from './dto/create-command.dto';
 import { UpdateCommandDto } from './dto/update-command.dto';
@@ -16,6 +18,7 @@ export class CommandsController {
   constructor(private readonly commandsService: CommandsService) {}
 
   @Get()
+  @UseGuards(AuthGuard)
   async getAll(@Res() res) {
     const commands = await this.commandsService.findAll();
     return res.status(HttpStatus.OK).json(commands);
