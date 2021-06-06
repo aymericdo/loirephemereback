@@ -12,10 +12,14 @@ import { AuthGuard } from './auth.guard';
 import { CommandsService } from './commands.service';
 import { CreateCommandDto } from './dto/create-command.dto';
 import { UpdateCommandDto } from './dto/update-command.dto';
+import { CommandsGateway } from './commands.gateway';
 
 @Controller('commands')
 export class CommandsController {
-  constructor(private readonly commandsService: CommandsService) {}
+  constructor(
+    private readonly commandsService: CommandsService,
+    private readonly commandsGateway: CommandsGateway,
+  ) {}
 
   @Get()
   @UseGuards(AuthGuard)
@@ -27,12 +31,13 @@ export class CommandsController {
   @Post()
   async postCommand(@Res() res, @Body() createCatDto: CreateCommandDto) {
     const command = await this.commandsService.create(createCatDto);
+    this.commandsGateway.alertNewCommand(command);
     return res.status(HttpStatus.OK).json(command);
   }
 
-  @Put(':id')
-  async putCommand(@Res() res, @Body() updateCatDto: UpdateCommandDto) {
-    const command = await this.commandsService.update(updateCatDto);
-    return res.status(HttpStatus.OK).json(command);
-  }
+  // @Put(':id')
+  // async putCommand(@Res() res, @Body() updateCatDto: UpdateCommandDto) {
+  //   const command = await this.commandsService.update(updateCatDto);
+  //   return res.status(HttpStatus.OK).json(command);
+  // }
 }
