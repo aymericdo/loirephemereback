@@ -33,6 +33,7 @@ export class CommandsController {
   @Patch('/close/:id')
   async patchCommand(@Param('id') id: string, @Res() res) {
     const command = await this.commandsService.closeCommand(id);
+    this.commandsGateway.alertCloseCommand(command);
     return res.status(HttpStatus.OK).json(command);
   }
 

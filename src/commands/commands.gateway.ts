@@ -5,7 +5,7 @@ import {
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { Logger } from '@nestjs/common';
-import { CreateCommandDto } from './dto/create-command.dto';
+import { Command } from './schemas/command.schema';
 
 @WebSocketGateway()
 export class CommandsGateway
@@ -25,9 +25,15 @@ export class CommandsGateway
     client.send(JSON.stringify({ hello: 'bonjour' }));
   }
 
-  alertNewCommand(command: CreateCommandDto) {
+  alertNewCommand(command: Command) {
     this.server.clients.forEach((client: WebSocket) =>
-      client.send(JSON.stringify({ command })),
+      client.send(JSON.stringify({ addCommand: command })),
+    );
+  }
+
+  alertCloseCommand(command: Command) {
+    this.server.clients.forEach((client: WebSocket) =>
+      client.send(JSON.stringify({ closeCommand: command })),
     );
   }
 }
