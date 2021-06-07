@@ -3,6 +3,8 @@ import {
   Controller,
   Get,
   HttpStatus,
+  Param,
+  Patch,
   Post,
   Put,
   Res,
@@ -28,6 +30,12 @@ export class CommandsController {
     return res.status(HttpStatus.OK).json(commands);
   }
 
+  @Patch('/close/:id')
+  async patchCommand(@Param('id') id: string, @Res() res) {
+    const command = await this.commandsService.closeCommand(id);
+    return res.status(HttpStatus.OK).json(command);
+  }
+
   @Post()
   async postCommand(@Res() res, @Body() createCatDto: CreateCommandDto) {
     const command = await this.commandsService.create(createCatDto);
@@ -36,7 +44,7 @@ export class CommandsController {
   }
 
   // @Put(':id')
-  // async putCommand(@Res() res, @Body() updateCatDto: UpdateCommandDto) {
+  // async putCommand(@Param('id') id: string, @Res() res, @Body() updateCatDto: UpdateCommandDto) {
   //   const command = await this.commandsService.update(updateCatDto);
   //   return res.status(HttpStatus.OK).json(command);
   // }
