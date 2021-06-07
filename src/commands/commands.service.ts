@@ -13,12 +13,12 @@ export class CommandsService {
 
   async create(createCommandDto: CreateCommandDto): Promise<Command> {
     const createdCommand = new this.commandModel(createCommandDto);
-    return createdCommand.save();
+    return (await createdCommand.save()).populate('pastries').execPopulate();
   }
 
   async update(updateCommandDto: UpdateCommandDto): Promise<Command> {
     const updatedCommand = new this.commandModel(updateCommandDto);
-    return updatedCommand.save();
+    return (await updatedCommand.save()).populate('pastries').execPopulate();
   }
 
   async closeCommand(id: string): Promise<Command> {
