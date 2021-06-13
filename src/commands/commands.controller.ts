@@ -44,8 +44,8 @@ export class CommandsController {
     return res.status(HttpStatus.OK).json(command);
   }
 
-  // @Put(':id')
-  // async putCommand(@Param('id') id: string, @Res() res, @Body() updateCatDto: UpdateCommandDto) {
+  // @Put(':reference')
+  // async putCommand(@Param('reference') reference: string, @Res() res, @Body() updateCatDto: UpdateCommandDto) {
   //   const command = await this.commandsService.update(updateCatDto);
   //   return res.status(HttpStatus.OK).json(command);
   // }

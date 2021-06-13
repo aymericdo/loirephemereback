@@ -15,6 +15,9 @@ export class Command {
   @Prop({ type: String, required: true })
   name: string;
 
+  @Prop({ type: String, required: true })
+  reference: string;
+
   @Prop({ type: Boolean, required: true, default: false })
   isDone: boolean;
 }

@@ -1,6 +1,7 @@
 import {
   ValidateNested,
   MaxLength,
+  Length,
   IsNotEmpty,
   IsString,
 } from 'class-validator';
@@ -20,4 +21,9 @@ export class CreateCommandDto {
   @MaxLength(100)
   @IsNotEmpty()
   readonly name: string;
+
+  @IsString()
+  @Length(14, 14)
+  @IsNotEmpty()
+  readonly reference: string;
 }

@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { CommandsGateway } from './commands.gateway';
 import { CreateCommandDto } from './dto/create-command.dto';
 import { UpdateCommandDto } from './dto/update-command.dto';
 import { Command, CommandDocument } from './schemas/command.schema';
+import { randomBytes } from 'crypto';
 
 @Injectable()
 export class CommandsService {
@@ -13,7 +13,15 @@ export class CommandsService {
   ) {}
 
   async create(createCommandDto: CreateCommandDto): Promise<Command> {
-    const createdCommand = new this.commandModel(createCommandDto);
+    const reference = randomBytes(12).toString('hex').toUpperCase();
+    const createdCommand = new this.commandModel({
+      ...createCommandDto,
+      reference: [
+        reference.slice(0, 4),
+        reference.slice(4, 8),
+        reference.slice(8, 12),
+      ].join('-'),
+    });
     return (await createdCommand.save()).populate('pastries').execPopulate();
   }
 
