@@ -23,7 +23,7 @@ export class CreateCommandDto {
   readonly name: string;
 
   @IsString()
-  @Length(14, 14)
+  @Length(4, 4)
   @IsNotEmpty()
   readonly reference: string;
 }

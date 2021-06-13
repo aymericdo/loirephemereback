@@ -13,14 +13,9 @@ export class CommandsService {
   ) {}
 
   async create(createCommandDto: CreateCommandDto): Promise<Command> {
-    const reference = randomBytes(12).toString('hex').toUpperCase();
     const createdCommand = new this.commandModel({
       ...createCommandDto,
-      reference: [
-        reference.slice(0, 4),
-        reference.slice(4, 8),
-        reference.slice(8, 12),
-      ].join('-'),
+      reference: randomBytes(4).toString('hex').toUpperCase(),
     });
     return (await createdCommand.save()).populate('pastries').execPopulate();
   }
