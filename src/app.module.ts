@@ -5,6 +5,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule } from '@nestjs/config';
 import { PastriesModule } from './pastries/pastries.module';
 import { CommandsModule } from './commands/commands.module';
+import { AppGateway } from './app.gateway';
 
 @Module({
   imports: [
