@@ -10,5 +10,6 @@ import { Pastry, PastrySchema } from './schemas/pastry.schema';
   ],
   controllers: [PastriesController],
   providers: [PastriesService],
+  exports: [PastriesService],
 })
 export class PastriesModule {}

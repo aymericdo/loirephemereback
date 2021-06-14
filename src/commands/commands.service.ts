@@ -28,7 +28,11 @@ export class CommandsService {
 
   async closeCommand(id: string): Promise<Command> {
     return this.commandModel
-      .findByIdAndUpdate(id, { isDone: true }, { new: true })
+      .findByIdAndUpdate(
+        id,
+        { isDone: true },
+        { new: true, useFindAndModify: false },
+      )
       .populate('pastries')
       .exec();
   }
