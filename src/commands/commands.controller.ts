@@ -19,6 +19,8 @@ import { CreateCommandDto } from './dto/create-command.dto';
 import { UpdateCommandDto } from './dto/update-command.dto';
 import { Pastry as PastryInterface } from 'src/pastries/schemas/pastry.interface';
 
+const TIPS_ID = '60aebea4bec7f2f43b69744a';
+
 @Controller('commands')
 export class CommandsController {
   constructor(
@@ -45,6 +47,10 @@ export class CommandsController {
   async postCommand(@Res() res, @Body() createCatDto: CreateCommandDto) {
     const pastriesGroupBy = createCatDto.pastries.reduce(
       (prev, pastry: PastryInterface) => {
+        if (pastry._id === TIPS_ID) {
+          return prev;
+        }
+
         if (!prev.hasOwnProperty(pastry._id)) {
           prev[pastry._id] = 1;
         } else {
