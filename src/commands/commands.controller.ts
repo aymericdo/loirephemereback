@@ -17,6 +17,8 @@ import { AuthGuard } from './auth.guard';
 import { CommandsService } from './commands.service';
 import { CreateCommandDto } from './dto/create-command.dto';
 import { UpdateCommandDto } from './dto/update-command.dto';
+import { InjectConnection } from '@nestjs/mongoose';
+import * as mongoose from 'mongoose';
 import { Pastry as PastryInterface } from 'src/pastries/schemas/pastry.interface';
 
 const TIPS_ID = '60aebea4bec7f2f43b69744a';
@@ -27,6 +29,7 @@ export class CommandsController {
     private readonly pastriesService: PastriesService,
     private readonly commandsService: CommandsService,
     private readonly appGateway: AppGateway,
+    @InjectConnection() private readonly connection: mongoose.Connection,
   ) {}
 
   @Get()
@@ -60,42 +63,54 @@ export class CommandsController {
       },
       {},
     );
+    const transactionSession = await this.connection.startSession();
 
-    const pastriesToZero = await Object.keys(pastriesGroupBy).reduce(
-      async (prev: any, pastryId) => {
-        const oldPastry: Pastry = await this.pastriesService.findOne(pastryId);
-        if (oldPastry.stock - pastriesGroupBy[pastryId] < 0) {
-          prev.push(oldPastry);
-        }
-        return prev;
-      },
-      [],
-    );
+    try {
+      transactionSession.startTransaction();
 
-    if (pastriesToZero.length) {
-      return res
-        .status(HttpStatus.UNPROCESSABLE_ENTITY)
-        .json({ outOfStock: pastriesToZero });
-    }
-
-    Object.keys(pastriesGroupBy).forEach(async (pastryId) => {
-      const oldPastry = await this.pastriesService.findOne(pastryId);
-
-      const pastry = await this.pastriesService.decrementStock(
-        oldPastry as PastryInterface,
-        pastriesGroupBy[pastryId],
+      const pastriesToZero = await Object.keys(pastriesGroupBy).reduce(
+        async (prev: any, pastryId) => {
+          const oldPastry: Pastry = await this.pastriesService.findOne(
+            pastryId,
+          );
+          if (oldPastry.stock - pastriesGroupBy[pastryId] < 0) {
+            prev.push(oldPastry);
+          }
+          return prev;
+        },
+        [],
       );
 
-      this.appGateway.stockChanged({
-        pastryId: pastryId,
-        newStock: pastry.stock,
+      if (pastriesToZero.length) {
+        return res
+          .status(HttpStatus.UNPROCESSABLE_ENTITY)
+          .json({ outOfStock: pastriesToZero });
+      }
+
+      Object.keys(pastriesGroupBy).forEach(async (pastryId) => {
+        const oldPastry = await this.pastriesService.findOne(pastryId);
+
+        const pastry = await this.pastriesService.decrementStock(
+          oldPastry as PastryInterface,
+          pastriesGroupBy[pastryId],
+        );
+
+        this.appGateway.stockChanged({
+          pastryId: pastryId,
+          newStock: pastry.stock,
+        });
       });
-    });
 
-    const command = await this.commandsService.create(createCatDto);
-    this.appGateway.alertNewCommand(command);
+      const command = await this.commandsService.create(createCatDto);
+      this.appGateway.alertNewCommand(command);
 
-    return res.status(HttpStatus.OK).json(command);
+      transactionSession.commitTransaction();
+      return res.status(HttpStatus.OK).json(command);
+    } catch (err) {
+      transactionSession.abortTransaction();
+    } finally {
+      transactionSession.endSession();
+    }
   }
 
   // @Put(':reference')
