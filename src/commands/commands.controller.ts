@@ -63,53 +63,61 @@ export class CommandsController {
       },
       {},
     );
+
     const transactionSession = await this.connection.startSession();
 
     try {
-      transactionSession.startTransaction();
-
-      const pastriesToZero = await Object.keys(pastriesGroupBy).reduce(
-        async (prev: any, pastryId) => {
-          const oldPastry: Pastry = await this.pastriesService.findOne(
-            pastryId,
+      await transactionSession.withTransaction(
+        async () => {
+          const pastriesToZero = await Object.keys(pastriesGroupBy).reduce(
+            async (prev: any, pastryId) => {
+              const oldPastry: Pastry = await this.pastriesService.findOne(
+                pastryId,
+              );
+              if (oldPastry.stock - pastriesGroupBy[pastryId] < 0) {
+                prev.push(oldPastry);
+              }
+              return prev;
+            },
+            [],
           );
-          if (oldPastry.stock - pastriesGroupBy[pastryId] < 0) {
-            prev.push(oldPastry);
+
+          if (pastriesToZero.length) {
+            return res
+              .status(HttpStatus.UNPROCESSABLE_ENTITY)
+              .json({ outOfStock: pastriesToZero });
           }
-          return prev;
+
+          Object.keys(pastriesGroupBy).forEach(async (pastryId) => {
+            const oldPastry = await this.pastriesService.findOne(pastryId);
+
+            const pastry = await this.pastriesService.decrementStock(
+              oldPastry as PastryInterface,
+              pastriesGroupBy[pastryId],
+            );
+
+            this.appGateway.stockChanged({
+              pastryId: pastryId,
+              newStock: pastry.stock,
+            });
+          });
+
+          const command = await this.commandsService.create(createCatDto);
+          this.appGateway.alertNewCommand(command);
+
+          return res.status(HttpStatus.OK).json(command);
         },
-        [],
+        {
+          readPreference: 'primary',
+          readConcern: { level: 'local' },
+          writeConcern: { w: 'majority' },
+        },
       );
-
-      if (pastriesToZero.length) {
-        return res
-          .status(HttpStatus.UNPROCESSABLE_ENTITY)
-          .json({ outOfStock: pastriesToZero });
-      }
-
-      Object.keys(pastriesGroupBy).forEach(async (pastryId) => {
-        const oldPastry = await this.pastriesService.findOne(pastryId);
-
-        const pastry = await this.pastriesService.decrementStock(
-          oldPastry as PastryInterface,
-          pastriesGroupBy[pastryId],
-        );
-
-        this.appGateway.stockChanged({
-          pastryId: pastryId,
-          newStock: pastry.stock,
-        });
-      });
-
-      const command = await this.commandsService.create(createCatDto);
-      this.appGateway.alertNewCommand(command);
-
-      transactionSession.commitTransaction();
-      return res.status(HttpStatus.OK).json(command);
     } catch (err) {
       transactionSession.abortTransaction();
     } finally {
       transactionSession.endSession();
+      this.connection.close();
     }
   }
 
