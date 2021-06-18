@@ -18,7 +18,7 @@ import { CommandsService } from './commands.service';
 import { CreateCommandDto } from './dto/create-command.dto';
 import { UpdateCommandDto } from './dto/update-command.dto';
 import { InjectConnection } from '@nestjs/mongoose';
-import * as mongoose from 'mongoose';
+import { Connection } from 'mongoose';
 import { Pastry as PastryInterface } from 'src/pastries/schemas/pastry.interface';
 
 const TIPS_ID = '60aebea4bec7f2f43b69744a';
@@ -29,7 +29,7 @@ export class CommandsController {
     private readonly pastriesService: PastriesService,
     private readonly commandsService: CommandsService,
     private readonly appGateway: AppGateway,
-    @InjectConnection() private readonly connection: mongoose.Connection,
+    @InjectConnection() private readonly connection: Connection,
   ) {}
 
   @Get()
