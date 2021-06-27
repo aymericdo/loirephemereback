@@ -14,7 +14,8 @@ import { join } from 'path';
     ConfigModule.forRoot(),
     MongooseModule.forRoot(process.env.MONGODB_URI),
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'public'),
+      rootPath: join(__dirname, '..', 'client'),
+      serveRoot: '',
     }),
     PastriesModule,
     CommandsModule,
