@@ -4,5 +4,6 @@ export interface Pastry {
   price: number;
   description: string;
   imageLink: string;
+  ingredients: string[];
   stock: number;
 }

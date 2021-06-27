@@ -21,8 +21,6 @@ import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
 import { Pastry as PastryInterface } from 'src/pastries/schemas/pastry.interface';
 
-const TIPS_ID = '60aebea4bec7f2f43b69744a';
-
 @Controller('commands')
 export class CommandsController {
   constructor(
@@ -50,7 +48,7 @@ export class CommandsController {
   async postCommand(@Res() res, @Body() createCatDto: CreateCommandDto) {
     const pastriesGroupBy = createCatDto.pastries.reduce(
       (prev, pastry: PastryInterface) => {
-        if (pastry._id === TIPS_ID) {
+        if (pastry.stock === null) {
           return prev;
         }
 

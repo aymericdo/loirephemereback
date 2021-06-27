@@ -17,6 +17,9 @@ export class Pastry {
   @Prop({ type: String, required: true })
   imageLink: string;
 
+  @Prop({ type: String[] })
+  ingredients: String[];
+
   @Prop({ type: Number })
   stock: number;
 }
