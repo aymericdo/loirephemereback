@@ -20,9 +20,36 @@ export class PastriesController {
 
     res.status(HttpStatus.OK).json();
 
-    console.log('testouille');
-
-    const payload = JSON.stringify({ title: 'Loirephemere yo' });
+    const payload = JSON.stringify({
+      notification: {
+        title: 'La colone vendome',
+        body: 'La meeeeeeer',
+        icon: 'assets/icons/icon-128x128.png',
+        vibrate: [
+          500,
+          110,
+          500,
+          110,
+          450,
+          110,
+          200,
+          110,
+          170,
+          40,
+          450,
+          110,
+          200,
+          110,
+          170,
+          40,
+          500,
+        ],
+        data: {
+          dateOfArrival: Date.now(),
+          primaryKey: 1,
+        },
+      },
+    });
 
     // Pass object into sendNotification
     webpush.sendNotification(sub, payload).catch((err) => console.error(err));
