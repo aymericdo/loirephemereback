@@ -1,6 +1,16 @@
-import { Controller, Get, HttpStatus, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpStatus, Post, Res } from '@nestjs/common';
 import { PastriesService } from './pastries.service';
 import { Pastry } from './schemas/pastry.schema';
+import webpush = require('web-push');
+
+const publicVapidKey = process.env.PUBLIC_VAPID_KEY;
+const privateVapidKey = process.env.PRIVATE_VAPID_KEY;
+
+webpush.setVapidDetails(
+  'http://loirephemere.netlify.app/',
+  publicVapidKey,
+  privateVapidKey,
+);
 
 @Controller('pastries')
 export class PastriesController {
@@ -10,5 +20,18 @@ export class PastriesController {
   async getAll(@Res() res): Promise<Pastry[]> {
     const pastries = await this.pastriesService.findAll();
     return res.status(HttpStatus.OK).json(pastries);
+  }
+
+  @Post('notification')
+  async postNotificationSub(@Res() res, @Body() sub: any) {
+    // save sub
+    console.log(sub);
+
+    res.status(HttpStatus.OK).json();
+
+    const payload = JSON.stringify({ title: 'Loirephemere yo' });
+
+    // Pass object into sendNotification
+    webpush.sendNotification(sub, payload).catch((err) => console.error(err));
   }
 }

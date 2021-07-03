@@ -11,7 +11,6 @@ import {
 import { Logger } from '@nestjs/common';
 import { Server } from 'ws';
 import WebSocket = require('ws');
-import { Observable } from 'rxjs';
 import { Command } from './commands/schemas/command.interface';
 
 @WebSocketGateway()
