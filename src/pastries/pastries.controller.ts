@@ -16,8 +16,6 @@ export class PastriesController {
   @Post('notification')
   async postNotificationSub(@Res() res, @Body() sub: any) {
     // save sub
-    console.log(sub);
-
     res.status(HttpStatus.OK).json();
 
     const payload = JSON.stringify({
