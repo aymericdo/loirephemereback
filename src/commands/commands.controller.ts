@@ -20,6 +20,7 @@ import { UpdateCommandDto } from './dto/update-command.dto';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
 import { Pastry as PastryInterface } from 'src/pastries/schemas/pastry.interface';
+import { Command } from './schemas/command.interface';
 
 @Controller('commands')
 export class CommandsController {
@@ -40,7 +41,7 @@ export class CommandsController {
   @Patch('/close/:id')
   async patchCommand(@Param('id') id: string, @Res() res) {
     const command = await this.commandsService.closeCommand(id);
-    this.appGateway.alertCloseCommand(command);
+    this.appGateway.alertCloseCommand(command as Command);
     return res.status(HttpStatus.OK).json(command);
   }
 
@@ -100,7 +101,7 @@ export class CommandsController {
       });
 
       const command = await this.commandsService.create(createCatDto);
-      this.appGateway.alertNewCommand(command);
+      this.appGateway.alertNewCommand(command as Command);
 
       transactionSession.commitTransaction();
       return res.status(HttpStatus.OK).json(command);
