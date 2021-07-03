@@ -50,6 +50,11 @@ export class PastriesController {
     });
 
     // Pass object into sendNotification
-    webpush.sendNotification(sub, payload).catch((err) => console.error(err));
+    webpush
+      .sendNotification(sub, payload)
+      .then(() => {
+        console.log('notif sent');
+      })
+      .catch((err) => console.error(err));
   }
 }
