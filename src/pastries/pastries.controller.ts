@@ -3,15 +3,6 @@ import { PastriesService } from './pastries.service';
 import { Pastry } from './schemas/pastry.schema';
 import webpush = require('web-push');
 
-const publicVapidKey = process.env.PUBLIC_VAPID_KEY;
-const privateVapidKey = process.env.PRIVATE_VAPID_KEY;
-
-webpush.setVapidDetails(
-  'http://loirephemere.netlify.app/',
-  publicVapidKey,
-  privateVapidKey,
-);
-
 @Controller('pastries')
 export class PastriesController {
   constructor(private readonly pastriesService: PastriesService) {}
