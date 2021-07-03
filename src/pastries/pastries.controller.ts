@@ -20,6 +20,8 @@ export class PastriesController {
 
     res.status(HttpStatus.OK).json();
 
+    console.log('testouille');
+
     const payload = JSON.stringify({ title: 'Loirephemere yo' });
 
     // Pass object into sendNotification
