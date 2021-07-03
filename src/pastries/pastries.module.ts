@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { AppGateway } from 'src/app.gateway';
 import { PastriesController } from './pastries.controller';
 import { PastriesService } from './pastries.service';
 import { Pastry, PastrySchema } from './schemas/pastry.schema';
@@ -9,7 +10,7 @@ import { Pastry, PastrySchema } from './schemas/pastry.schema';
     MongooseModule.forFeature([{ name: Pastry.name, schema: PastrySchema }]),
   ],
   controllers: [PastriesController],
-  providers: [PastriesService],
+  providers: [PastriesService, AppGateway],
   exports: [PastriesService],
 })
 export class PastriesModule {}

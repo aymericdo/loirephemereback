@@ -4,7 +4,6 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect,
   SubscribeMessage,
-  WsResponse,
   MessageBody,
   ConnectedSocket,
 } from '@nestjs/websockets';
@@ -12,6 +11,7 @@ import { Logger } from '@nestjs/common';
 import { Server } from 'ws';
 import WebSocket = require('ws');
 import { Command } from './commands/schemas/command.interface';
+import webpush = require('web-push');
 
 @WebSocketGateway()
 export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -19,6 +19,7 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   server: Server;
   users: WebSocket[] = [];
   waitingQueue: { commandId: string; ws: WebSocket }[] = [];
+  waitingQueueSubNotification: { commandId: string; sub: any }[] = [];
   admins: WebSocket[] = [];
 
   private logger: Logger = new Logger('AppGateway');
@@ -52,6 +53,13 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     );
   }
 
+  addWaitingQueueSubNotification(subNotif: { sub: any; commandId: string }) {
+    this.waitingQueueSubNotification.push({
+      commandId: subNotif.commandId,
+      sub: subNotif.sub,
+    });
+  }
+
   @SubscribeMessage('wizzer')
   onWizzer(
     @MessageBody() data: Command,
@@ -60,8 +68,17 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const ws = this.waitingQueue.find((user) => user.commandId === data._id)
       ?.ws;
 
-    if (!ws) return;
-    ws.send(JSON.stringify({ wizz: data._id }));
+    const subNotification = this.waitingQueueSubNotification.find(
+      (subNotif) => subNotif.commandId === data._id,
+    )?.sub;
+
+    if (subNotification) {
+      this.sendPushNotif(subNotification, data);
+    }
+
+    if (ws) {
+      ws.send(JSON.stringify({ wizz: data._id }));
+    }
   }
 
   @SubscribeMessage('addWaitingQueue')
@@ -80,5 +97,45 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (data === process.env.PASSWORD) {
       this.admins.push(client);
     }
+  }
+
+  private sendPushNotif(sub: any, _command: Command) {
+    const payload = JSON.stringify({
+      notification: {
+        title: 'La colone vendome',
+        body: 'Votre commande est prête !',
+        icon: 'assets/icons/icon-128x128.png',
+        vibrate: [
+          500,
+          110,
+          500,
+          110,
+          450,
+          110,
+          200,
+          110,
+          170,
+          40,
+          450,
+          110,
+          200,
+          110,
+          170,
+          40,
+          500,
+        ],
+        data: {
+          dateOfArrival: Date.now(),
+          primaryKey: 1,
+        },
+      },
+    });
+
+    webpush
+      .sendNotification(sub, payload)
+      .then(() => {
+        console.log('notif sent');
+      })
+      .catch((err) => console.error(err));
   }
 }
