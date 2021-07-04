@@ -49,7 +49,7 @@ export class CommandsController {
   async postCommand(@Res() res, @Body() createCatDto: CreateCommandDto) {
     const pastriesGroupBy = createCatDto.pastries.reduce(
       (prev, pastry: PastryInterface) => {
-        if (pastry.stock === null) {
+        if (pastry.stock === undefined || pastry.stock === null) {
           return prev;
         }
 
