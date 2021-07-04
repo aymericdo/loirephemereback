@@ -54,6 +54,7 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   addWaitingQueueSubNotification(subNotif: { sub: any; commandId: string }) {
+    console.log('addWaitingQueueSubNotification');
     this.waitingQueueSubNotification.push({
       commandId: subNotif.commandId,
       sub: subNotif.sub,
@@ -73,6 +74,8 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     )?.sub;
 
     if (subNotification) {
+      console.log('subNotification');
+      console.log(subNotification);
       this.sendPushNotif(subNotification, data);
     }
 
