@@ -45,6 +45,13 @@ export class CommandsController {
     return res.status(HttpStatus.OK).json(command);
   }
 
+  @Patch('/payed/:id')
+  async patchCommand2(@Param('id') id: string, @Res() res) {
+    const command = await this.commandsService.payedCommand(id);
+    this.appGateway.alertPayedCommand(command as Command);
+    return res.status(HttpStatus.OK).json(command);
+  }
+
   @Post()
   async postCommand(@Res() res, @Body() createCatDto: CreateCommandDto) {
     const pastriesGroupBy = createCatDto.pastries.reduce(

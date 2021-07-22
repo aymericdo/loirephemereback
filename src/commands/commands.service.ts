@@ -37,6 +37,17 @@ export class CommandsService {
       .exec();
   }
 
+  async payedCommand(id: string): Promise<Command> {
+    return this.commandModel
+      .findByIdAndUpdate(
+        id,
+        { isPayed: true },
+        { new: true, useFindAndModify: false },
+      )
+      .populate('pastries')
+      .exec();
+  }
+
   async findAll(): Promise<Command[]> {
     return this.commandModel
       .find()

@@ -9,4 +9,5 @@ export interface Command {
   createdAt?: string;
   updatedAt?: string;
   isDone?: boolean;
+  isPayed?: boolean;
 }

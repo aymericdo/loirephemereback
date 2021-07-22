@@ -56,6 +56,12 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     );
   }
 
+  alertPayedCommand(command: Command) {
+    this.admins.forEach((client: WebSocket) =>
+      client.send(JSON.stringify({ payedCommand: command })),
+    );
+  }
+
   stockChanged(newStock: { pastryId: string; newStock: number }) {
     this.users.forEach((client: WebSocket) =>
       client.send(JSON.stringify({ stockChanged: newStock })),

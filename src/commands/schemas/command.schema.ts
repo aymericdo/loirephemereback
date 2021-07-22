@@ -20,6 +20,9 @@ export class Command {
 
   @Prop({ type: Boolean, required: true, default: false })
   isDone: boolean;
+
+  @Prop({ type: Boolean, required: true, default: false })
+  isPayed: boolean;
 }
 
 export const CommandSchema = SchemaFactory.createForClass(Command);
