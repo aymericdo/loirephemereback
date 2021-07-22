@@ -76,9 +76,15 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   addAdminQueueSubNotification(subNotif: { sub: any }) {
-    this.waitingAdminSubNotification.push({
-      sub: subNotif.sub,
-    });
+    if (
+      !this.waitingAdminSubNotification.some(
+        (notif) => notif.sub.endpoint === subNotif.sub.endpoint,
+      )
+    ) {
+      this.waitingAdminSubNotification.push({
+        sub: subNotif.sub,
+      });
+    }
   }
 
   @SubscribeMessage('wizzer')
