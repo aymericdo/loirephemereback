@@ -20,6 +20,7 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   users: WebSocket[] = [];
   waitingQueue: { commandId: string; ws: WebSocket }[] = [];
   waitingQueueSubNotification: { commandId: string; sub: any }[] = [];
+  waitingAdminSubNotification: { sub: any }[] = [];
   admins: WebSocket[] = [];
 
   private logger: Logger = new Logger('AppGateway');
@@ -39,6 +40,14 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.admins.forEach((client: WebSocket) =>
       client.send(JSON.stringify({ addCommand: command })),
     );
+
+    this.waitingAdminSubNotification.forEach((adminSub) => {
+      this.sendPushNotif(
+        adminSub.sub,
+        'Une nouvelle commande est arrivée !',
+        command,
+      );
+    });
   }
 
   alertCloseCommand(command: Command) {
@@ -60,6 +69,12 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
   }
 
+  addAdminQueueSubNotification(subNotif: { sub: any }) {
+    this.waitingAdminSubNotification.push({
+      sub: subNotif.sub,
+    });
+  }
+
   @SubscribeMessage('wizzer')
   onWizzer(
     @MessageBody() data: Command,
@@ -73,7 +88,7 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     )?.sub;
 
     if (subNotification) {
-      this.sendPushNotif(subNotification, data);
+      this.sendPushNotif(subNotification, 'Votre commande est prête !', data);
     }
 
     if (ws) {
@@ -99,11 +114,11 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  private sendPushNotif(sub: any, _command: Command) {
+  private sendPushNotif(sub: any, body: string, _command: Command) {
     const payload = JSON.stringify({
       notification: {
         title: 'Petite notif gentille',
-        body: 'Votre commande est prête !',
+        body,
         icon: 'assets/icons/icon-128x128.png',
         vibrate: [
           500,

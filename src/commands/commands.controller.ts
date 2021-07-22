@@ -112,6 +112,13 @@ export class CommandsController {
     }
   }
 
+  @Post('notification')
+  async postNotificationSub(@Res() res, @Body() body: { sub: any }) {
+    this.appGateway.addAdminQueueSubNotification(body);
+
+    res.status(HttpStatus.OK).json();
+  }
+
   // @Put(':reference')
   // async putCommand(@Param('reference') reference: string, @Res() res, @Body() updateCatDto: UpdateCommandDto) {
   //   const command = await this.commandsService.update(updateCatDto);
