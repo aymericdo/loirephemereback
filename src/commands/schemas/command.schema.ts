@@ -23,6 +23,9 @@ export class Command {
 
   @Prop({ type: Boolean, required: true, default: false })
   isPayed: boolean;
+
+  @Prop({ type: Number, required: true })
+  totalPrice: number;
 }
 
 export const CommandSchema = SchemaFactory.createForClass(Command);

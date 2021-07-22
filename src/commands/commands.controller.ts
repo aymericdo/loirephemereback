@@ -35,20 +35,21 @@ export class CommandsController {
   @UseGuards(AuthGuard)
   async getAll(@Res() res) {
     const commands = await this.commandsService.findAll();
+
     return res.status(HttpStatus.OK).json(commands);
   }
 
   @Patch('/close/:id')
   async patchCommand(@Param('id') id: string, @Res() res) {
     const command = await this.commandsService.closeCommand(id);
-    this.appGateway.alertCloseCommand(command as Command);
+    this.appGateway.alertCloseCommand(command as any);
     return res.status(HttpStatus.OK).json(command);
   }
 
   @Patch('/payed/:id')
   async patchCommand2(@Param('id') id: string, @Res() res) {
     const command = await this.commandsService.payedCommand(id);
-    this.appGateway.alertPayedCommand(command as Command);
+    this.appGateway.alertPayedCommand(command as any);
     return res.status(HttpStatus.OK).json(command);
   }
 
@@ -108,7 +109,7 @@ export class CommandsController {
       });
 
       const command = await this.commandsService.create(createCatDto);
-      this.appGateway.alertNewCommand(command as Command);
+      this.appGateway.alertNewCommand(command as any);
 
       transactionSession.commitTransaction();
       return res.status(HttpStatus.OK).json(command);
