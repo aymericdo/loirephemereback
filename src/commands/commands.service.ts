@@ -48,8 +48,7 @@ export class CommandsService {
       .exec();
   }
 
-  async findAll(): Promise<Command[]> {
-    const year = new Date().getFullYear();
+  async findAll(year = new Date().getFullYear()): Promise<Command[]> {
     return this.commandModel
       .find({
         createdAt: {

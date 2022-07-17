@@ -6,7 +6,7 @@ import {
   Param,
   Patch,
   Post,
-  Put,
+  Query,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -31,8 +31,8 @@ export class CommandsController {
 
   @Get()
   @UseGuards(AuthGuard)
-  async getAll(@Res() res) {
-    const commands = await this.commandsService.findAll();
+  async getAll(@Res() res, @Query() query) {
+    const commands = await this.commandsService.findAll(query.year);
 
     return res.status(HttpStatus.OK).json(commands);
   }
@@ -124,10 +124,4 @@ export class CommandsController {
 
     res.status(HttpStatus.OK).json();
   }
-
-  // @Put(':reference')
-  // async putCommand(@Param('reference') reference: string, @Res() res, @Body() updateCatDto: UpdateCommandDto) {
-  //   const command = await this.commandsService.update(updateCatDto);
-  //   return res.status(HttpStatus.OK).json(command);
-  // }
 }
