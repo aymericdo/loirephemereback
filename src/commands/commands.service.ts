@@ -49,8 +49,14 @@ export class CommandsService {
   }
 
   async findAll(): Promise<Command[]> {
+    const year = new Date().getFullYear();
     return this.commandModel
-      .find()
+      .find({
+        createdAt: {
+          $gt: new Date(year, 0, 1),
+          $lte: new Date(year + 1, 0, 1),
+        },
+      })
       .sort({ createdAt: 1 })
       .populate('pastries')
       .exec();

@@ -16,11 +16,9 @@ import { Pastry } from 'src/pastries/schemas/pastry.schema';
 import { AuthGuard } from './auth.guard';
 import { CommandsService } from './commands.service';
 import { CreateCommandDto } from './dto/create-command.dto';
-import { UpdateCommandDto } from './dto/update-command.dto';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
 import { Pastry as PastryInterface } from 'src/pastries/schemas/pastry.interface';
-import { Command } from './schemas/command.interface';
 
 @Controller('commands')
 export class CommandsController {
@@ -94,6 +92,9 @@ export class CommandsController {
           .json({ outOfStock: pastriesToZero });
       }
 
+      const command = await this.commandsService.create(createCatDto);
+      this.appGateway.alertNewCommand(command as any);
+
       Object.keys(pastriesGroupBy).forEach(async (pastryId) => {
         const oldPastry = await this.pastriesService.findOne(pastryId);
 
@@ -107,9 +108,6 @@ export class CommandsController {
           newStock: pastry.stock,
         });
       });
-
-      const command = await this.commandsService.create(createCatDto);
-      this.appGateway.alertNewCommand(command as any);
 
       transactionSession.commitTransaction();
       return res.status(HttpStatus.OK).json(command);

@@ -15,11 +15,6 @@ export class CreateCommandDto {
   @IsString()
   @MaxLength(100)
   @IsNotEmpty()
-  readonly table: string;
-
-  @IsString()
-  @MaxLength(100)
-  @IsNotEmpty()
   readonly name: string;
 
   @IsString()

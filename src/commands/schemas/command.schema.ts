@@ -10,9 +10,6 @@ export class Command {
   pastries: Pastry[];
 
   @Prop({ type: String, required: true })
-  table: string;
-
-  @Prop({ type: String, required: true })
   name: string;
 
   @Prop({ type: String, required: true })
