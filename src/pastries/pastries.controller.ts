@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpStatus, Post, Res } from '@nestjs/common';
 import { PastriesService } from './pastries.service';
-import { PastryDocument } from './schemas/pastry.schema';
+import { PastryDocument } from 'src/pastries/schemas/pastry.schema';
 import { AppGateway } from 'src/app.gateway';
 
 @Controller('pastries')
