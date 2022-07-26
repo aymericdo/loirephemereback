@@ -12,13 +12,12 @@ import {
 } from '@nestjs/common';
 import { AppGateway } from 'src/app.gateway';
 import { PastriesService } from 'src/pastries/pastries.service';
-import { Pastry } from 'src/pastries/schemas/pastry.schema';
+import { PastryDocument } from 'src/pastries/schemas/pastry.schema';
 import { AuthGuard } from './auth.guard';
 import { CommandsService } from './commands.service';
 import { CreateCommandDto } from './dto/create-command.dto';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
-import { Pastry as PastryInterface } from 'src/pastries/schemas/pastry.interface';
 
 @Controller('commands')
 export class CommandsController {
@@ -54,7 +53,7 @@ export class CommandsController {
   @Post()
   async postCommand(@Res() res, @Body() createCatDto: CreateCommandDto) {
     const pastriesGroupBy = createCatDto.pastries.reduce(
-      (prev, pastry: PastryInterface) => {
+      (prev, pastry: PastryDocument) => {
         if (pastry.stock === undefined || pastry.stock === null) {
           return prev;
         }
@@ -68,6 +67,7 @@ export class CommandsController {
       },
       {},
     );
+
     const transactionSession = await this.connection.startSession();
 
     try {
@@ -75,9 +75,10 @@ export class CommandsController {
 
       const pastriesToZero = await Object.keys(pastriesGroupBy).reduce(
         async (prev: any, pastryId) => {
-          const oldPastry: Pastry = await this.pastriesService.findOne(
+          const oldPastry: PastryDocument = await this.pastriesService.findOne(
             pastryId,
           );
+
           if (oldPastry.stock - pastriesGroupBy[pastryId] < 0) {
             prev.push(oldPastry);
           }
@@ -96,17 +97,36 @@ export class CommandsController {
       this.appGateway.alertNewCommand(command as any);
 
       Object.keys(pastriesGroupBy).forEach(async (pastryId) => {
-        const oldPastry = await this.pastriesService.findOne(pastryId);
-
-        const pastry = await this.pastriesService.decrementStock(
-          oldPastry as PastryInterface,
-          pastriesGroupBy[pastryId],
+        const oldPastry: PastryDocument = await this.pastriesService.findOne(
+          pastryId,
         );
 
-        this.appGateway.stockChanged({
-          pastryId: pastryId,
-          newStock: pastry.stock,
-        });
+        if (oldPastry.commonStock) {
+          const oldPastries = await this.pastriesService.findByCommonStock(
+            oldPastry.commonStock,
+          );
+
+          oldPastries.forEach(async (oldP: PastryDocument) => {
+            const newP = await this.pastriesService.decrementStock(
+              oldP as PastryDocument,
+              pastriesGroupBy[oldPastry._id],
+            );
+
+            this.appGateway.stockChanged({
+              pastryId: oldP._id,
+              newStock: newP.stock,
+            });
+          });
+        } else {
+          const pastry = await this.pastriesService.decrementStock(
+            oldPastry as PastryDocument,
+            pastriesGroupBy[oldPastry._id],
+          );
+          this.appGateway.stockChanged({
+            pastryId: oldPastry._id,
+            newStock: pastry.stock,
+          });
+        }
       });
 
       transactionSession.commitTransaction();

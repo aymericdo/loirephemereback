@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpStatus, Post, Res } from '@nestjs/common';
 import { PastriesService } from './pastries.service';
-import { Pastry } from './schemas/pastry.schema';
+import { PastryDocument } from './schemas/pastry.schema';
 import { AppGateway } from 'src/app.gateway';
 
 @Controller('pastries')
@@ -11,7 +11,7 @@ export class PastriesController {
   ) {}
 
   @Get()
-  async getAll(@Res() res): Promise<Pastry[]> {
+  async getAll(@Res() res): Promise<PastryDocument[]> {
     const pastries = await this.pastriesService.findAll();
     return res.status(HttpStatus.OK).json(pastries);
   }

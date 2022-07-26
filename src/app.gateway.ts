@@ -10,7 +10,7 @@ import {
 import { Logger } from '@nestjs/common';
 import { Server } from 'ws';
 import WebSocket = require('ws');
-import { Command } from './commands/schemas/command.interface';
+import { CommandDocument } from './commands/schemas/command.schema';
 import webpush = require('web-push');
 
 @WebSocketGateway()
@@ -36,7 +36,7 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.users.push(client);
   }
 
-  alertNewCommand(command: Command) {
+  alertNewCommand(command: CommandDocument) {
     this.admins.forEach((client: WebSocket) =>
       client.send(JSON.stringify({ addCommand: command })),
     );
@@ -50,13 +50,13 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
   }
 
-  alertCloseCommand(command: Command) {
+  alertCloseCommand(command: CommandDocument) {
     this.admins.forEach((client: WebSocket) =>
       client.send(JSON.stringify({ closeCommand: command })),
     );
   }
 
-  alertPayedCommand(command: Command) {
+  alertPayedCommand(command: CommandDocument) {
     this.admins.forEach((client: WebSocket) =>
       client.send(JSON.stringify({ payedCommand: command })),
     );
@@ -89,7 +89,7 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('wizzer')
   onWizzer(
-    @MessageBody() data: Command,
+    @MessageBody() data: CommandDocument,
     @ConnectedSocket() client: WebSocket,
   ): void {
     const ws = this.waitingQueue.find((user) => user.commandId === data._id)
@@ -110,7 +110,7 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('addWaitingQueue')
   onAddWaitingQueue(
-    @MessageBody() data: Command,
+    @MessageBody() data: CommandDocument,
     @ConnectedSocket() client: WebSocket,
   ): void {
     this.waitingQueue.push({ commandId: data._id, ws: client });
@@ -126,7 +126,7 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  private sendPushNotif(sub: any, body: string, _command: Command) {
+  private sendPushNotif(sub: any, body: string, _command: CommandDocument) {
     const payload = JSON.stringify({
       notification: {
         title: 'Petite notif gentille',

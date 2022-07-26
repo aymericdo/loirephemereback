@@ -22,6 +22,12 @@ export class Pastry {
 
   @Prop({ type: Number })
   stock: number;
+
+  @Prop({ type: Boolean, default: false })
+  hidden: boolean;
+
+  @Prop({ type: String })
+  commonStock: string;
 }
 
 export const PastrySchema = SchemaFactory.createForClass(Pastry);

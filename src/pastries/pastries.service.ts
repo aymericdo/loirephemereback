@@ -1,8 +1,7 @@
 import { Model } from 'mongoose';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Pastry, PastryDocument } from './schemas/pastry.schema';
-import { Pastry as PastryInterface } from './schemas/pastry.interface';
+import { Pastry, PastryDocument } from './schemas/Pastry.schema';
 
 @Injectable()
 export class PastriesService {
@@ -10,18 +9,24 @@ export class PastriesService {
     @InjectModel(Pastry.name) private pastryModel: Model<PastryDocument>,
   ) {}
 
-  async findOne(pastryId: string): Promise<Pastry> {
-    return this.pastryModel.findOne({ _id: pastryId }).lean();
+  async findOne(PastryDocumentId: string): Promise<PastryDocument> {
+    return this.pastryModel
+      .findOne({ _id: PastryDocumentId.toString() })
+      .exec();
   }
 
-  async findAll(): Promise<Pastry[]> {
-    return this.pastryModel.find().lean().exec();
+  async findAll(): Promise<PastryDocument[]> {
+    return this.pastryModel.find().sort({ displaySequence: 1 }).exec();
+  }
+
+  async findByCommonStock(commonStock: string): Promise<PastryDocument[]> {
+    return this.pastryModel.find({ commonStock: commonStock }).exec();
   }
 
   async decrementStock(
-    pastry: PastryInterface,
+    pastry: PastryDocument,
     count: number,
-  ): Promise<Pastry> {
+  ): Promise<PastryDocument> {
     return this.pastryModel
       .findByIdAndUpdate(
         pastry._id,
