@@ -52,8 +52,8 @@ export class CommandsService {
     return this.commandModel
       .find({
         createdAt: {
-          $gt: new Date(year, 0, 1),
-          $lte: new Date(year + 1, 0, 1),
+          $gt: new Date(+year, 0, 1),
+          $lte: new Date(+year + 1, 0, 1),
         },
       })
       .sort({ createdAt: 1 })
