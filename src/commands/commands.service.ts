@@ -18,12 +18,12 @@ export class CommandsService {
       ...createCommandDto,
       reference: reference.slice(0, 4),
     });
-    return (await createdCommand.save()).populate('pastries').execPopulate();
+    return (await createdCommand.save()).populate('pastries');
   }
 
   async update(updateCommandDto: UpdateCommandDto): Promise<Command> {
     const updatedCommand = new this.commandModel(updateCommandDto);
-    return (await updatedCommand.save()).populate('pastries').execPopulate();
+    return (await updatedCommand.save()).populate('pastries');
   }
 
   async closeCommand(id: string): Promise<Command> {
