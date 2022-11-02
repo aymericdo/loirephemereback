@@ -13,7 +13,8 @@ import WebSocket = require('ws');
 import { CommandDocument } from './commands/schemas/command.schema';
 import webpush = require('web-push');
 
-@WebSocketGateway()
+const wsPort: number = +process.env.WS_PORT || null;
+@WebSocketGateway(wsPort)
 export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
@@ -92,8 +93,7 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: CommandDocument,
     @ConnectedSocket() client: WebSocket,
   ): void {
-    const ws = this.waitingQueue.find((user) => user.commandId === data._id)
-      ?.ws;
+    const ws = this.waitingQueue.find((user) => user.commandId === data._id)?.ws;
 
     const subNotification = this.waitingQueueSubNotification.find(
       (subNotif) => subNotif.commandId === data._id,
