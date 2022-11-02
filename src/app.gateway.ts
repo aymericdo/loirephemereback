@@ -13,6 +13,10 @@ import WebSocket = require('ws');
 import { CommandDocument } from './commands/schemas/command.schema';
 import webpush = require('web-push');
 
+const wsPort: number = +process.env.WS_PORT || null;
+console.log('wsPort');
+console.log(wsPort);
+console.log(process.env);
 @WebSocketGateway(3002)
 export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
