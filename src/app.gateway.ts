@@ -16,6 +16,7 @@ import webpush = require('web-push');
 const wsPort: number = +process.env.WS_PORT || null;
 console.log('wsPort');
 console.log(wsPort);
+console.log(process.env);
 @WebSocketGateway(wsPort)
 export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
