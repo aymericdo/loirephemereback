@@ -14,6 +14,8 @@ import { CommandDocument } from './commands/schemas/command.schema';
 import webpush = require('web-push');
 
 const wsPort: number = +process.env.WS_PORT || null;
+console.log('wsPort');
+console.log(wsPort);
 @WebSocketGateway(wsPort)
 export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
