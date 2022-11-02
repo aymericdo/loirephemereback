@@ -13,7 +13,7 @@ import WebSocket = require('ws');
 import { CommandDocument } from './commands/schemas/command.schema';
 import webpush = require('web-push');
 
-@WebSocketGateway(3002)
+@WebSocketGateway()
 export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
