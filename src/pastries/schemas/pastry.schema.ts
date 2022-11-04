@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Schema as MongooseSchema } from 'mongoose';
+import { Restaurant } from 'src/restaurants/schemas/restaurant.schema';
 
 export type PastryDocument = Pastry & Document;
 
@@ -28,6 +29,9 @@ export class Pastry {
 
   @Prop({ type: String })
   commonStock: string;
+
+  @Prop({ type: { type: MongooseSchema.Types.ObjectId, ref: 'Restaurant' } })
+  restaurant: Restaurant;
 }
 
 export const PastrySchema = SchemaFactory.createForClass(Pastry);

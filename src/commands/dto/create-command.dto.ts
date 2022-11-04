@@ -4,6 +4,9 @@ import {
   Length,
   IsNotEmpty,
   IsString,
+  IsBoolean,
+  IsDate,
+  MinDate,
 } from 'class-validator';
 import { Pastry } from 'src/pastries/schemas/pastry.schema';
 
@@ -16,6 +19,14 @@ export class CreateCommandDto {
   @MaxLength(100)
   @IsNotEmpty()
   readonly name: string;
+
+  @IsBoolean()
+  @IsNotEmpty()
+  readonly takeAway: boolean;
+
+  @IsDate()
+  @MinDate(new Date())
+  readonly pickUpTime: Date;
 
   @IsString()
   @Length(4, 4)

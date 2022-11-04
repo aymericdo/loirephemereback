@@ -7,6 +7,7 @@ import { PastriesModule } from './pastries/pastries.module';
 import { CommandsModule } from './commands/commands.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { RestaurantsModule } from './restaurants/restaurants.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { join } from 'path';
     }),
     PastriesModule,
     CommandsModule,
+    RestaurantsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

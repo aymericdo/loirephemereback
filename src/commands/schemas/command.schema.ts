@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
 import { Pastry } from 'src/pastries/schemas/pastry.schema';
+import { Restaurant } from 'src/restaurants/schemas/restaurant.schema';
 
 export type CommandDocument = Command & Document;
 
@@ -9,10 +10,16 @@ export class Command {
   @Prop({ type: [{ type: MongooseSchema.Types.ObjectId, ref: 'Pastry' }] })
   pastries: Pastry[];
 
-  @Prop({ type: String, required: true })
+  @Prop({ type: { type: MongooseSchema.Types.ObjectId, ref: 'Restaurant' } })
+  restaurant: Restaurant;
+
+  @Prop({ type: String, required: true, maxLength: 100 })
   name: string;
 
-  @Prop({ type: String, required: true })
+  @Prop({ type: Boolean, required: true, default: false })
+  takeAway: boolean;
+
+  @Prop({ type: String, required: true, minLength: 4, maxLength: 4 })
   reference: string;
 
   @Prop({ type: Boolean, required: true, default: false })
@@ -21,8 +28,11 @@ export class Command {
   @Prop({ type: Boolean, required: true, default: false })
   isPayed: boolean;
 
-  @Prop({ type: Number, required: true })
+  @Prop({ type: Number, required: true, min: 0 })
   totalPrice: number;
+
+  @Prop({ type: Date, required: true, default: null, min: new Date() })
+  pickUpTime: Date;
 }
 
 export const CommandSchema = SchemaFactory.createForClass(Command);

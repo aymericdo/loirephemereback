@@ -51,8 +51,8 @@ export class CommandsController {
   }
 
   @Post()
-  async postCommand(@Res() res, @Body() createCatDto: CreateCommandDto) {
-    const pastriesGroupBy = createCatDto.pastries.reduce(
+  async postCommand(@Res() res, @Body() body: CreateCommandDto) {
+    const pastriesGroupBy = body.pastries.reduce(
       (prev, pastry: PastryDocument) => {
         if (pastry.stock === undefined || pastry.stock === null) {
           return prev;
@@ -93,7 +93,7 @@ export class CommandsController {
           .json({ outOfStock: pastriesToZero });
       }
 
-      const command = await this.commandsService.create(createCatDto);
+      const command = await this.commandsService.create(body);
       this.appGateway.alertNewCommand(command as any);
 
       Object.keys(pastriesGroupBy).forEach(async (pastryId) => {
