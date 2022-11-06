@@ -15,6 +15,13 @@ export class PastriesService {
       .exec();
   }
 
+  async findDisplayable(): Promise<PastryDocument[]> {
+    return this.pastryModel
+      .find({ hidden: { $ne: true } })
+      .sort({ displaySequence: 1 })
+      .exec();
+  }
+
   async findAll(): Promise<PastryDocument[]> {
     return this.pastryModel.find().sort({ displaySequence: 1 }).exec();
   }

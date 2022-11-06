@@ -10,6 +10,12 @@ export class PastriesController {
     private readonly appGateway: AppGateway,
   ) {}
 
+  @Get('displayable')
+  async getDisplayable(@Res() res): Promise<PastryDocument[]> {
+    const pastries = await this.pastriesService.findDisplayable();
+    return res.status(HttpStatus.OK).json(pastries);
+  }
+
   @Get()
   async getAll(@Res() res): Promise<PastryDocument[]> {
     const pastries = await this.pastriesService.findAll();

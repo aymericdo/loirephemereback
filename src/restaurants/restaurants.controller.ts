@@ -1,4 +1,12 @@
-import { Body, Controller, Get, HttpStatus, Post, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpStatus,
+  Post,
+  Query,
+  Res,
+} from '@nestjs/common';
 import { RestaurantsService } from './restaurants.service';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
 import { InjectConnection } from '@nestjs/mongoose';
@@ -14,6 +22,13 @@ export class RestaurantsController {
   @Get()
   async getAll(@Res() res) {
     const restaurants = await this.restaurantsService.findAll();
+
+    return res.status(HttpStatus.OK).json(restaurants);
+  }
+
+  @Get('validate')
+  async validateRestaurant(@Res() res, @Query() query) {
+    const restaurants = await this.restaurantsService.isValid(query.name);
 
     return res.status(HttpStatus.OK).json(restaurants);
   }
