@@ -24,9 +24,9 @@ export class PastriesController {
     return res.status(HttpStatus.OK).json(pastries);
   }
 
-  @Get('everything')
-  async getAll(@Res() res): Promise<PastryDocument[]> {
-    const pastries = await this.pastriesService.findAll();
+  @Get('all/by-code/:code')
+  async getAll(@Res() res, @Param('code') code): Promise<PastryDocument[]> {
+    const pastries = await this.pastriesService.findAllByCode(code);
     return res.status(HttpStatus.OK).json(pastries);
   }
 
