@@ -1,4 +1,12 @@
-import { Body, Controller, Get, HttpStatus, Post, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpStatus,
+  Param,
+  Post,
+  Res,
+} from '@nestjs/common';
 import { PastriesService } from './pastries.service';
 import { PastryDocument } from 'src/pastries/schemas/pastry.schema';
 import { AppGateway } from 'src/app.gateway';
@@ -10,15 +18,24 @@ export class PastriesController {
     private readonly appGateway: AppGateway,
   ) {}
 
-  @Get('displayable')
+  @Get()
   async getDisplayable(@Res() res): Promise<PastryDocument[]> {
     const pastries = await this.pastriesService.findDisplayable();
     return res.status(HttpStatus.OK).json(pastries);
   }
 
-  @Get()
+  @Get('everything')
   async getAll(@Res() res): Promise<PastryDocument[]> {
     const pastries = await this.pastriesService.findAll();
+    return res.status(HttpStatus.OK).json(pastries);
+  }
+
+  @Get('by-code/:code')
+  async getPastriesByCode(
+    @Res() res,
+    @Param('code') code,
+  ): Promise<PastryDocument[]> {
+    const pastries = await this.pastriesService.findDisplayableByCode(code);
     return res.status(HttpStatus.OK).json(pastries);
   }
 

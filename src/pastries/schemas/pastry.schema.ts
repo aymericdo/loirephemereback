@@ -6,7 +6,7 @@ export type PastryDocument = Pastry & Document;
 
 @Schema()
 export class Pastry {
-  @Prop({ type: String, required: true })
+  @Prop({ type: String, required: true, unique: true })
   name: string;
 
   @Prop({ type: Number, required: true })
@@ -27,6 +27,7 @@ export class Pastry {
   @Prop({ type: Boolean, default: false })
   hidden: boolean;
 
+  // Props to join stock of several pastries
   @Prop({ type: String })
   commonStock: string;
 

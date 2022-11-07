@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   HttpStatus,
+  Param,
   Post,
   Query,
   Res,
@@ -31,6 +32,17 @@ export class RestaurantsController {
     const restaurants = await this.restaurantsService.isValid(query.name);
 
     return res.status(HttpStatus.OK).json(restaurants);
+  }
+
+  @Get('by-code/:code')
+  async getRestaurant(@Res() res, @Param('code') code) {
+    const restaurant = await this.restaurantsService.findByCode(code);
+
+    if (restaurant) {
+      return res.status(HttpStatus.OK).json(restaurant);
+    } else {
+      return res.status(HttpStatus.NOT_FOUND).json(null);
+    }
   }
 
   @Post('/')

@@ -2,11 +2,13 @@ import { NestFactory } from '@nestjs/core';
 import { WsAdapter } from '@nestjs/platform-ws';
 import { AppModule } from './app.module';
 import webpush = require('web-push');
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors();
   app.useWebSocketAdapter(new WsAdapter(app));
+  app.useGlobalPipes(new ValidationPipe());
 
   const publicVapidKey = process.env.PUBLIC_VAPID_KEY;
   const privateVapidKey = process.env.PRIVATE_VAPID_KEY;

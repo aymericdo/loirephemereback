@@ -9,9 +9,9 @@ export class PastriesService {
     @InjectModel(Pastry.name) private pastryModel: Model<PastryDocument>,
   ) {}
 
-  async findOne(PastryDocumentId: string): Promise<PastryDocument> {
+  async findOne(pastryDocumentId: string): Promise<PastryDocument> {
     return this.pastryModel
-      .findOne({ _id: PastryDocumentId.toString() })
+      .findOne({ _id: pastryDocumentId.toString() })
       .exec();
   }
 
@@ -19,6 +19,27 @@ export class PastriesService {
     return this.pastryModel
       .find({ hidden: { $ne: true } })
       .sort({ displaySequence: 1 })
+      .exec();
+  }
+
+  async findDisplayableByCode(code: string): Promise<PastryDocument[]> {
+    return this.pastryModel
+      .aggregate([
+        {
+          $lookup: {
+            from: 'restaurants',
+            localField: 'restaurant',
+            foreignField: '_id',
+            as: 'restaurant',
+          },
+        },
+        {
+          $match: { 'restaurant.code': code, hidden: { $ne: true } },
+        },
+        {
+          $sort: { displaySequence: 1 },
+        },
+      ])
       .exec();
   }
 

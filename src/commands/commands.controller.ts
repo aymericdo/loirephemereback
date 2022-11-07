@@ -36,6 +36,14 @@ export class CommandsController {
     return res.status(HttpStatus.OK).json(commands);
   }
 
+  @Get('by-code/:code')
+  @UseGuards(AuthGuard)
+  async getCommandsByCode(@Res() res, @Param('code') code, @Query() query) {
+    const commands = await this.commandsService.findByCode(code, query.year);
+
+    return res.status(HttpStatus.OK).json(commands);
+  }
+
   @Patch('/close/:id')
   async patchCommand(@Param('id') id: string, @Res() res) {
     const command = await this.commandsService.closeCommand(id);

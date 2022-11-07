@@ -16,6 +16,7 @@ export class CommandsService {
     const reference = randomBytes(24).toString('hex').toUpperCase();
     const createdCommand = new this.commandModel({
       ...createCommandDto,
+      name: createCommandDto.name.trim(),
       reference: reference.slice(0, 4),
     });
     return (await createdCommand.save()).populate('pastries');
@@ -58,6 +59,44 @@ export class CommandsService {
       })
       .sort({ createdAt: 1 })
       .populate('pastries')
+      .exec();
+  }
+
+  async findByCode(
+    code: string,
+    year = new Date().getFullYear(),
+  ): Promise<Command[]> {
+    return this.commandModel
+      .aggregate([
+        {
+          $lookup: {
+            from: 'restaurants',
+            localField: 'restaurant',
+            foreignField: '_id',
+            as: 'restaurant',
+          },
+        },
+        {
+          $match: {
+            'restaurant.code': code,
+            createdAt: {
+              $gt: new Date(+year, 0, 1),
+              $lte: new Date(+year + 1, 0, 1),
+            },
+          },
+        },
+        {
+          $lookup: {
+            from: 'pastries',
+            localField: 'pastries',
+            foreignField: '_id',
+            as: 'pastries',
+          },
+        },
+        {
+          $sort: { createdAt: 1 },
+        },
+      ])
       .exec();
   }
 }
