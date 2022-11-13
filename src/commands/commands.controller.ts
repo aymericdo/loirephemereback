@@ -18,10 +18,13 @@ import { CommandsService } from './commands.service';
 import { CreateCommandDto } from './dto/create-command.dto';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
+import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
+import { RestaurantsService } from 'src/restaurants/restaurants.service';
 
 @Controller('commands')
 export class CommandsController {
   constructor(
+    private readonly restaurantsService: RestaurantsService,
     private readonly pastriesService: PastriesService,
     private readonly commandsService: CommandsService,
     private readonly appGateway: AppGateway,
@@ -58,8 +61,12 @@ export class CommandsController {
     return res.status(HttpStatus.OK).json(command);
   }
 
-  @Post()
-  async postCommand(@Res() res, @Body() body: CreateCommandDto) {
+  @Post(':code')
+  async postCommand(
+    @Res() res,
+    @Body() body: CreateCommandDto,
+    @Param('code') code,
+  ) {
     const pastriesGroupBy = body.pastries.reduce(
       (prev, pastry: PastryDocument) => {
         if (pastry.stock === undefined || pastry.stock === null) {
@@ -81,6 +88,9 @@ export class CommandsController {
     try {
       transactionSession.startTransaction();
 
+      const restaurant: RestaurantDocument =
+        await this.restaurantsService.findByCode(code);
+
       const pastriesToZero = await Object.keys(pastriesGroupBy).reduce(
         async (prev: any, pastryId) => {
           const oldPastry: PastryDocument = await this.pastriesService.findOne(
@@ -101,8 +111,8 @@ export class CommandsController {
           .json({ outOfStock: pastriesToZero });
       }
 
-      const command = await this.commandsService.create(body);
-      this.appGateway.alertNewCommand(command as any);
+      const command = await this.commandsService.create(restaurant, body);
+      this.appGateway.alertNewCommand(code, command as any);
 
       Object.keys(pastriesGroupBy).forEach(async (pastryId) => {
         const oldPastry: PastryDocument = await this.pastriesService.findOne(
@@ -120,7 +130,7 @@ export class CommandsController {
               pastriesGroupBy[oldPastry._id],
             );
 
-            this.appGateway.stockChanged({
+            this.appGateway.stockChanged(code, {
               pastryId: oldP._id,
               newStock: newP.stock,
             });
@@ -130,7 +140,7 @@ export class CommandsController {
             oldPastry as PastryDocument,
             pastriesGroupBy[oldPastry._id],
           );
-          this.appGateway.stockChanged({
+          this.appGateway.stockChanged(code, {
             pastryId: oldPastry._id,
             newStock: pastry.stock,
           });

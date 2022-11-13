@@ -5,6 +5,7 @@ import { CreateCommandDto } from './dto/create-command.dto';
 import { UpdateCommandDto } from './dto/update-command.dto';
 import { Command, CommandDocument } from './schemas/command.schema';
 import { randomBytes } from 'crypto';
+import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
 
 @Injectable()
 export class CommandsService {
@@ -12,12 +13,16 @@ export class CommandsService {
     @InjectModel(Command.name) private commandModel: Model<CommandDocument>,
   ) {}
 
-  async create(createCommandDto: CreateCommandDto): Promise<Command> {
+  async create(
+    restaurant: RestaurantDocument,
+    createCommandDto: CreateCommandDto,
+  ): Promise<Command> {
     const reference = randomBytes(24).toString('hex').toUpperCase();
     const createdCommand = new this.commandModel({
       ...createCommandDto,
       name: createCommandDto.name.trim(),
       reference: reference.slice(0, 4),
+      restaurant,
     });
     return (await createdCommand.save()).populate('pastries');
   }

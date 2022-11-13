@@ -7,6 +7,7 @@ import {
   IsBoolean,
   IsDate,
   MinDate,
+  MinLength,
 } from 'class-validator';
 import { Pastry } from 'src/pastries/schemas/pastry.schema';
 
@@ -16,6 +17,7 @@ export class CreateCommandDto {
   readonly pastries: Pastry[];
 
   @IsString()
+  @MinLength(3)
   @MaxLength(100)
   @IsNotEmpty()
   readonly name: string;

@@ -13,13 +13,19 @@ export class Command {
   @Prop({ type: { type: MongooseSchema.Types.ObjectId, ref: 'Restaurant' } })
   restaurant: Restaurant;
 
-  @Prop({ type: String, required: true, maxLength: 100 })
+  @Prop({ type: String, required: true, minlength: 3, maxlength: 100 })
   name: string;
 
   @Prop({ type: Boolean, required: true, default: false })
   takeAway: boolean;
 
-  @Prop({ type: String, required: true, minLength: 4, maxLength: 4 })
+  @Prop({
+    type: String,
+    unique: true,
+    required: true,
+    minlength: 4,
+    maxlength: 4,
+  })
   reference: string;
 
   @Prop({ type: Boolean, required: true, default: false })

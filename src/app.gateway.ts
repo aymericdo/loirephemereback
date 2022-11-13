@@ -17,7 +17,7 @@ import webpush = require('web-push');
 export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
-  users: WebSocket[] = [];
+  clients: { [code: string]: WebSocket[] } = {};
   waitingQueue: { commandId: string; ws: WebSocket }[] = [];
   waitingQueueSubNotification: { commandId: string; sub: any }[] = [];
   waitingAdminSubNotification: { sub: any }[] = [];
@@ -31,12 +31,20 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   handleConnection(client: WebSocket, ...args: any[]) {
-    this.logger.log(`Client connected`);
-    client.send(JSON.stringify({ hello: 'bonjour' }));
-    this.users.push(client);
+    const codeRgx = args[0].url.match(/code=(.*)/)[1];
+    if (codeRgx && codeRgx[1]) {
+      const code = codeRgx[1];
+      this.logger.log('Client connected');
+      client.send(JSON.stringify({ hello: 'bonjour' }));
+      if (this.clients.hasOwnProperty(code)) {
+        this.clients[code].push(client);
+      } else {
+        this.clients[code] = [client];
+      }
+    }
   }
 
-  alertNewCommand(command: CommandDocument) {
+  alertNewCommand(code: string, command: CommandDocument) {
     this.admins.forEach((client: WebSocket) =>
       client.send(JSON.stringify({ addCommand: command })),
     );
@@ -62,8 +70,8 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     );
   }
 
-  stockChanged(newStock: { pastryId: string; newStock: number }) {
-    this.users.forEach((client: WebSocket) =>
+  stockChanged(code: string, newStock: { pastryId: string; newStock: number }) {
+    this.clients[code].forEach((client: WebSocket) =>
       client.send(JSON.stringify({ stockChanged: newStock })),
     );
   }
@@ -92,7 +100,9 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: CommandDocument,
     @ConnectedSocket() client: WebSocket,
   ): void {
-    const ws = this.waitingQueue.find((user) => user.commandId === data._id)?.ws;
+    const ws = this.waitingQueue.find(
+      (user) => user.commandId === data._id,
+    )?.ws;
 
     const subNotification = this.waitingQueueSubNotification.find(
       (subNotif) => subNotif.commandId === data._id,
@@ -132,23 +142,8 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
         body,
         icon: 'assets/icons/icon-128x128.png',
         vibrate: [
-          500,
-          110,
-          500,
-          110,
-          450,
-          110,
-          200,
-          110,
-          170,
-          40,
-          450,
-          110,
-          200,
-          110,
-          170,
-          40,
-          500,
+          500, 110, 500, 110, 450, 110, 200, 110, 170, 40, 450, 110, 200, 110,
+          170, 40, 500,
         ],
         data: {
           dateOfArrival: Date.now(),
