@@ -1,9 +1,10 @@
 import { MaxLength, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { SIZE } from 'src/helpers/sizes';
 
 export class CreateRestaurantDto {
   @IsString()
-  @MinLength(3)
-  @MaxLength(100)
+  @MinLength(SIZE.MIN)
+  @MaxLength(SIZE.SMALL)
   @IsNotEmpty()
   readonly name: string;
 }

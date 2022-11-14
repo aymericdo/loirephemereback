@@ -11,20 +11,12 @@ export class RestaurantsService {
     private restaurantModel: Model<RestaurantDocument>,
   ) {}
 
-  generateCode(name: string): string {
-    return name
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9- ]/g, '')
-      .replace(' ', '-');
-  }
-
-  async findAll(): Promise<Restaurant[]> {
-    return this.restaurantModel.find().sort({ createdAt: 1 }).exec();
+  async findAll(): Promise<RestaurantDocument[]> {
+    return await this.restaurantModel.find().sort({ createdAt: 1 }).exec();
   }
 
   async findByCode(code: string): Promise<RestaurantDocument> {
-    return this.restaurantModel.findOne({ code: code }).exec();
+    return await this.restaurantModel.findOne({ code: code }).exec();
   }
 
   async isValid(name: string): Promise<boolean> {
@@ -35,11 +27,21 @@ export class RestaurantsService {
     );
   }
 
-  async create(createRestaurantDto: CreateRestaurantDto): Promise<Restaurant> {
+  async create(
+    createRestaurantDto: CreateRestaurantDto,
+  ): Promise<RestaurantDocument> {
     const createdRestaurant = new this.restaurantModel({
       name: createRestaurantDto.name.trim(),
       code: this.generateCode(createRestaurantDto.name),
     });
     return await createdRestaurant.save();
+  }
+
+  private generateCode(name: string): string {
+    return name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9- ]/g, '')
+      .replace(' ', '-');
   }
 }

@@ -50,7 +50,7 @@ export class PastriesController {
     const restaurant: RestaurantDocument =
       await this.restaurantsService.findByCode(code);
     const pastry = await this.pastriesService.create(restaurant, body);
-    return new PastryEntity(pastry);
+    return new PastryEntity(pastry.toObject());
   }
 
   @UseInterceptors(ClassSerializerInterceptor)

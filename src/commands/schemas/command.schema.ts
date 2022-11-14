@@ -1,25 +1,37 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Schema as MongooseSchema } from 'mongoose';
+import { Document, SchemaTypes } from 'mongoose';
 import { Pastry } from 'src/pastries/schemas/pastry.schema';
 import { Restaurant } from 'src/restaurants/schemas/restaurant.schema';
+import { SIZE } from 'src/helpers/sizes';
 
 export type CommandDocument = Command & Document;
 
 @Schema({ timestamps: true })
 export class Command {
-  @Prop({ type: [{ type: MongooseSchema.Types.ObjectId, ref: 'Pastry' }] })
+  @Prop({
+    type: [{ type: SchemaTypes.ObjectId, ref: Pastry.name }],
+    required: true,
+    validate: [
+      (val: string) => val.length <= 100,
+      `{PATH} exceeds the limit of 100`,
+    ],
+  })
   pastries: Pastry[];
 
   @Prop({
-    type: {
-      type: MongooseSchema.Types.ObjectId,
-      ref: 'Restaurant',
-      required: true,
-    },
+    type: SchemaTypes.ObjectId,
+    ref: Restaurant.name,
+    required: true,
   })
   restaurant: Restaurant;
 
-  @Prop({ type: String, required: true, minlength: 3, maxlength: 100 })
+  @Prop({
+    type: String,
+    required: true,
+    trim: true,
+    minlength: SIZE.MIN,
+    maxlength: SIZE.SMALL,
+  })
   name: string;
 
   @Prop({ type: Boolean, required: true, default: false })
@@ -29,6 +41,7 @@ export class Command {
     type: String,
     unique: true,
     required: true,
+    uppercase: true,
     minlength: 4,
     maxlength: 4,
   })

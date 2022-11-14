@@ -1,4 +1,4 @@
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Pastry, PastryDocument } from 'src/pastries/schemas/pastry.schema';
@@ -12,7 +12,7 @@ export class PastriesService {
   ) {}
 
   async findOne(pastryDocumentId: string): Promise<PastryDocument> {
-    return this.pastryModel
+    return await this.pastryModel
       .findOne({ _id: pastryDocumentId.toString() })
       .exec();
   }
@@ -20,26 +20,26 @@ export class PastriesService {
   async create(
     restaurant: RestaurantDocument,
     createPastryDto: CreatePastryDto,
-  ): Promise<Pastry> {
+  ): Promise<PastryDocument> {
     const createdPastry = new this.pastryModel({
       ...createPastryDto,
       name: createPastryDto.name.trim(),
       description: createPastryDto.description.trim(),
       ingredients: createPastryDto.ingredients.map((i) => i.trim()),
-      restaurant: restaurant._id,
+      restaurant,
     });
-    return (await createdPastry.save()).toObject();
+    return await createdPastry.save();
   }
 
   async findDisplayable(): Promise<PastryDocument[]> {
-    return this.pastryModel
+    return await this.pastryModel
       .find({ hidden: { $ne: true } })
       .sort({ displaySequence: 1 })
       .exec();
   }
 
   async findDisplayableByCode(code: string): Promise<PastryDocument[]> {
-    return this.pastryModel
+    return await this.pastryModel
       .aggregate([
         {
           $lookup: {
@@ -79,7 +79,7 @@ export class PastriesService {
   }
 
   async findByCommonStock(commonStock: string): Promise<PastryDocument[]> {
-    return this.pastryModel.find({ commonStock: commonStock }).exec();
+    return await this.pastryModel.find({ commonStock: commonStock }).exec();
   }
 
   async isValid(code: string, pastryName: string): Promise<boolean> {
@@ -118,7 +118,7 @@ export class PastriesService {
     pastry: PastryDocument,
     count: number,
   ): Promise<PastryDocument> {
-    return this.pastryModel
+    return await this.pastryModel
       .findByIdAndUpdate(
         pastry._id,
         {

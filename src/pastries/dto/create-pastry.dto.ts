@@ -12,11 +12,12 @@ import {
   IsEnum,
 } from 'class-validator';
 import { pastryTypes } from 'src/pastries/schemas/pastry.schema';
+import { SIZE } from 'src/helpers/sizes';
 
 export class CreatePastryDto {
   @IsString()
-  @MinLength(3)
-  @MaxLength(100)
+  @MinLength(SIZE.MIN)
+  @MaxLength(SIZE.SMALL)
   @IsNotEmpty()
   readonly name: string;
 
@@ -26,19 +27,20 @@ export class CreatePastryDto {
   readonly price: number;
 
   @IsString()
-  @MinLength(10)
-  @MaxLength(500)
+  @MinLength(SIZE.MIN)
+  @MaxLength(SIZE.LARGE)
   @IsNotEmpty()
   readonly description: string;
 
   @IsString()
-  @MinLength(4)
+  @IsOptional()
+  @MinLength(SIZE.MIN)
   readonly imageUrl: string;
 
   @IsArray()
   @IsString({ each: true })
-  @MaxLength(100, { each: true })
-  @ArrayMaxSize(100)
+  @MaxLength(SIZE.SMALL, { each: true })
+  @ArrayMaxSize(SIZE.MEDIUM)
   readonly ingredients: string[];
 
   @IsBoolean()
@@ -56,8 +58,8 @@ export class CreatePastryDto {
 
   @IsString()
   @IsOptional()
-  @MinLength(3)
-  @MaxLength(50)
+  @MinLength(SIZE.MIN)
+  @MaxLength(SIZE.MEDIUM)
   readonly commonStock: string;
 
   @IsString()

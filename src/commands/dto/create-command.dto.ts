@@ -10,6 +10,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { Pastry } from 'src/pastries/schemas/pastry.schema';
+import { SIZE } from 'src/helpers/sizes';
 
 export class CreateCommandDto {
   @ValidateNested()
@@ -17,8 +18,8 @@ export class CreateCommandDto {
   readonly pastries: Pastry[];
 
   @IsString()
-  @MinLength(3)
-  @MaxLength(100)
+  @MinLength(SIZE.MIN)
+  @MaxLength(SIZE.SMALL)
   @IsNotEmpty()
   readonly name: string;
 

@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { SIZE } from 'src/helpers/sizes';
 
 export type RestaurantDocument = Restaurant & Document;
 
@@ -8,16 +9,18 @@ export class Restaurant {
   @Prop({
     type: String,
     required: true,
-    minlength: 3,
-    maxlength: 100,
+    trim: true,
+    minlength: SIZE.MIN,
+    maxlength: SIZE.SMALL,
   })
   name: string;
 
   @Prop({
     type: String,
     required: true,
-    minlength: 3,
-    maxlength: 100,
+    trim: true,
+    minlength: SIZE.MIN,
+    maxlength: SIZE.SMALL,
   })
   code: string;
 }
