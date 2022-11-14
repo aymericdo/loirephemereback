@@ -23,9 +23,12 @@ export class PastriesService {
   ): Promise<Pastry> {
     const createdPastry = new this.pastryModel({
       ...createPastryDto,
-      restaurant,
+      name: createPastryDto.name.trim(),
+      description: createPastryDto.description.trim(),
+      ingredients: createPastryDto.ingredients.map((i) => i.trim()),
+      restaurant: restaurant._id,
     });
-    return await createdPastry.save();
+    return (await createdPastry.save()).toObject();
   }
 
   async findDisplayable(): Promise<PastryDocument[]> {

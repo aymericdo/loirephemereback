@@ -17,11 +17,14 @@ export class CommandsService {
     restaurant: RestaurantDocument,
     createCommandDto: CreateCommandDto,
   ): Promise<Command> {
-    const reference = randomBytes(24).toString('hex').toUpperCase();
+    const reference: string = randomBytes(24)
+      .toString('hex')
+      .toUpperCase()
+      .slice(0, 4);
     const createdCommand = new this.commandModel({
       ...createCommandDto,
       name: createCommandDto.name.trim(),
-      reference: reference.slice(0, 4),
+      reference,
       restaurant,
     });
     return (await createdCommand.save()).populate('pastries');

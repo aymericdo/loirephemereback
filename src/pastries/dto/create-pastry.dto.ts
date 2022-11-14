@@ -5,9 +5,13 @@ import {
   IsBoolean,
   MinLength,
   IsNumber,
-  IsArray,
   Min,
+  ArrayMaxSize,
+  IsArray,
+  IsOptional,
+  IsEnum,
 } from 'class-validator';
+import { pastryTypes } from 'src/pastries/schemas/pastry.schema';
 
 export class CreatePastryDto {
   @IsString()
@@ -28,25 +32,35 @@ export class CreatePastryDto {
   readonly description: string;
 
   @IsString()
+  @MinLength(4)
   readonly imageUrl: string;
 
+  @IsArray()
   @IsString({ each: true })
-  @MaxLength(100)
+  @MaxLength(100, { each: true })
+  @ArrayMaxSize(100)
   readonly ingredients: string[];
-
-  @IsNumber()
-  @Min(0)
-  readonly stock: number;
 
   @IsBoolean()
   readonly hidden: boolean;
 
   @IsNumber()
+  @IsOptional()
+  @Min(0)
+  readonly stock: number;
+
+  @IsNumber()
+  @IsOptional()
   @Min(0)
   readonly displaySequence: number;
 
   @IsString()
+  @IsOptional()
   @MinLength(3)
   @MaxLength(50)
   readonly commonStock: string;
+
+  @IsString()
+  @IsEnum(pastryTypes)
+  readonly type: string;
 }

@@ -10,7 +10,13 @@ export class Command {
   @Prop({ type: [{ type: MongooseSchema.Types.ObjectId, ref: 'Pastry' }] })
   pastries: Pastry[];
 
-  @Prop({ type: { type: MongooseSchema.Types.ObjectId, ref: 'Restaurant' } })
+  @Prop({
+    type: {
+      type: MongooseSchema.Types.ObjectId,
+      ref: 'Restaurant',
+      required: true,
+    },
+  })
   restaurant: Restaurant;
 
   @Prop({ type: String, required: true, minlength: 3, maxlength: 100 })

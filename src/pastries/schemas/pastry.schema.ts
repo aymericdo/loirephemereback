@@ -4,6 +4,8 @@ import { Restaurant } from 'src/restaurants/schemas/restaurant.schema';
 
 export type PastryDocument = Pastry & Document;
 
+export const pastryTypes = ['pastry', 'drink', 'tips', 'other'] as const;
+type PastryType = typeof pastryTypes[number];
 @Schema({ timestamps: true })
 export class Pastry {
   @Prop({
@@ -36,13 +38,19 @@ export class Pastry {
   displaySequence: number;
 
   @Prop({ type: String })
-  type: 'drink' | 'pastry' | 'tip';
+  type: PastryType;
 
   // Props to join stock of several pastries
   @Prop({ type: String, minlength: 3, maxlength: 50 })
   commonStock: string;
 
-  @Prop({ type: { type: MongooseSchema.Types.ObjectId, ref: 'Restaurant' } })
+  @Prop({
+    type: {
+      type: MongooseSchema.Types.ObjectId,
+      ref: 'Restaurant',
+      required: true,
+    },
+  })
   restaurant: Restaurant;
 }
 
@@ -53,4 +61,4 @@ PastrySchema.index(
   { collation: { locale: 'fr', strength: 1 }, unique: true },
 );
 
-PastrySchema.index({ restaurant: 1, displaySequence: 1 }, { unique: true });
+// PastrySchema.index({ restaurant: 1, displaySequence: 1 }, { unique: true });
