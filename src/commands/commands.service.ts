@@ -30,11 +30,6 @@ export class CommandsService {
     return (await createdCommand.save()).populate('pastries');
   }
 
-  async update(updateCommandDto: UpdateCommandDto): Promise<Command> {
-    const updatedCommand = new this.commandModel(updateCommandDto);
-    return (await updatedCommand.save()).populate('pastries');
-  }
-
   async closeCommand(id: string): Promise<Command> {
     return this.commandModel
       .findByIdAndUpdate(

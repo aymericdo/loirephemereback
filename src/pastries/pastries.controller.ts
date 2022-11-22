@@ -9,6 +9,7 @@ import {
   Param,
   ParseFilePipe,
   Post,
+  Put,
   Query,
   Res,
   SerializeOptions,
@@ -27,6 +28,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { extname } from 'path';
 import * as fs from 'fs';
 import { randomBytes } from 'crypto';
+import { UpdatePastryDto } from 'src/pastries/dto/update-pastry.dto';
 
 const IMAGE_URL_PATH = './client/photos';
 
@@ -51,6 +53,36 @@ export class PastriesController {
       await this.restaurantsService.findByCode(code);
     const pastry = await this.pastriesService.create(restaurant, body);
     return new PastryEntity(pastry.toObject());
+  }
+
+  @Put('by-code/:code')
+  async updatePastry(
+    @Body() body: UpdatePastryDto,
+    @Param('code') code: string,
+  ): Promise<{
+    pastry: PastryEntity;
+    displaySequenceById: { [pastryId: string]: number };
+  }> {
+    let displaySequenceById = {};
+    const currentPastry = await this.pastriesService.findOne(
+      body._id.toString(),
+    );
+
+    displaySequenceById = await this.pastriesService.movingPastries(
+      code,
+      body,
+      currentPastry.displaySequence,
+    );
+
+    const pastry = await this.pastriesService.update({
+      ...body,
+      displaySequence: displaySequenceById[currentPastry._id],
+    });
+
+    return {
+      pastry: new PastryEntity(pastry.toObject()),
+      displaySequenceById,
+    };
   }
 
   @UseInterceptors(ClassSerializerInterceptor)

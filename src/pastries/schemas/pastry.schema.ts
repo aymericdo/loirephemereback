@@ -58,7 +58,7 @@ export class Pastry {
   @Prop({ type: Boolean, default: false })
   hidden: boolean;
 
-  @Prop({ type: Number, min: 0 })
+  @Prop({ type: Number, min: 0, required: true })
   displaySequence: number;
 
   @Prop({ type: String })

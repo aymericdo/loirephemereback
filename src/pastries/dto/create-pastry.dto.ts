@@ -44,6 +44,7 @@ export class CreatePastryDto {
   readonly ingredients: string[];
 
   @IsBoolean()
+  @IsNotEmpty()
   readonly hidden: boolean;
 
   @IsNumber()
@@ -57,12 +58,13 @@ export class CreatePastryDto {
   readonly displaySequence: number;
 
   @IsString()
+  @IsEnum(pastryTypes)
+  @IsNotEmpty()
+  readonly type: string;
+
+  @IsString()
   @IsOptional()
   @MinLength(SIZE.MIN)
   @MaxLength(SIZE.MEDIUM)
   readonly commonStock: string;
-
-  @IsString()
-  @IsEnum(pastryTypes)
-  readonly type: string;
 }

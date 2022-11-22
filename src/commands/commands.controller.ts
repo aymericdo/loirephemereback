@@ -67,21 +67,19 @@ export class CommandsController {
     @Body() body: CreateCommandDto,
     @Param('code') code,
   ) {
-    const pastriesGroupBy = body.pastries.reduce(
-      (prev, pastry: PastryDocument) => {
+    const pastriesGroupBy: { [pastryId: string]: number } =
+      body.pastries.reduce((prev, pastry: PastryDocument) => {
         if (pastry.stock === undefined || pastry.stock === null) {
           return prev;
         }
 
         if (!prev.hasOwnProperty(pastry._id)) {
-          prev[pastry._id] = 1;
+          prev[pastry._id.toString()] = 1;
         } else {
-          prev[pastry._id] = prev[pastry._id] + 1;
+          prev[pastry._id.toString()] = prev[pastry._id] + 1;
         }
         return prev;
-      },
-      {},
-    );
+      }, {});
 
     const transactionSession = await this.connection.startSession();
 
@@ -91,18 +89,18 @@ export class CommandsController {
       const restaurant: RestaurantDocument =
         await this.restaurantsService.findByCode(code);
 
-      const pastriesToZero = await Object.keys(pastriesGroupBy).reduce(
-        async (prev: any, pastryId) => {
+      const pastriesToZero = Object.keys(pastriesGroupBy).reduce(
+        async (prev: any, pastryId: string) => {
           const oldPastry: PastryDocument = await this.pastriesService.findOne(
             pastryId,
           );
 
           if (oldPastry.stock - pastriesGroupBy[pastryId] < 0) {
-            prev.push(oldPastry);
+            prev.push(oldPastry as PastryDocument);
           }
           return prev;
         },
-        [],
+        [] as PastryDocument[],
       );
 
       if (pastriesToZero.length) {
