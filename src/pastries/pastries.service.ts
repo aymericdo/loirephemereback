@@ -50,7 +50,11 @@ export class PastriesService {
     updatePastryDto: UpdatePastryDto,
     oldDisplaySequence: number,
   ): Promise<{ [pastryId: string]: number }> {
-    const newDisplaySequence = updatePastryDto.displaySequence;
+    let newDisplaySequence = updatePastryDto.displaySequence;
+
+    if (newDisplaySequence > oldDisplaySequence) {
+      newDisplaySequence += 1;
+    }
 
     if (newDisplaySequence !== oldDisplaySequence) {
       const transactionSession = await this.connection.startSession();
