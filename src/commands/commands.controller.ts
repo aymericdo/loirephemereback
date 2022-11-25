@@ -11,7 +11,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AppGateway } from 'src/app.gateway';
-import { PastriesService } from 'src/pastries/pastries.service';
 import { PastryDocument } from 'src/pastries/schemas/pastry.schema';
 import { AuthGuard } from './auth.guard';
 import { CommandsService } from './commands.service';
@@ -25,7 +24,6 @@ import { RestaurantsService } from 'src/restaurants/restaurants.service';
 export class CommandsController {
   constructor(
     private readonly restaurantsService: RestaurantsService,
-    private readonly pastriesService: PastriesService,
     private readonly commandsService: CommandsService,
     private readonly appGateway: AppGateway,
     @InjectConnection() private readonly connection: Connection,
@@ -67,19 +65,8 @@ export class CommandsController {
     @Body() body: CreateCommandDto,
     @Param('code') code,
   ) {
-    const pastriesGroupBy: { [pastryId: string]: number } =
-      body.pastries.reduce((prev, pastry: PastryDocument) => {
-        if (pastry.stock === undefined || pastry.stock === null) {
-          return prev;
-        }
-
-        if (!prev.hasOwnProperty(pastry._id)) {
-          prev[pastry._id.toString()] = 1;
-        } else {
-          prev[pastry._id.toString()] = prev[pastry._id] + 1;
-        }
-        return prev;
-      }, {});
+    const pastriesGroupById: { [pastryId: string]: number } =
+      this.commandsService.reducePastriesById(body.pastries);
 
     const transactionSession = await this.connection.startSession();
 
@@ -89,19 +76,8 @@ export class CommandsController {
       const restaurant: RestaurantDocument =
         await this.restaurantsService.findByCode(code);
 
-      const pastriesToZero = Object.keys(pastriesGroupBy).reduce(
-        async (prev: any, pastryId: string) => {
-          const oldPastry: PastryDocument = await this.pastriesService.findOne(
-            pastryId,
-          );
-
-          if (oldPastry.stock - pastriesGroupBy[pastryId] < 0) {
-            prev.push(oldPastry as PastryDocument);
-          }
-          return prev;
-        },
-        [] as PastryDocument[],
-      );
+      const pastriesToZero: PastryDocument[] =
+        this.commandsService.pastriesReached0(pastriesGroupById);
 
       if (pastriesToZero.length) {
         return res
@@ -112,38 +88,7 @@ export class CommandsController {
       const command = await this.commandsService.create(restaurant, body);
       this.appGateway.alertNewCommand(code, command as any);
 
-      Object.keys(pastriesGroupBy).forEach(async (pastryId) => {
-        const oldPastry: PastryDocument = await this.pastriesService.findOne(
-          pastryId,
-        );
-
-        if (oldPastry.commonStock) {
-          const oldPastries = await this.pastriesService.findByCommonStock(
-            oldPastry.commonStock,
-          );
-
-          oldPastries.forEach(async (oldP: PastryDocument) => {
-            const newP = await this.pastriesService.decrementStock(
-              oldP as PastryDocument,
-              pastriesGroupBy[oldPastry._id],
-            );
-
-            this.appGateway.stockChanged(code, {
-              pastryId: oldP._id,
-              newStock: newP.stock,
-            });
-          });
-        } else {
-          const pastry = await this.pastriesService.decrementStock(
-            oldPastry as PastryDocument,
-            pastriesGroupBy[oldPastry._id],
-          );
-          this.appGateway.stockChanged(code, {
-            pastryId: oldPastry._id,
-            newStock: pastry.stock,
-          });
-        }
-      });
+      this.commandsService.stockManagement(code, pastriesGroupById);
 
       transactionSession.commitTransaction();
       return res.status(HttpStatus.OK).json(command);

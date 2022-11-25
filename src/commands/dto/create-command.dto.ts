@@ -9,13 +9,13 @@ import {
   MinDate,
   MinLength,
 } from 'class-validator';
-import { Pastry } from 'src/pastries/schemas/pastry.schema';
 import { SIZE } from 'src/helpers/sizes';
+import { PastryDocument } from 'src/pastries/schemas/pastry.schema';
 
 export class CreateCommandDto {
   @ValidateNested()
   @IsNotEmpty()
-  readonly pastries: Pastry[];
+  readonly pastries: PastryDocument[];
 
   @IsString()
   @MinLength(SIZE.MIN)
