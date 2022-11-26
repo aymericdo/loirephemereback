@@ -12,7 +12,7 @@ import {
   IsEnum,
 } from 'class-validator';
 import { pastryTypes } from 'src/pastries/schemas/pastry.schema';
-import { SIZE } from 'src/helpers/sizes';
+import { SIZE } from 'src/shared/helpers/sizes';
 
 export class CreatePastryDto {
   @IsString()

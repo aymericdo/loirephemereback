@@ -1,12 +1,19 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, SchemaTypes } from 'mongoose';
 import { Restaurant } from 'src/restaurants/schemas/restaurant.schema';
-import { SIZE } from 'src/helpers/sizes';
+import { SIZE } from 'src/shared/helpers/sizes';
 
 export type PastryDocument = Pastry & Document;
 
 export const pastryTypes = ['pastry', 'drink', 'tips', 'other'] as const;
 type PastryType = typeof pastryTypes[number];
+
+export const statsAttributes = ['price', 'type'];
+export interface Historical {
+  date: Date;
+  price?: [number, number];
+  type?: [string, string];
+}
 
 @Schema({ timestamps: true })
 export class Pastry {
@@ -67,6 +74,11 @@ export class Pastry {
   // Props to join stock of several pastries
   @Prop({ type: String, minlength: SIZE.MIN, maxlength: SIZE.MEDIUM })
   commonStock: string;
+
+  @Prop({
+    type: [{ type: Object }],
+  })
+  historical: Historical[];
 }
 
 export const PastrySchema = SchemaFactory.createForClass(Pastry);

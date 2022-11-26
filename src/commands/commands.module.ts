@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { PastriesModule } from 'src/pastries/pastries.module';
 import { RestaurantsModule } from 'src/restaurants/restaurants.module';
@@ -9,12 +9,13 @@ import { Command, CommandSchema } from './schemas/command.schema';
 
 @Module({
   imports: [
+    forwardRef(() => PastriesModule),
     SharedModule,
-    PastriesModule,
     RestaurantsModule,
     MongooseModule.forFeature([{ name: Command.name, schema: CommandSchema }]),
   ],
   controllers: [CommandsController],
   providers: [CommandsService],
+  exports: [CommandsService],
 })
 export class CommandsModule {}

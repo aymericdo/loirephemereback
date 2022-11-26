@@ -1,5 +1,5 @@
 import { MaxLength, IsNotEmpty, IsString, MinLength } from 'class-validator';
-import { SIZE } from 'src/helpers/sizes';
+import { SIZE } from 'src/shared/helpers/sizes';
 
 export class CreateRestaurantDto {
   @IsString()

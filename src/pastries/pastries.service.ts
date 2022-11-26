@@ -1,7 +1,12 @@
 import { Connection, Model, ObjectId } from 'mongoose';
 import { Injectable } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
-import { Pastry, PastryDocument } from 'src/pastries/schemas/pastry.schema';
+import {
+  Historical,
+  Pastry,
+  PastryDocument,
+  statsAttributes,
+} from 'src/pastries/schemas/pastry.schema';
 import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
 import { CreatePastryDto } from 'src/pastries/dto/create-pastry.dto';
 import { UpdatePastryDto } from 'src/pastries/dto/update-pastry.dto';
@@ -37,10 +42,27 @@ export class PastriesService {
     return await createdPastry.save();
   }
 
-  async update(updatePastryDto: UpdatePastryDto): Promise<PastryDocument> {
+  async updateHistorical(
+    updatePastryDto: UpdatePastryDto,
+    changes: Historical,
+  ): Promise<PastryDocument> {
     return await this.pastryModel.findOneAndUpdate(
       { _id: updatePastryDto._id.toString() },
-      updatePastryDto,
+      { $push: { historical: changes } },
+      { new: true },
+    );
+  }
+
+  async update(
+    updatePastryDto: UpdatePastryDto,
+    historical: Historical,
+  ): Promise<PastryDocument> {
+    return await this.pastryModel.findOneAndUpdate(
+      { _id: updatePastryDto._id.toString() },
+      {
+        ...updatePastryDto,
+        historical,
+      },
       { new: true },
     );
   }
@@ -232,7 +254,7 @@ export class PastriesService {
     return await this.pastryModel.find({ commonStock: commonStock }).exec();
   }
 
-  async isValid(code: string, pastryName: string): Promise<boolean> {
+  async isValidName(code: string, pastryName: string): Promise<boolean> {
     return (
       (
         (await this.pastryModel
@@ -279,6 +301,63 @@ export class PastriesService {
       .exec();
   }
 
+  async verifyAllPastriesRestaurant(
+    code: string,
+    pastryIds: string[],
+  ): Promise<boolean> {
+    return (
+      (
+        (await this.pastryModel
+          .aggregate([
+            {
+              $lookup: {
+                from: 'restaurants',
+                localField: 'restaurant',
+                foreignField: '_id',
+                as: 'restaurant',
+              },
+            },
+            {
+              $match: {
+                'restaurant.code': code,
+                _id: { $in: pastryIds },
+              },
+            },
+            {
+              $count: 'totalCount',
+            },
+          ])
+          .exec()) as { totalCount: number }[]
+      ).length === pastryIds.length
+    );
+  }
+
+  isStatsAttributesChanged(
+    oldPastry: PastryDocument,
+    newPastry: UpdatePastryDto,
+  ): boolean {
+    return statsAttributes.some((attribute) => {
+      return oldPastry[attribute] !== newPastry[attribute];
+    });
+  }
+
+  getStatsAttributesChanged(
+    oldPastry: PastryDocument,
+    newPastry: UpdatePastryDto,
+  ): Historical {
+    const historical: Historical = {
+      date: new Date(),
+    };
+
+    statsAttributes.forEach((attribute) => {
+      if (oldPastry[attribute] !== newPastry[attribute]) {
+        historical[attribute] = [oldPastry[attribute], newPastry[attribute]];
+      }
+    });
+
+    return historical;
+  }
+
   private async getDisplaySequence(
     code: string,
     displaySequence: number,
@@ -289,10 +368,17 @@ export class PastriesService {
   }
 
   private async getDefaultDisplaySequence(code: string): Promise<number> {
-    return (await this.getCurrentMaxDisplaySequence(code)) + 1;
+    const currentMaxDisplaySequence = await this.getCurrentMaxDisplaySequence(
+      code,
+    );
+    return currentMaxDisplaySequence === null
+      ? 0
+      : currentMaxDisplaySequence + 1;
   }
 
-  private async getCurrentMaxDisplaySequence(code: string): Promise<number> {
+  private async getCurrentMaxDisplaySequence(
+    code: string,
+  ): Promise<number | null> {
     return (
       (
         (await this.pastryModel
@@ -325,7 +411,7 @@ export class PastriesService {
             },
           ])
           .exec()) as { displaySequence?: number }[]
-      )[0]?.displaySequence ?? 0
+      )[0]?.displaySequence ?? null
     );
   }
 }

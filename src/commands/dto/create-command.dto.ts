@@ -1,18 +1,21 @@
+import { Transform } from 'class-transformer';
 import {
   ValidateNested,
   MaxLength,
-  Length,
   IsNotEmpty,
   IsString,
   IsBoolean,
   IsDate,
-  MinDate,
   MinLength,
+  IsOptional,
 } from 'class-validator';
-import { SIZE } from 'src/helpers/sizes';
+import { SIZE } from 'src/shared/helpers/sizes';
 import { PastryDocument } from 'src/pastries/schemas/pastry.schema';
+import { IsInFuture } from 'src/shared/validators/date-is-in-future.decorator';
 
 export class CreateCommandDto {
+  currentDate: Date = new Date();
+
   @ValidateNested()
   @IsNotEmpty()
   readonly pastries: PastryDocument[];
@@ -27,12 +30,9 @@ export class CreateCommandDto {
   @IsNotEmpty()
   readonly takeAway: boolean;
 
+  @IsOptional()
+  @IsInFuture()
+  @Transform(({ value }) => value && new Date(value))
   @IsDate()
-  @MinDate(new Date())
   readonly pickUpTime: Date;
-
-  @IsString()
-  @Length(4, 4)
-  @IsNotEmpty()
-  readonly reference: string;
 }

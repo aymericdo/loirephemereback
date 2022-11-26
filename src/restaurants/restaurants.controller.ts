@@ -29,7 +29,7 @@ export class RestaurantsController {
 
   @Get('validate')
   async validateRestaurant(@Res() res, @Query() query) {
-    const isValid = await this.restaurantsService.isValid(query.name);
+    const isValid = await this.restaurantsService.isValidName(query.name);
 
     return res.status(HttpStatus.OK).json(isValid);
   }

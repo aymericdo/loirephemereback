@@ -19,7 +19,7 @@ export class RestaurantsService {
     return await this.restaurantModel.findOne({ code: code }).exec();
   }
 
-  async isValid(name: string): Promise<boolean> {
+  async isValidName(name: string): Promise<boolean> {
     return (
       (await this.restaurantModel
         .countDocuments({ code: this.generateCode(name) }, { limit: 1 })

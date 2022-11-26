@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { CreateCommandDto } from './dto/create-command.dto';
 import { Command, CommandDocument } from './schemas/command.schema';
 import { randomBytes } from 'crypto';
@@ -35,7 +35,7 @@ export class CommandsService {
   }
 
   async closeCommand(id: string): Promise<Command> {
-    return this.commandModel
+    return await this.commandModel
       .findByIdAndUpdate(
         id,
         { isDone: true },
@@ -46,7 +46,7 @@ export class CommandsService {
   }
 
   async payedCommand(id: string): Promise<Command> {
-    return this.commandModel
+    return await this.commandModel
       .findByIdAndUpdate(
         id,
         { isPayed: true },
@@ -57,7 +57,7 @@ export class CommandsService {
   }
 
   async findAll(year = new Date().getFullYear()): Promise<Command[]> {
-    return this.commandModel
+    return await this.commandModel
       .find({
         createdAt: {
           $gt: new Date(+year, 0, 1),
@@ -73,7 +73,7 @@ export class CommandsService {
     code: string,
     year = new Date().getFullYear(),
   ): Promise<Command[]> {
-    return this.commandModel
+    return await this.commandModel
       .aggregate([
         {
           $lookup: {
@@ -98,6 +98,30 @@ export class CommandsService {
             localField: 'pastries',
             foreignField: '_id',
             as: 'pastries',
+          },
+        },
+        {
+          $sort: { createdAt: 1 },
+        },
+      ])
+      .exec();
+  }
+
+  async findByPastry(code: string, pastryId: string): Promise<Command[]> {
+    return await this.commandModel
+      .aggregate([
+        {
+          $lookup: {
+            from: 'restaurants',
+            localField: 'restaurant',
+            foreignField: '_id',
+            as: 'restaurant',
+          },
+        },
+        {
+          $match: {
+            'restaurant.code': code,
+            pastries: new Types.ObjectId(pastryId),
           },
         },
         {

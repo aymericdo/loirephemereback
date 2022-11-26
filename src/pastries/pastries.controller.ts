@@ -29,6 +29,7 @@ import { extname } from 'path';
 import * as fs from 'fs';
 import { randomBytes } from 'crypto';
 import { UpdatePastryDto } from 'src/pastries/dto/update-pastry.dto';
+import { CommandsService } from 'src/commands/commands.service';
 
 const IMAGE_URL_PATH = './client/photos';
 
@@ -40,6 +41,7 @@ export class PastriesController {
   constructor(
     private readonly pastriesService: PastriesService,
     private readonly restaurantsService: RestaurantsService,
+    private readonly commandsService: CommandsService,
     private readonly appGateway: AppGateway,
   ) {}
 
@@ -57,6 +59,7 @@ export class PastriesController {
 
   @Put('by-code/:code')
   async updatePastry(
+    @Res() res,
     @Body() body: UpdatePastryDto,
     @Param('code') code: string,
   ): Promise<{
@@ -68,16 +71,39 @@ export class PastriesController {
       body._id.toString(),
     );
 
+    if (
+      (await this.commandsService.findByPastry(code, body._id.toString()))
+        .length > 0
+    ) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'you cannot edit the name of a pastry already ordered',
+      });
+    }
+
     displaySequenceById = await this.pastriesService.movingPastries(
       code,
       body,
       currentPastry.displaySequence,
     );
 
-    const pastry = await this.pastriesService.update({
-      ...body,
-      displaySequence: displaySequenceById[currentPastry._id],
-    });
+    let historical = null;
+    // Update historical
+    if (this.pastriesService.isStatsAttributesChanged(currentPastry, body)) {
+      historical = (
+        await this.pastriesService.updateHistorical(
+          { ...body },
+          this.pastriesService.getStatsAttributesChanged(currentPastry, body),
+        )
+      ).historical;
+    }
+
+    const pastry = await this.pastriesService.update(
+      {
+        ...body,
+        displaySequence: displaySequenceById[currentPastry._id],
+      },
+      historical,
+    );
 
     return {
       pastry: new PastryEntity(pastry.toObject()),
@@ -107,7 +133,19 @@ export class PastriesController {
     @Param('code') code: string,
     @Query() query: { name: string },
   ): Promise<PastryDocument[]> {
-    const isValid = await this.pastriesService.isValid(code, query.name);
+    const isValid = await this.pastriesService.isValidName(code, query.name);
+
+    return res.status(HttpStatus.OK).json(isValid);
+  }
+
+  @Get('by-code/:code/pastries/:pastryId/isAlreadyOrdered')
+  async isAlreadyOrdered(
+    @Res() res,
+    @Param('code') code: string,
+    @Param('pastryId') pastryId: string,
+  ): Promise<PastryDocument[]> {
+    const isValid =
+      (await this.commandsService.findByPastry(code, pastryId)).length > 0;
 
     return res.status(HttpStatus.OK).json(isValid);
   }

@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
-import { SIZE } from 'src/helpers/sizes';
+import { Document, SchemaTypes } from 'mongoose';
+import { SIZE } from 'src/shared/helpers/sizes';
+import { User } from 'src/users/schemas/user.schema';
 
 export type RestaurantDocument = Restaurant & Document;
 
@@ -23,6 +24,12 @@ export class Restaurant {
     maxlength: SIZE.SMALL,
   })
   code: string;
+
+  @Prop({
+    type: [{ type: SchemaTypes.ObjectId, ref: User.name }],
+    required: true,
+  })
+  users: User[];
 }
 
 export const RestaurantSchema = SchemaFactory.createForClass(Restaurant);

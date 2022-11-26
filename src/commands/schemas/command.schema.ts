@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, SchemaTypes } from 'mongoose';
 import { Pastry } from 'src/pastries/schemas/pastry.schema';
 import { Restaurant } from 'src/restaurants/schemas/restaurant.schema';
-import { SIZE } from 'src/helpers/sizes';
+import { SIZE } from 'src/shared/helpers/sizes';
 
 export type CommandDocument = Command & Document;
 

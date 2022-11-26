@@ -19,12 +19,14 @@ import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
 import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
 import { RestaurantsService } from 'src/restaurants/restaurants.service';
+import { PastriesService } from 'src/pastries/pastries.service';
 
 @Controller('commands')
 export class CommandsController {
   constructor(
     private readonly restaurantsService: RestaurantsService,
     private readonly commandsService: CommandsService,
+    private readonly pastriesService: PastriesService,
     private readonly appGateway: AppGateway,
     @InjectConnection() private readonly connection: Connection,
   ) {}
@@ -67,6 +69,17 @@ export class CommandsController {
   ) {
     const pastriesGroupById: { [pastryId: string]: number } =
       this.commandsService.reducePastriesById(body.pastries);
+
+    if (
+      !(await this.pastriesService.verifyAllPastriesRestaurant(
+        code,
+        Object.keys(pastriesGroupById),
+      ))
+    ) {
+      return res
+        .status(HttpStatus.BAD_REQUEST)
+        .json({ message: 'mismatch between pastries and restaurant' });
+    }
 
     const transactionSession = await this.connection.startSession();
 
