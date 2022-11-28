@@ -46,25 +46,29 @@ export class PastriesService {
     updatePastryDto: UpdatePastryDto,
     changes: Historical,
   ): Promise<PastryDocument> {
-    return await this.pastryModel.findOneAndUpdate(
-      { _id: updatePastryDto._id.toString() },
-      { $push: { historical: changes } },
-      { new: true },
-    );
+    return await this.pastryModel
+      .findOneAndUpdate(
+        { _id: updatePastryDto._id.toString() },
+        { $push: { historical: changes } },
+        { new: true },
+      )
+      .exec();
   }
 
   async update(
     updatePastryDto: UpdatePastryDto,
     historical: Historical,
   ): Promise<PastryDocument> {
-    return await this.pastryModel.findOneAndUpdate(
-      { _id: updatePastryDto._id.toString() },
-      {
-        ...updatePastryDto,
-        historical,
-      },
-      { new: true },
-    );
+    return await this.pastryModel
+      .findOneAndUpdate(
+        { _id: updatePastryDto._id.toString() },
+        {
+          ...updatePastryDto,
+          historical,
+        },
+        { new: true },
+      )
+      .exec();
   }
 
   async movingPastries(

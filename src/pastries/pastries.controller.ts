@@ -14,6 +14,7 @@ import {
   Res,
   SerializeOptions,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { diskStorage } from 'multer';
@@ -30,6 +31,7 @@ import * as fs from 'fs';
 import { randomBytes } from 'crypto';
 import { UpdatePastryDto } from 'src/pastries/dto/update-pastry.dto';
 import { CommandsService } from 'src/commands/commands.service';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 const IMAGE_URL_PATH = './client/photos';
 
@@ -46,6 +48,16 @@ export class PastriesController {
   ) {}
 
   @UseInterceptors(ClassSerializerInterceptor)
+  @Get('by-code/:code')
+  async getPastriesByCode(
+    @Param('code') code: string,
+  ): Promise<PastryEntity[]> {
+    const pastries = await this.pastriesService.findDisplayableByCode(code);
+    return pastries.map((p) => new PastryEntity(p));
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
   @Post('by-code/:code')
   async createPastry(
     @Body() body: CreatePastryDto,
@@ -57,6 +69,8 @@ export class PastriesController {
     return new PastryEntity(pastry.toObject());
   }
 
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
   @Put('by-code/:code')
   async updatePastry(
     @Res() res,
@@ -72,6 +86,7 @@ export class PastriesController {
     );
 
     if (
+      currentPastry.name !== body.name &&
       (await this.commandsService.findByPastry(code, body._id.toString()))
         .length > 0
     ) {
@@ -105,12 +120,13 @@ export class PastriesController {
       historical,
     );
 
-    return {
+    return res.status(HttpStatus.OK).json({
       pastry: new PastryEntity(pastry.toObject()),
       displaySequenceById,
-    };
+    });
   }
 
+  @UseGuards(JwtAuthGuard)
   @UseInterceptors(ClassSerializerInterceptor)
   @Get('by-code/:code/all')
   async getAll(@Param('code') code: string): Promise<PastryEntity[]> {
@@ -118,15 +134,7 @@ export class PastriesController {
     return pastries.map((p) => new PastryEntity(p));
   }
 
-  @UseInterceptors(ClassSerializerInterceptor)
-  @Get('by-code/:code')
-  async getPastriesByCode(
-    @Param('code') code: string,
-  ): Promise<PastryEntity[]> {
-    const pastries = await this.pastriesService.findDisplayableByCode(code);
-    return pastries.map((p) => new PastryEntity(p));
-  }
-
+  @UseGuards(JwtAuthGuard)
   @Get('by-code/:code/validate')
   async validatePastryName(
     @Res() res,
@@ -138,6 +146,7 @@ export class PastriesController {
     return res.status(HttpStatus.OK).json(isValid);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('by-code/:code/pastries/:pastryId/isAlreadyOrdered')
   async isAlreadyOrdered(
     @Res() res,
@@ -150,6 +159,7 @@ export class PastriesController {
     return res.status(HttpStatus.OK).json(isValid);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('by-code/:code/upload-image')
   @UseInterceptors(
     FileInterceptor('file', {

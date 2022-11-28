@@ -12,8 +12,14 @@ export class Command {
     type: [{ type: SchemaTypes.ObjectId, ref: Pastry.name }],
     required: true,
     validate: [
-      (val: string) => val.length <= 100,
-      `{PATH} exceeds the limit of 100`,
+      {
+        validator: (val: string) => val.length <= 100,
+        msg: '{PATH} exceeds the limit of 100',
+      },
+      {
+        validator: (val: string) => val.length > 0,
+        msg: '{PATH} is less than 1',
+      },
     ],
   })
   pastries: Pastry[];

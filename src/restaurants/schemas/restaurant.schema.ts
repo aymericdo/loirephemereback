@@ -28,6 +28,7 @@ export class Restaurant {
   @Prop({
     type: [{ type: SchemaTypes.ObjectId, ref: User.name }],
     required: true,
+    validate: [(val: string) => val.length > 0, '{PATH} is less than 1'],
   })
   users: User[];
 }

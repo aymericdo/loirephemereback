@@ -12,7 +12,6 @@ import {
 } from '@nestjs/common';
 import { AppGateway } from 'src/app.gateway';
 import { PastryDocument } from 'src/pastries/schemas/pastry.schema';
-import { AuthGuard } from './auth.guard';
 import { CommandsService } from './commands.service';
 import { CreateCommandDto } from './dto/create-command.dto';
 import { InjectConnection } from '@nestjs/mongoose';
@@ -20,6 +19,7 @@ import { Connection } from 'mongoose';
 import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
 import { RestaurantsService } from 'src/restaurants/restaurants.service';
 import { PastriesService } from 'src/pastries/pastries.service';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @Controller('commands')
 export class CommandsController {
@@ -30,36 +30,6 @@ export class CommandsController {
     private readonly appGateway: AppGateway,
     @InjectConnection() private readonly connection: Connection,
   ) {}
-
-  @Get()
-  @UseGuards(AuthGuard)
-  async getAll(@Res() res, @Query() query) {
-    const commands = await this.commandsService.findAll(query.year);
-
-    return res.status(HttpStatus.OK).json(commands);
-  }
-
-  @Get('by-code/:code')
-  @UseGuards(AuthGuard)
-  async getCommandsByCode(@Res() res, @Param('code') code, @Query() query) {
-    const commands = await this.commandsService.findByCode(code, query.year);
-
-    return res.status(HttpStatus.OK).json(commands);
-  }
-
-  @Patch('/close/:id')
-  async patchCommand(@Param('id') id: string, @Res() res) {
-    const command = await this.commandsService.closeCommand(id);
-    this.appGateway.alertCloseCommand(command as any);
-    return res.status(HttpStatus.OK).json(command);
-  }
-
-  @Patch('/payed/:id')
-  async patchCommand2(@Param('id') id: string, @Res() res) {
-    const command = await this.commandsService.payedCommand(id);
-    this.appGateway.alertPayedCommand(command as any);
-    return res.status(HttpStatus.OK).json(command);
-  }
 
   @Post(':code')
   async postCommand(
@@ -110,6 +80,30 @@ export class CommandsController {
     } finally {
       transactionSession.endSession();
     }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('by-code/:code')
+  async getCommandsByCode(@Res() res, @Param('code') code, @Query() query) {
+    const commands = await this.commandsService.findByCode(code, query.year);
+
+    return res.status(HttpStatus.OK).json(commands);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('/close/:id')
+  async patchCommand(@Param('id') id: string, @Res() res) {
+    const command = await this.commandsService.closeCommand(id);
+    this.appGateway.alertCloseCommand(command as any);
+    return res.status(HttpStatus.OK).json(command);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('/payed/:id')
+  async patchCommand2(@Param('id') id: string, @Res() res) {
+    const command = await this.commandsService.payedCommand(id);
+    this.appGateway.alertPayedCommand(command as any);
+    return res.status(HttpStatus.OK).json(command);
   }
 
   @Post('notification')

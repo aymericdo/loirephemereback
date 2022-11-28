@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User, UserDocument } from './schemas/user.schema';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -11,25 +12,12 @@ export class UsersService {
     private userModel: Model<UserDocument>,
   ) {}
 
-  async findAllByCode(code: string): Promise<UserDocument[]> {
-    return await this.userModel.aggregate([
-      {
-        $lookup: {
-          from: 'restaurants',
-          localField: 'restaurant',
-          foreignField: '_id',
-          as: 'restaurant',
-        },
-      },
-      {
-        $match: { 'restaurant.code': code },
-      },
-      {
-        $sort: {
-          email: 1,
-        },
-      },
-    ]);
+  async findOne(id: string): Promise<UserDocument | undefined> {
+    return await this.userModel.findOne({ _id: id }).exec();
+  }
+
+  async findOneByEmail(email: string): Promise<UserDocument | undefined> {
+    return await this.userModel.findOne({ email: email }).exec();
   }
 
   async isValidEmail(email: string): Promise<boolean> {
@@ -43,12 +31,13 @@ export class UsersService {
   async create(createUserDto: CreateUserDto): Promise<UserDocument> {
     const createdUser = new this.userModel({
       ...createUserDto,
-      password: this.encryptPassword(createUserDto.password),
+      password: await this.encryptPassword(createUserDto.password),
     });
     return await createdUser.save();
   }
 
-  private encryptPassword(password: string): string {
-    return password;
+  private async encryptPassword(password: string): Promise<string> {
+    const saltOrRounds = 10;
+    return await bcrypt.hash(password, saltOrRounds);
   }
 }
