@@ -17,6 +17,7 @@ import { LocalAuthGuard } from 'src/auth/local-auth.guard';
 import { AuthService } from 'src/auth/auth.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RestaurantsService } from 'src/restaurants/restaurants.service';
+import { EmailUserDto } from 'src/users/dto/email-user.dto';
 
 @Controller('users')
 export class UsersController {
@@ -33,8 +34,24 @@ export class UsersController {
     return res.status(HttpStatus.OK).json(isValid);
   }
 
+  @Post('/confirm-email')
+  async confirmUserWithEmail(@Res() res, @Body() body: EmailUserDto) {
+    const code2 = await this.authService.confirmEmail(body);
+    return res.status(HttpStatus.OK).json(code2);
+  }
+
   @Post('/')
   async postUser(@Res() res, @Body() body: CreateUserDto) {
+    const isValid = await this.authService.validateCodes(
+      body.email,
+      body.emailCode,
+      body.code2,
+    );
+    if (!isValid) {
+      return res
+        .status(HttpStatus.BAD_REQUEST)
+        .json({ message: 'code not valid' });
+    }
     const user = await this.usersService.create(body);
     return res.status(HttpStatus.OK).json(user);
   }
