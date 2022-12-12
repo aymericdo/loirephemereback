@@ -85,7 +85,11 @@ export class CommandsController {
   @UseGuards(JwtAuthGuard)
   @Get('by-code/:code')
   async getCommandsByCode(@Res() res, @Param('code') code, @Query() query) {
-    const commands = await this.commandsService.findByCode(code, query.year);
+    const commands = await this.commandsService.findByCode(
+      code,
+      query.fromDate,
+      query.toDate,
+    );
 
     return res.status(HttpStatus.OK).json(commands);
   }

@@ -38,7 +38,7 @@ export class UsersController {
 
   @Post('/confirm-email')
   async confirmUserWithEmail(@Res() res, @Body() body: EmailUserDto) {
-    const user = this.usersService.findOneByEmail(body.email);
+    const user = await this.usersService.findOneByEmail(body.email);
 
     if (user) {
       return res
@@ -52,7 +52,7 @@ export class UsersController {
 
   @Post('/confirm-recover-email')
   async confirmUserWithRecoverEmail(@Res() res, @Body() body: EmailUserDto) {
-    const user = this.usersService.findOneByEmail(body.email);
+    const user = await this.usersService.findOneByEmail(body.email);
 
     if (!user) {
       return res
@@ -66,7 +66,7 @@ export class UsersController {
 
   @Post('/change-password')
   async changePassword(@Res() res, @Body() body: UpdateUserDto) {
-    const user = this.usersService.findOneByEmail(body.email);
+    const user = await this.usersService.findOneByEmail(body.email);
 
     const isValid = await this.authService.validateCodes(
       body.email,
@@ -84,7 +84,7 @@ export class UsersController {
 
     await this.usersService.update(body);
 
-    return res.status(HttpStatus.OK).json(user);
+    return res.status(HttpStatus.OK).json(true);
   }
 
   @Post('/validate-recover-email-code')

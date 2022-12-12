@@ -71,7 +71,8 @@ export class CommandsService {
 
   async findByCode(
     code: string,
-    year = new Date().getFullYear(),
+    fromDate: string,
+    toDate: string,
   ): Promise<Command[]> {
     return await this.commandModel
       .aggregate([
@@ -87,8 +88,8 @@ export class CommandsService {
           $match: {
             'restaurant.code': code,
             createdAt: {
-              $gt: new Date(+year, 0, 1),
-              $lte: new Date(+year + 1, 0, 1),
+              $gt: new Date(fromDate),
+              $lte: new Date(toDate),
             },
           },
         },

@@ -22,7 +22,7 @@ export class MailService {
     await this.mailerService.sendMail({
       to: email.email,
       from: `"oResto" <${process.env.MAIL_FROM}>`, // override default from
-      subject: 'Bienvenue ! 😊 Confirmez votre email svp',
+      subject: 'Mot de passe oublié ! 😓 Confirmez votre email svp',
       template: './transactional',
       context: {
         code,
