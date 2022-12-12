@@ -18,6 +18,8 @@ import { AuthService } from 'src/auth/auth.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RestaurantsService } from 'src/restaurants/restaurants.service';
 import { EmailUserDto } from 'src/users/dto/email-user.dto';
+import { RecoverUserDto } from 'src/users/dto/recover-user.dto';
+import { UpdateUserDto } from 'src/users/dto/update-user.dto';
 
 @Controller('users')
 export class UsersController {
@@ -36,8 +38,70 @@ export class UsersController {
 
   @Post('/confirm-email')
   async confirmUserWithEmail(@Res() res, @Body() body: EmailUserDto) {
+    const user = this.usersService.findOneByEmail(body.email);
+
+    if (user) {
+      return res
+        .status(HttpStatus.BAD_REQUEST)
+        .json({ message: 'email not valid' });
+    }
+
     const code2 = await this.authService.confirmEmail(body);
     return res.status(HttpStatus.OK).json(code2);
+  }
+
+  @Post('/confirm-recover-email')
+  async confirmUserWithRecoverEmail(@Res() res, @Body() body: EmailUserDto) {
+    const user = this.usersService.findOneByEmail(body.email);
+
+    if (!user) {
+      return res
+        .status(HttpStatus.BAD_REQUEST)
+        .json({ message: 'email not valid' });
+    }
+
+    const code2 = await this.authService.confirmRecoverEmail(body);
+    return res.status(HttpStatus.OK).json(code2);
+  }
+
+  @Post('/change-password')
+  async changePassword(@Res() res, @Body() body: UpdateUserDto) {
+    const user = this.usersService.findOneByEmail(body.email);
+
+    const isValid = await this.authService.validateCodes(
+      body.email,
+      body.emailCode,
+      body.code2,
+    );
+
+    if (!user || !isValid) {
+      return res
+        .status(HttpStatus.BAD_REQUEST)
+        .json({ message: 'email not valid' });
+    }
+
+    await this.authService.deleteCodes(body.email);
+
+    await this.usersService.update(body);
+
+    return res.status(HttpStatus.OK).json(user);
+  }
+
+  @Post('/validate-recover-email-code')
+  async validateRecoverEmailCode(@Res() res, @Body() body: RecoverUserDto) {
+    const isValid = await this.authService.validateCodes(
+      body.email,
+      body.emailCode,
+      body.code2,
+    );
+
+    if (!isValid) {
+      return res
+        .status(HttpStatus.BAD_REQUEST)
+        .json({ message: 'code not valid' });
+    } else {
+      return res.status(HttpStatus.OK).json(true);
+    }
   }
 
   @Post('/')
@@ -47,6 +111,9 @@ export class UsersController {
       body.emailCode,
       body.code2,
     );
+
+    await this.authService.deleteCodes(body.email);
+
     if (!isValid) {
       return res
         .status(HttpStatus.BAD_REQUEST)

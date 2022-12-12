@@ -51,6 +51,21 @@ export class AuthService {
     return code2;
   }
 
+  async confirmRecoverEmail(email: EmailUserDto): Promise<string> {
+    const emailCode = Math.floor(1000 + Math.random() * 9000).toString();
+    const code2 = Math.floor(1000 + Math.random() * 9000).toString();
+
+    await this.cacheManager.set(
+      this.confirmationEmailCacheKey(email.email),
+      JSON.stringify([emailCode, code2]),
+      1000 * 180,
+    );
+
+    await this.mailService.sendUserRecoverConfirmation(email, emailCode);
+
+    return code2;
+  }
+
   async validateCodes(
     email: string,
     emailCode: string,
@@ -66,6 +81,10 @@ export class AuthService {
       JSON.parse(values)[0] === emailCode &&
       JSON.parse(values)[1] === code2
     );
+  }
+
+  async deleteCodes(email: string): Promise<void> {
+    this.cacheManager.del(this.confirmationEmailCacheKey(email));
   }
 
   private confirmationEmailCacheKey(email: string): string {

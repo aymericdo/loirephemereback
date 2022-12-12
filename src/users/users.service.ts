@@ -4,6 +4,7 @@ import { Model } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User, UserDocument } from './schemas/user.schema';
 import * as bcrypt from 'bcrypt';
+import { UpdateUserDto } from 'src/users/dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -34,6 +35,19 @@ export class UsersService {
       password: await this.encryptPassword(createUserDto.password),
     });
     return await createdUser.save();
+  }
+
+  async update(updateUserDto: UpdateUserDto): Promise<UserDocument> {
+    return await this.userModel
+      .findOneAndUpdate(
+        { email: updateUserDto.email },
+        {
+          ...updateUserDto,
+          password: await this.encryptPassword(updateUserDto.password),
+        },
+        { new: true },
+      )
+      .exec();
   }
 
   private async encryptPassword(password: string): Promise<string> {
