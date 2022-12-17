@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User } from 'src/users/schemas/user.schema';
+import { User, UserDocument } from 'src/users/schemas/user.schema';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
 import { Restaurant, RestaurantDocument } from './schemas/restaurant.schema';
 
@@ -32,7 +32,7 @@ export class RestaurantsService {
     ).users;
   }
 
-  async isValidName(name: string): Promise<boolean> {
+  async isNameNotExists(name: string): Promise<boolean> {
     return (
       (await this.restaurantModel
         .countDocuments({ code: this.generateCode(name) }, { limit: 1 })
@@ -42,12 +42,40 @@ export class RestaurantsService {
 
   async create(
     createRestaurantDto: CreateRestaurantDto,
+    userId: string,
   ): Promise<RestaurantDocument> {
     const createdRestaurant = new this.restaurantModel({
       name: createRestaurantDto.name.trim(),
       code: this.generateCode(createRestaurantDto.name),
+      users: [userId],
     });
     return await createdRestaurant.save();
+  }
+
+  async addUserToRestaurant(
+    code: string,
+    user: UserDocument,
+  ): Promise<RestaurantDocument> {
+    return await this.restaurantModel
+      .findOneAndUpdate(
+        { code: code },
+        { $push: { users: user } },
+        { new: true },
+      )
+      .exec();
+  }
+
+  async deleteUserToRestaurant(
+    code: string,
+    user: UserDocument,
+  ): Promise<RestaurantDocument> {
+    return await this.restaurantModel
+      .findOneAndUpdate(
+        { code: code },
+        { $pull: { users: user } },
+        { new: true },
+      )
+      .exec();
   }
 
   private generateCode(name: string): string {

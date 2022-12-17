@@ -12,20 +12,15 @@ import {
 } from '@nestjs/common';
 import { RestaurantsService } from './restaurants.service';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
-import { InjectConnection } from '@nestjs/mongoose';
-import { Connection } from 'mongoose';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @Controller('restaurants')
 export class RestaurantsController {
-  constructor(
-    private readonly restaurantsService: RestaurantsService,
-    @InjectConnection() private readonly connection: Connection,
-  ) {}
+  constructor(private readonly restaurantsService: RestaurantsService) {}
 
-  @Get('validate')
+  @Get('not-exists')
   async validateRestaurant(@Res() res, @Query() query) {
-    const isValid = await this.restaurantsService.isValidName(query.name);
+    const isValid = await this.restaurantsService.isNameNotExists(query.name);
 
     return res.status(HttpStatus.OK).json(isValid);
   }
@@ -53,8 +48,15 @@ export class RestaurantsController {
 
   @UseGuards(JwtAuthGuard)
   @Post('/')
-  async postRestaurant(@Res() res, @Body() body: CreateRestaurantDto) {
-    const restaurant = await this.restaurantsService.create(body);
+  async postRestaurant(
+    @Res() res,
+    @Body() body: CreateRestaurantDto,
+    @Req() req,
+  ) {
+    const restaurant = await this.restaurantsService.create(
+      body,
+      req.user.userId,
+    );
     return res.status(HttpStatus.OK).json(restaurant);
   }
 }

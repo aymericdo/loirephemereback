@@ -135,13 +135,16 @@ export class PastriesController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('by-code/:code/validate')
+  @Get('by-code/:code/not-exists')
   async validatePastryName(
     @Res() res,
     @Param('code') code: string,
     @Query() query: { name: string },
   ): Promise<PastryDocument[]> {
-    const isValid = await this.pastriesService.isValidName(code, query.name);
+    const isValid = await this.pastriesService.isNameNotExists(
+      code,
+      query.name,
+    );
 
     return res.status(HttpStatus.OK).json(isValid);
   }

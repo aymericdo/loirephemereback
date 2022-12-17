@@ -29,9 +29,9 @@ export class UsersController {
     private readonly authService: AuthService,
   ) {}
 
-  @Get('validate')
-  async validateUserEmail(@Res() res, @Query() query) {
-    const isValid = await this.usersService.isValidEmail(query.email);
+  @Get('not-exists')
+  async notExistsUserEmail(@Res() res, @Query() query) {
+    const isValid = await this.usersService.isEmailNotExists(query.email);
 
     return res.status(HttpStatus.OK).json(isValid);
   }
@@ -123,6 +123,14 @@ export class UsersController {
     return res.status(HttpStatus.OK).json(user);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Get('exists')
+  async existsUserEmail(@Res() res, @Query() query) {
+    const isValid = await this.usersService.isEmailExists(query.email);
+
+    return res.status(HttpStatus.OK).json(isValid);
+  }
+
   @UseGuards(LocalAuthGuard)
   @Post('/auth/login')
   async login(@Req() req) {
@@ -139,5 +147,29 @@ export class UsersController {
   @Get('by-code/:code/all')
   async getAll(@Param('code') code: string): Promise<User[]> {
     return await this.restaurantsService.findUsersByCode(code);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('by-code/:code')
+  async postUserToRestaurant(
+    @Res() res,
+    @Param('code') code,
+    @Body() body: { email: string },
+  ) {
+    const user = await this.usersService.findOneByEmail(body.email);
+    await this.restaurantsService.addUserToRestaurant(code, user);
+    return res.status(HttpStatus.OK).json(user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('by-code/:code/delete')
+  async deleteUserFromRestaurant(
+    @Res() res,
+    @Param('code') code,
+    @Body() body: { email: string },
+  ) {
+    const user = await this.usersService.findOneByEmail(body.email);
+    await this.restaurantsService.deleteUserToRestaurant(code, user);
+    return res.status(HttpStatus.OK).json(true);
   }
 }

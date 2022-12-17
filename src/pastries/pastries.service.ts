@@ -258,7 +258,7 @@ export class PastriesService {
     return await this.pastryModel.find({ commonStock: commonStock }).exec();
   }
 
-  async isValidName(code: string, pastryName: string): Promise<boolean> {
+  async isNameNotExists(code: string, pastryName: string): Promise<boolean> {
     return (
       (
         (await this.pastryModel

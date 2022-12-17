@@ -21,7 +21,15 @@ export class UsersService {
     return await this.userModel.findOne({ email: email }).exec();
   }
 
-  async isValidEmail(email: string): Promise<boolean> {
+  async isEmailExists(email: string): Promise<boolean> {
+    return (
+      (await this.userModel
+        .countDocuments({ email: email }, { limit: 1 })
+        .exec()) === 1
+    );
+  }
+
+  async isEmailNotExists(email: string): Promise<boolean> {
     return (
       (await this.userModel
         .countDocuments({ email: email }, { limit: 1 })
