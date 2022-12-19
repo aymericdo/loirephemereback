@@ -6,21 +6,22 @@ import {
   Param,
   Post,
   Query,
-  Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
 import { RestaurantsService } from './restaurants.service';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { UserDocument } from 'src/users/schemas/user.schema';
+import { AuthUser } from 'src/shared/middleware/auth-user.decorator';
 
 @Controller('restaurants')
 export class RestaurantsController {
   constructor(private readonly restaurantsService: RestaurantsService) {}
 
   @Get('not-exists')
-  async validateRestaurant(@Res() res, @Query() query) {
-    const isValid = await this.restaurantsService.isNameNotExists(query.name);
+  async validateRestaurant(@Res() res, @Query('name') name: string) {
+    const isValid = await this.restaurantsService.isNameNotExists(name);
 
     return res.status(HttpStatus.OK).json(isValid);
   }
@@ -38,9 +39,9 @@ export class RestaurantsController {
 
   @UseGuards(JwtAuthGuard)
   @Get()
-  async getAllByUser(@Res() res, @Req() req) {
+  async getAllByUser(@Res() res, @AuthUser() authUser: UserDocument) {
     const restaurants = await this.restaurantsService.findAllByUserId(
-      req.user.userId,
+      authUser._id,
     );
 
     return res.status(HttpStatus.OK).json(restaurants);
@@ -51,12 +52,9 @@ export class RestaurantsController {
   async postRestaurant(
     @Res() res,
     @Body() body: CreateRestaurantDto,
-    @Req() req,
+    @AuthUser() authUser: UserDocument,
   ) {
-    const restaurant = await this.restaurantsService.create(
-      body,
-      req.user.userId,
-    );
+    const restaurant = await this.restaurantsService.create(body, authUser._id);
     return res.status(HttpStatus.OK).json(restaurant);
   }
 }

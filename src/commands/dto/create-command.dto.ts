@@ -1,4 +1,4 @@
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   ValidateNested,
   MaxLength,
@@ -32,7 +32,7 @@ export class CreateCommandDto {
 
   @IsOptional()
   @IsInFuture()
-  @Transform(({ value }) => value && new Date(value))
+  @Type(() => Date)
   @IsDate()
   readonly pickUpTime: Date;
 }

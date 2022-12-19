@@ -32,6 +32,20 @@ export class RestaurantsService {
     ).users;
   }
 
+  async findUsersByCodeCount(code: string): Promise<number> {
+    return (
+      await this.restaurantModel.findOne({ code: code }, { users: 1 }).exec()
+    ).users.length;
+  }
+
+  async isUserInRestaurant(code: string, userId: string): Promise<boolean> {
+    return (
+      (await this.restaurantModel
+        .countDocuments({ code: code, users: userId }, { limit: 1 })
+        .exec()) === 0
+    );
+  }
+
   async isNameNotExists(name: string): Promise<boolean> {
     return (
       (await this.restaurantModel
@@ -59,7 +73,7 @@ export class RestaurantsService {
     return await this.restaurantModel
       .findOneAndUpdate(
         { code: code },
-        { $push: { users: user } },
+        { $addToSet: { users: user._id.toString() } },
         { new: true },
       )
       .exec();
@@ -72,7 +86,7 @@ export class RestaurantsService {
     return await this.restaurantModel
       .findOneAndUpdate(
         { code: code },
-        { $pull: { users: user } },
+        { $pull: { users: user._id.toString() } },
         { new: true },
       )
       .exec();

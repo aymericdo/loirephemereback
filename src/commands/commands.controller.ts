@@ -9,6 +9,7 @@ import {
   Query,
   Res,
   UseGuards,
+  ValidationPipe,
 } from '@nestjs/common';
 import { AppGateway } from 'src/app.gateway';
 import { PastryDocument } from 'src/pastries/schemas/pastry.schema';
@@ -20,6 +21,8 @@ import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
 import { RestaurantsService } from 'src/restaurants/restaurants.service';
 import { PastriesService } from 'src/pastries/pastries.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { AuthUser } from 'src/shared/middleware/auth-user.decorator';
+import { UserDocument } from 'src/users/schemas/user.schema';
 
 @Controller('commands')
 export class CommandsController {
@@ -84,11 +87,23 @@ export class CommandsController {
 
   @UseGuards(JwtAuthGuard)
   @Get('by-code/:code')
-  async getCommandsByCode(@Res() res, @Param('code') code, @Query() query) {
+  async getCommandsByCode(
+    @Res() res,
+    @Param('code') code,
+    @AuthUser() authUser: UserDocument,
+    @Query('fromDate') fromDate: string,
+    @Query('toDate') toDate: string,
+  ) {
+    if (!this.restaurantsService.isUserInRestaurant(code, authUser._id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'user not in restaurant',
+      });
+    }
+
     const commands = await this.commandsService.findByCode(
       code,
-      query.fromDate,
-      query.toDate,
+      fromDate,
+      toDate,
     );
 
     return res.status(HttpStatus.OK).json(commands);
@@ -96,7 +111,19 @@ export class CommandsController {
 
   @UseGuards(JwtAuthGuard)
   @Patch('/close/:id')
-  async patchCommand(@Param('id') id: string, @Res() res) {
+  async patchCommand(
+    @Param('id') id: string,
+    @AuthUser() authUser: UserDocument,
+    @Res() res,
+  ) {
+    const code = (await this.commandsService.findOne(id)).restaurant.code;
+
+    if (!this.restaurantsService.isUserInRestaurant(code, authUser._id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'user not in restaurant',
+      });
+    }
+
     const command = await this.commandsService.closeCommand(id);
     this.appGateway.alertCloseCommand(command as any);
     return res.status(HttpStatus.OK).json(command);
@@ -104,7 +131,19 @@ export class CommandsController {
 
   @UseGuards(JwtAuthGuard)
   @Patch('/payed/:id')
-  async patchCommand2(@Param('id') id: string, @Res() res) {
+  async patchCommand2(
+    @Param('id') id: string,
+    @AuthUser() authUser: UserDocument,
+    @Res() res,
+  ) {
+    const code = (await this.commandsService.findOne(id)).restaurant.code;
+
+    if (!this.restaurantsService.isUserInRestaurant(code, authUser._id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'user not in restaurant',
+      });
+    }
+
     const command = await this.commandsService.payedCommand(id);
     this.appGateway.alertPayedCommand(command as any);
     return res.status(HttpStatus.OK).json(command);
@@ -114,6 +153,6 @@ export class CommandsController {
   async postNotificationSub(@Res() res, @Body() body: { sub: any }) {
     this.appGateway.addAdminQueueSubNotification(body);
 
-    res.status(HttpStatus.OK).json();
+    return res.status(HttpStatus.OK).json();
   }
 }

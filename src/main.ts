@@ -8,7 +8,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors();
   app.useWebSocketAdapter(new WsAdapter(app));
-  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(new ValidationPipe({ transform: true }));
 
   const publicVapidKey = process.env.PUBLIC_VAPID_KEY;
   const privateVapidKey = process.env.PRIVATE_VAPID_KEY;

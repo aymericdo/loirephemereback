@@ -17,6 +17,10 @@ export class CommandsService {
     private readonly appGateway: AppGateway,
   ) {}
 
+  async findOne(id: string): Promise<CommandDocument> {
+    return await this.commandModel.findOne({ _id: id }).exec();
+  }
+
   async create(
     restaurant: RestaurantDocument,
     createCommandDto: CreateCommandDto,

@@ -32,6 +32,8 @@ import { randomBytes } from 'crypto';
 import { UpdatePastryDto } from 'src/pastries/dto/update-pastry.dto';
 import { CommandsService } from 'src/commands/commands.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { AuthUser } from 'src/shared/middleware/auth-user.decorator';
+import { UserDocument } from 'src/users/schemas/user.schema';
 
 const IMAGE_URL_PATH = './client/photos';
 
@@ -60,13 +62,21 @@ export class PastriesController {
   @UseInterceptors(ClassSerializerInterceptor)
   @Post('by-code/:code')
   async createPastry(
+    @Res() res,
     @Body() body: CreatePastryDto,
     @Param('code') code: string,
+    @AuthUser() authUser: UserDocument,
   ): Promise<PastryEntity> {
+    if (!this.restaurantsService.isUserInRestaurant(code, authUser._id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'user not in restaurant',
+      });
+    }
+
     const restaurant: RestaurantDocument =
       await this.restaurantsService.findByCode(code);
     const pastry = await this.pastriesService.create(restaurant, body);
-    return new PastryEntity(pastry.toObject());
+    return res.status(HttpStatus.OK).json(new PastryEntity(pastry.toObject()));
   }
 
   @UseGuards(JwtAuthGuard)
@@ -76,10 +86,17 @@ export class PastriesController {
     @Res() res,
     @Body() body: UpdatePastryDto,
     @Param('code') code: string,
+    @AuthUser() authUser: UserDocument,
   ): Promise<{
     pastry: PastryEntity;
     displaySequenceById: { [pastryId: string]: number };
   }> {
+    if (!this.restaurantsService.isUserInRestaurant(code, authUser._id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'user not in restaurant',
+      });
+    }
+
     let displaySequenceById = {};
     const currentPastry = await this.pastriesService.findOne(
       body._id.toString(),
@@ -129,9 +146,21 @@ export class PastriesController {
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(ClassSerializerInterceptor)
   @Get('by-code/:code/all')
-  async getAll(@Param('code') code: string): Promise<PastryEntity[]> {
+  async getAll(
+    @Res() res,
+    @Param('code') code: string,
+    @AuthUser() authUser: UserDocument,
+  ): Promise<PastryEntity[]> {
+    if (!this.restaurantsService.isUserInRestaurant(code, authUser._id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'user not in restaurant',
+      });
+    }
+
     const pastries = await this.pastriesService.findAllByCode(code);
-    return pastries.map((p) => new PastryEntity(p));
+    return res
+      .status(HttpStatus.OK)
+      .json(pastries.map((p) => new PastryEntity(p)));
   }
 
   @UseGuards(JwtAuthGuard)
@@ -139,12 +168,16 @@ export class PastriesController {
   async validatePastryName(
     @Res() res,
     @Param('code') code: string,
-    @Query() query: { name: string },
+    @Query('name') name: string,
+    @AuthUser() authUser: UserDocument,
   ): Promise<PastryDocument[]> {
-    const isValid = await this.pastriesService.isNameNotExists(
-      code,
-      query.name,
-    );
+    if (!this.restaurantsService.isUserInRestaurant(code, authUser._id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'user not in restaurant',
+      });
+    }
+
+    const isValid = await this.pastriesService.isNameNotExists(code, name);
 
     return res.status(HttpStatus.OK).json(isValid);
   }
@@ -155,7 +188,14 @@ export class PastriesController {
     @Res() res,
     @Param('code') code: string,
     @Param('pastryId') pastryId: string,
+    @AuthUser() authUser: UserDocument,
   ): Promise<PastryDocument[]> {
+    if (!this.restaurantsService.isUserInRestaurant(code, authUser._id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'user not in restaurant',
+      });
+    }
+
     const isValid =
       (await this.commandsService.findByPastry(code, pastryId)).length > 0;
 
@@ -192,6 +232,7 @@ export class PastriesController {
     }),
   )
   async uploadedFile(
+    @Res() res,
     @UploadedFile(
       new ParseFilePipe({
         validators: [
@@ -200,13 +241,23 @@ export class PastriesController {
         ],
       }),
     )
+    @Param('code')
+    code: string,
+    @AuthUser() authUser: UserDocument,
     file: Express.Multer.File,
   ) {
+    if (!this.restaurantsService.isUserInRestaurant(code, authUser._id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'user not in restaurant',
+      });
+    }
+
     const response = {
       originalname: file.originalname,
       filename: file.filename,
     };
-    return response;
+
+    return res.status(HttpStatus.OK).json(response);
   }
 
   @Post('notification')
@@ -216,6 +267,6 @@ export class PastriesController {
   ) {
     this.appGateway.addWaitingQueueSubNotification(body);
 
-    res.status(HttpStatus.OK).json();
+    return res.status(HttpStatus.OK).json();
   }
 }

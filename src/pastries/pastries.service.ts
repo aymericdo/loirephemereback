@@ -18,8 +18,8 @@ export class PastriesService {
     @InjectConnection() private readonly connection: Connection,
   ) {}
 
-  async findOne(pastryDocumentId: string): Promise<PastryDocument> {
-    return await this.pastryModel.findOne({ _id: pastryDocumentId }).exec();
+  async findOne(id: string): Promise<PastryDocument> {
+    return await this.pastryModel.findOne({ _id: id }).exec();
   }
 
   async create(

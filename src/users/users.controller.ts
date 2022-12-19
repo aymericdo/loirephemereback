@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { User } from 'src/users/schemas/user.schema';
+import { User, UserDocument } from 'src/users/schemas/user.schema';
 import { LocalAuthGuard } from 'src/auth/local-auth.guard';
 import { AuthService } from 'src/auth/auth.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
@@ -20,6 +20,7 @@ import { RestaurantsService } from 'src/restaurants/restaurants.service';
 import { EmailUserDto } from 'src/users/dto/email-user.dto';
 import { RecoverUserDto } from 'src/users/dto/recover-user.dto';
 import { UpdateUserDto } from 'src/users/dto/update-user.dto';
+import { AuthUser } from 'src/shared/middleware/auth-user.decorator';
 
 @Controller('users')
 export class UsersController {
@@ -30,8 +31,8 @@ export class UsersController {
   ) {}
 
   @Get('not-exists')
-  async notExistsUserEmail(@Res() res, @Query() query) {
-    const isValid = await this.usersService.isEmailNotExists(query.email);
+  async notExistsUserEmail(@Res() res, @Query('email') email: string) {
+    const isValid = await this.usersService.isEmailNotExists(email);
 
     return res.status(HttpStatus.OK).json(isValid);
   }
@@ -125,8 +126,8 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard)
   @Get('exists')
-  async existsUserEmail(@Res() res, @Query() query) {
-    const isValid = await this.usersService.isEmailExists(query.email);
+  async existsUserEmail(@Res() res, @Query('email') email: string) {
+    const isValid = await this.usersService.isEmailExists(email);
 
     return res.status(HttpStatus.OK).json(isValid);
   }
@@ -139,14 +140,25 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard)
   @Get()
-  async getUser(@Req() req): Promise<User> {
-    return await this.usersService.findOne(req.user.userId);
+  async getUser(@AuthUser() authUser: UserDocument): Promise<User> {
+    return await this.usersService.findOne(authUser._id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('by-code/:code/all')
-  async getAll(@Param('code') code: string): Promise<User[]> {
-    return await this.restaurantsService.findUsersByCode(code);
+  async getAll(
+    @Res() res,
+    @Param('code') code: string,
+    @AuthUser() authUser: UserDocument,
+  ): Promise<User[]> {
+    if (!this.restaurantsService.isUserInRestaurant(code, authUser._id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'user not in restaurant',
+      });
+    }
+
+    const users = await this.restaurantsService.findUsersByCode(code);
+    return res.status(HttpStatus.OK).json(users);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -154,9 +166,23 @@ export class UsersController {
   async postUserToRestaurant(
     @Res() res,
     @Param('code') code,
-    @Body() body: { email: string },
+    @Body('email') email: string,
+    @AuthUser() authUser: UserDocument,
   ) {
-    const user = await this.usersService.findOneByEmail(body.email);
+    if (!this.restaurantsService.isUserInRestaurant(code, authUser._id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'user not in restaurant',
+      });
+    }
+
+    const user = await this.usersService.findOneByEmail(email);
+
+    if (this.restaurantsService.isUserInRestaurant(code, user._id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'user already in restaurant',
+      });
+    }
+
     await this.restaurantsService.addUserToRestaurant(code, user);
     return res.status(HttpStatus.OK).json(user);
   }
@@ -166,9 +192,24 @@ export class UsersController {
   async deleteUserFromRestaurant(
     @Res() res,
     @Param('code') code,
-    @Body() body: { email: string },
+    @Body('email') email: string,
+    @AuthUser() authUser: UserDocument,
   ) {
-    const user = await this.usersService.findOneByEmail(body.email);
+    if (!this.restaurantsService.isUserInRestaurant(code, authUser._id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'user not in restaurant',
+      });
+    }
+
+    const usersCount = await this.restaurantsService.findUsersByCodeCount(code);
+
+    if (usersCount === 1) {
+      return res.status(HttpStatus.FORBIDDEN).json({
+        message: 'no more users in the restaurant',
+      });
+    }
+
+    const user = await this.usersService.findOneByEmail(email);
     await this.restaurantsService.deleteUserToRestaurant(code, user);
     return res.status(HttpStatus.OK).json(true);
   }
