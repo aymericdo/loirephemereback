@@ -49,7 +49,7 @@ export class CommandsService {
       .exec();
   }
 
-  async payedCommand(id: string): Promise<Command> {
+  async payedCommand(id: string): Promise<CommandDocument> {
     return await this.commandModel
       .findByIdAndUpdate(
         id,
@@ -60,7 +60,7 @@ export class CommandsService {
       .exec();
   }
 
-  async findAll(year = new Date().getFullYear()): Promise<Command[]> {
+  async findAll(year = new Date().getFullYear()): Promise<CommandDocument[]> {
     return await this.commandModel
       .find({
         createdAt: {

@@ -125,7 +125,7 @@ export class CommandsController {
     }
 
     const command = await this.commandsService.closeCommand(id);
-    this.socketGateway.alertCloseCommand(command as any);
+    this.socketGateway.alertCloseCommand(code, command as any);
     return res.status(HttpStatus.OK).json(command);
   }
 
@@ -145,13 +145,28 @@ export class CommandsController {
     }
 
     const command = await this.commandsService.payedCommand(id);
-    this.socketGateway.alertPayedCommand(command as any);
+    this.socketGateway.alertPayedCommand(code, command);
     return res.status(HttpStatus.OK).json(command);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('notification')
-  async postNotificationSub(@Res() res: Response, @Body() body: { sub: any }) {
+  async postNotificationSub(
+    @Res() res: Response,
+    @Body() body: { sub: PushSubscription; code: string },
+  ) {
     this.socketGateway.addAdminQueueSubNotification(body);
+
+    return res.status(HttpStatus.OK).json();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('notification/delete')
+  async deleteNotificationSub(
+    @Res() res: Response,
+    @Body() body: { sub: PushSubscription; code: string },
+  ) {
+    this.socketGateway.deleteAdminQueueSubNotification(body);
 
     return res.status(HttpStatus.OK).json();
   }

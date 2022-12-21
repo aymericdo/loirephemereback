@@ -8,133 +8,172 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Logger, UseGuards } from '@nestjs/common';
-import { Server } from 'ws';
-import WebSocket = require('ws');
+import WebSocket, { Server } from 'ws';
 import { CommandDocument } from './commands/schemas/command.schema';
 import webpush = require('web-push');
 import { WsThrottlerGuard } from 'src/shared/guards/ws-throttler.guard';
 import { WsJwtAuthGuard } from 'src/auth/ws-jwt-auth.guard';
+import { Request } from 'express';
+import { RestaurantsService } from 'src/restaurants/restaurants.service';
+
+interface Client extends WebSocket {
+  request: Request;
+}
 
 @WebSocketGateway()
 @UseGuards(WsThrottlerGuard)
 export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  constructor(private readonly restaurantsService: RestaurantsService) {}
+
   @WebSocketServer() server: Server;
-  clients: { [code: string]: WebSocket[] } = {};
-  waitingQueue: { commandId: string; ws: WebSocket }[] = [];
-  waitingQueueSubNotification: { commandId: string; sub: any }[] = [];
-  waitingAdminSubNotification: { sub: any }[] = [];
-  admins: WebSocket[] = [];
+  clients: { [code: string]: Client[] } = {};
+  admins: { [code: string]: Client[] } = {};
+  adminsWaitingSubNotification: { [code: string]: PushSubscription[] } = {};
+
+  clientWaitingQueue: { [commandId: string]: Client } = {};
+  clientWaitingQueueSubNotification: { [commandId: string]: PushSubscription } =
+    {};
 
   private logger: Logger = new Logger(SocketGateway.name);
 
-  handleDisconnect(client: WebSocket) {
+  handleDisconnect(client: Client) {
+    const code = this.getCodeFromQueryParam(client.request.url);
+    this.clients[code] = this.clients[code].filter((c) => c !== client);
+    this.admins[code] = this.admins[code].filter((c) => c !== client);
+
     this.logger.log(`Client disconnected`);
     client.send(JSON.stringify({ bye: 'au revoir' }));
   }
 
-  handleConnection(client: WebSocket, ...args: any[]) {
-    const codeRgx = args[0].url.match(/code=(.*)/)[1];
-    if (codeRgx && codeRgx[1]) {
-      const code = codeRgx[1];
-      this.logger.log('Client connected');
-      client.send(JSON.stringify({ hello: 'bonjour' }));
-      if (this.clients.hasOwnProperty(code)) {
-        this.clients[code].push(client);
-      } else {
-        this.clients[code] = [client];
-      }
+  handleConnection(client: Client, request: Request) {
+    const code = this.getCodeFromQueryParam(request.url);
+    this.logger.log('Client connected');
+    client['request'] = request;
+    client.send(JSON.stringify({ hello: 'bonjour' }));
+
+    if (this.clients.hasOwnProperty(code)) {
+      this.clients[code].push(client);
+    } else {
+      this.clients[code] = [client];
     }
   }
 
   alertNewCommand(code: string, command: CommandDocument) {
-    this.admins.forEach((client: WebSocket) =>
+    this.admins[code].forEach((client: Client) =>
       client.send(JSON.stringify({ addCommand: command })),
     );
 
-    this.waitingAdminSubNotification.forEach((adminSub) => {
-      this.sendPushNotif(
-        adminSub.sub,
-        'Une nouvelle commande est arrivée !',
-        command,
-      );
+    this.adminsWaitingSubNotification[code].forEach((adminSub) => {
+      this.sendPushNotif(adminSub, 'Une nouvelle commande est arrivée !');
     });
   }
 
-  alertCloseCommand(command: CommandDocument) {
-    this.admins.forEach((client: WebSocket) =>
+  alertCloseCommand(code: string, command: CommandDocument) {
+    this.admins[code].forEach((client: Client) =>
       client.send(JSON.stringify({ closeCommand: command })),
     );
   }
 
-  alertPayedCommand(command: CommandDocument) {
-    this.admins.forEach((client: WebSocket) =>
+  alertPayedCommand(code: string, command: CommandDocument) {
+    this.admins[code].forEach((client: Client) =>
       client.send(JSON.stringify({ payedCommand: command })),
     );
   }
 
   stockChanged(code: string, newStock: { pastryId: string; newStock: number }) {
-    this.clients[code].forEach((client: WebSocket) =>
+    this.clients[code].forEach((client: Client) =>
       client.send(JSON.stringify({ stockChanged: newStock })),
     );
   }
 
-  addWaitingQueueSubNotification(subNotif: { sub: any; commandId: string }) {
-    this.waitingQueueSubNotification.push({
-      commandId: subNotif.commandId,
-      sub: subNotif.sub,
-    });
+  addClientWaitingQueueSubNotification(subNotif: {
+    sub: PushSubscription;
+    commandId: string;
+  }) {
+    this.clientWaitingQueueSubNotification[subNotif.commandId] = subNotif.sub;
   }
 
-  addAdminQueueSubNotification(subNotif: { sub: any }) {
-    if (
-      !this.waitingAdminSubNotification.some(
-        (notif) => notif.sub.endpoint === subNotif.sub.endpoint,
-      )
-    ) {
-      this.waitingAdminSubNotification.push({
-        sub: subNotif.sub,
-      });
+  addAdminQueueSubNotification(subNotif: {
+    sub: PushSubscription;
+    code: string;
+  }) {
+    if (this.adminsWaitingSubNotification.hasOwnProperty(subNotif.code)) {
+      if (
+        !this.adminsWaitingSubNotification[subNotif.code].some(
+          (notif) => notif.endpoint === subNotif.sub.endpoint,
+        )
+      ) {
+        this.adminsWaitingSubNotification[subNotif.code].push(subNotif.sub);
+      }
+    } else {
+      this.adminsWaitingSubNotification[subNotif.code] = [subNotif.sub];
     }
   }
 
-  @SubscribeMessage('wizzer')
-  onWizzer(
-    @MessageBody() data: CommandDocument,
-    @ConnectedSocket() client: WebSocket,
-  ): void {
-    const ws = this.waitingQueue.find(
-      (user) => user.commandId === data._id,
-    )?.ws;
+  deleteAdminQueueSubNotification(subNotif: {
+    sub: PushSubscription;
+    code: string;
+  }) {
+    this.adminsWaitingSubNotification[subNotif.code] =
+      this.adminsWaitingSubNotification[subNotif.code].filter(
+        (notif) => notif.endpoint !== subNotif.sub.endpoint,
+      );
+  }
 
-    const subNotification = this.waitingQueueSubNotification.find(
-      (subNotif) => subNotif.commandId === data._id,
-    )?.sub;
+  @SubscribeMessage('wizzer')
+  onWizzer(@MessageBody() data: CommandDocument): void {
+    const ws = this.clientWaitingQueue[data._id];
+    const subNotification = this.clientWaitingQueueSubNotification[data._id];
 
     if (subNotification) {
-      this.sendPushNotif(subNotification, 'Votre commande est prête !', data);
+      this.sendPushNotif(subNotification, 'Votre commande est prête !');
     }
 
     if (ws) {
       ws.send(JSON.stringify({ wizz: data._id }));
     }
+
+    // remove old waiting info
+    delete this.clientWaitingQueue[data._id];
+    delete this.clientWaitingQueueSubNotification[data._id];
   }
 
-  @SubscribeMessage('addWaitingQueue')
-  onAddWaitingQueue(
+  @SubscribeMessage('addclientWaitingQueue')
+  onAddclientWaitingQueue(
     @MessageBody() data: CommandDocument,
-    @ConnectedSocket() client: WebSocket,
+    @ConnectedSocket() client: Client,
   ): void {
-    this.waitingQueue.push({ commandId: data._id, ws: client });
+    this.clientWaitingQueue[data._id] = client;
   }
 
   @UseGuards(WsJwtAuthGuard)
   @SubscribeMessage('authorization')
-  onAuthorization(@ConnectedSocket() client: WebSocket): void {
-    this.admins.push(client);
+  onAuthorization(@ConnectedSocket() client: Client): void {
+    const code = this.getCodeFromQueryParam(client.request.url);
+
+    const userId = (client.request.user as { userId: string }).userId;
+    if (!this.restaurantsService.isUserInRestaurant(code, userId)) {
+      return;
+    }
+
+    if (this.admins.hasOwnProperty(code)) {
+      this.admins[code].push(client);
+    } else {
+      this.admins[code] = [client];
+    }
+
     this.logger.log('Admin connected');
   }
 
-  private sendPushNotif(sub: any, body: string, command: CommandDocument) {
+  cleanup() {
+    this.admins = {};
+    this.clients = {};
+    this.adminsWaitingSubNotification = {};
+    this.clientWaitingQueue = {};
+    this.clientWaitingQueueSubNotification = {};
+  }
+
+  private sendPushNotif(sub: PushSubscription, body: string) {
     const payload = JSON.stringify({
       notification: {
         title: 'Petite notif gentille',
@@ -157,5 +196,10 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
         console.log('notif sent');
       })
       .catch((err) => console.error(err));
+  }
+
+  private getCodeFromQueryParam(url: string): string {
+    const queryParams = new URLSearchParams(url.substring(1));
+    return queryParams.get('code');
   }
 }

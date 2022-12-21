@@ -14,6 +14,7 @@ import { AuthModule } from './auth/auth.module';
 import { MailModule } from './mail/mail.module';
 import { ApiLoggerMiddleware } from 'src/shared/middlewares/api-logger.middleware';
 import { APP_GUARD } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { APP_GUARD } from '@nestjs/core';
     UsersModule,
     AuthModule,
     MailModule,
+    ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
   providers: [

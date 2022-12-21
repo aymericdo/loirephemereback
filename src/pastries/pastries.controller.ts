@@ -35,7 +35,7 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
 import { UserDocument } from 'src/users/schemas/user.schema';
 
-const IMAGE_URL_PATH = './client/photos';
+export const IMAGE_URL_PATH = './client/photos';
 
 @Controller('pastries')
 @SerializeOptions({
@@ -260,9 +260,9 @@ export class PastriesController {
   @Post('notification')
   async postNotificationSub(
     @Res() res: Response,
-    @Body() body: { sub: any; commandId: string },
+    @Body() body: { sub: PushSubscription; commandId: string },
   ) {
-    this.socketGateway.addWaitingQueueSubNotification(body);
+    this.socketGateway.addClientWaitingQueueSubNotification(body);
 
     return res.status(HttpStatus.OK).json();
   }

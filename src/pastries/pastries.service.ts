@@ -336,6 +336,38 @@ export class PastriesService {
     );
   }
 
+  async isImageUrlExists(code: string, imageUrl: string): Promise<boolean> {
+    return (
+      (
+        (await this.pastryModel
+          .aggregate([
+            {
+              $lookup: {
+                from: 'restaurants',
+                localField: 'restaurant',
+                foreignField: '_id',
+                as: 'restaurant',
+              },
+            },
+            {
+              $match: {
+                'restaurant.code': code,
+                imageUrl: imageUrl,
+              },
+            },
+            {
+              $limit: 1,
+            },
+            {
+              $count: 'totalCount',
+            },
+          ])
+          .collation({ locale: 'fr', strength: 1 })
+          .exec()) as { totalCount: number }[]
+      ).length !== 0
+    );
+  }
+
   isStatsAttributesChanged(
     oldPastry: PastryDocument,
     newPastry: UpdatePastryDto,

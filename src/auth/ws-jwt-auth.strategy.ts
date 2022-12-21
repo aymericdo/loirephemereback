@@ -9,7 +9,7 @@ import { JwtPayload } from 'src/auth/jwt.strategy';
 export class WsJwtAuthStrategy extends PassportStrategy(Strategy, 'wsjwt') {
   constructor(private usersService: UsersService) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromUrlQueryParameter('bearerToken'),
       ignoreExpiration: false,
       secretOrKey: jwtConstants.secret,
     });
