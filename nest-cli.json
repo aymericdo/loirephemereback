@@ -5,6 +5,9 @@
     "assets": [
       "mail/templates/**/*"
     ],
-    "watchAssets": true
+    "watchAssets": true,
+    "lib": [
+      "es2021"
+    ]
   }
 }

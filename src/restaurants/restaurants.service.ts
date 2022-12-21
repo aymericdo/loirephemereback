@@ -96,7 +96,7 @@ export class RestaurantsService {
     return name
       .trim()
       .toLowerCase()
-      .replace(/[^a-z0-9- ]/g, '')
-      .replace(' ', '-');
+      .replaceAll(/[^a-z0-9- ]/g, '')
+      .replaceAll(' ', '-');
   }
 }

@@ -38,8 +38,8 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   handleDisconnect(client: Client) {
     const code = this.getCodeFromQueryParam(client.request.url);
-    this.clients[code] = this.clients[code].filter((c) => c !== client);
-    this.admins[code] = this.admins[code].filter((c) => c !== client);
+    this.clients[code] = this.clients[code]?.filter((c) => c !== client);
+    this.admins[code] = this.admins[code]?.filter((c) => c !== client);
 
     this.logger.log(`Client disconnected`);
     client.send(JSON.stringify({ bye: 'au revoir' }));
@@ -114,10 +114,12 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     sub: PushSubscription;
     code: string;
   }) {
-    this.adminsWaitingSubNotification[subNotif.code] =
-      this.adminsWaitingSubNotification[subNotif.code].filter(
-        (notif) => notif.endpoint !== subNotif.sub.endpoint,
-      );
+    if (this.adminsWaitingSubNotification.hasOwnProperty(subNotif.code)) {
+      this.adminsWaitingSubNotification[subNotif.code] =
+        this.adminsWaitingSubNotification[subNotif.code].filter(
+          (notif) => notif.endpoint !== subNotif.sub.endpoint,
+        );
+    }
   }
 
   @SubscribeMessage('wizzer')

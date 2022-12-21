@@ -210,8 +210,8 @@ export class PastriesController {
           const name = file.originalname
             .split('.')[0]
             .toLowerCase()
-            .replace(/[^a-z0-9- ]/g, '')
-            .replace(' ', '-');
+            .replaceAll(/[^a-z0-9- ]/g, '')
+            .replaceAll(' ', '-');
           const fileExtName = extname(file.originalname);
 
           const randomName: string = randomBytes(24)
