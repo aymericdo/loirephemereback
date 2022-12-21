@@ -10,6 +10,8 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { Response } from 'express';
+import { Throttle } from '@nestjs/throttler';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User, UserDocument } from 'src/users/schemas/user.schema';
@@ -20,7 +22,7 @@ import { RestaurantsService } from 'src/restaurants/restaurants.service';
 import { EmailUserDto } from 'src/users/dto/email-user.dto';
 import { RecoverUserDto } from 'src/users/dto/recover-user.dto';
 import { UpdateUserDto } from 'src/users/dto/update-user.dto';
-import { AuthUser } from 'src/shared/middleware/auth-user.decorator';
+import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
 
 @Controller('users')
 export class UsersController {
@@ -30,15 +32,20 @@ export class UsersController {
     private readonly authService: AuthService,
   ) {}
 
+  @Throttle(60, 10)
   @Get('not-exists')
-  async notExistsUserEmail(@Res() res, @Query('email') email: string) {
+  async notExistsUserEmail(
+    @Res() res: Response,
+    @Query('email') email: string,
+  ) {
     const isValid = await this.usersService.isEmailNotExists(email);
 
     return res.status(HttpStatus.OK).json(isValid);
   }
 
+  @Throttle(60, 10)
   @Post('/confirm-email')
-  async confirmUserWithEmail(@Res() res, @Body() body: EmailUserDto) {
+  async confirmUserWithEmail(@Res() res: Response, @Body() body: EmailUserDto) {
     const user = await this.usersService.findOneByEmail(body.email);
 
     if (user) {
@@ -51,8 +58,12 @@ export class UsersController {
     return res.status(HttpStatus.OK).json(code2);
   }
 
+  @Throttle(60, 10)
   @Post('/confirm-recover-email')
-  async confirmUserWithRecoverEmail(@Res() res, @Body() body: EmailUserDto) {
+  async confirmUserWithRecoverEmail(
+    @Res() res: Response,
+    @Body() body: EmailUserDto,
+  ) {
     const user = await this.usersService.findOneByEmail(body.email);
 
     if (!user) {
@@ -65,8 +76,9 @@ export class UsersController {
     return res.status(HttpStatus.OK).json(code2);
   }
 
+  @Throttle(60, 10)
   @Post('/change-password')
-  async changePassword(@Res() res, @Body() body: UpdateUserDto) {
+  async changePassword(@Res() res: Response, @Body() body: UpdateUserDto) {
     const user = await this.usersService.findOneByEmail(body.email);
 
     const isValid = await this.authService.validateCodes(
@@ -88,8 +100,12 @@ export class UsersController {
     return res.status(HttpStatus.OK).json(true);
   }
 
+  @Throttle(60, 10)
   @Post('/validate-recover-email-code')
-  async validateRecoverEmailCode(@Res() res, @Body() body: RecoverUserDto) {
+  async validateRecoverEmailCode(
+    @Res() res: Response,
+    @Body() body: RecoverUserDto,
+  ) {
     const isValid = await this.authService.validateCodes(
       body.email,
       body.emailCode,
@@ -105,8 +121,9 @@ export class UsersController {
     }
   }
 
+  @Throttle(60, 5)
   @Post('/')
-  async postUser(@Res() res, @Body() body: CreateUserDto) {
+  async postUser(@Res() res: Response, @Body() body: CreateUserDto) {
     const isValid = await this.authService.validateCodes(
       body.email,
       body.emailCode,
@@ -124,14 +141,16 @@ export class UsersController {
     return res.status(HttpStatus.OK).json(user);
   }
 
+  @Throttle(60, 10)
   @UseGuards(JwtAuthGuard)
   @Get('exists')
-  async existsUserEmail(@Res() res, @Query('email') email: string) {
+  async existsUserEmail(@Res() res: Response, @Query('email') email: string) {
     const isValid = await this.usersService.isEmailExists(email);
 
     return res.status(HttpStatus.OK).json(isValid);
   }
 
+  @Throttle(60, 10)
   @UseGuards(LocalAuthGuard)
   @Post('/auth/login')
   async login(@Req() req) {
@@ -147,10 +166,10 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @Get('by-code/:code/all')
   async getAll(
-    @Res() res,
+    @Res() res: Response,
     @Param('code') code: string,
     @AuthUser() authUser: UserDocument,
-  ): Promise<User[]> {
+  ) {
     if (!this.restaurantsService.isUserInRestaurant(code, authUser._id)) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'user not in restaurant',
@@ -161,10 +180,11 @@ export class UsersController {
     return res.status(HttpStatus.OK).json(users);
   }
 
+  @Throttle(60, 5)
   @UseGuards(JwtAuthGuard)
   @Post('by-code/:code')
   async postUserToRestaurant(
-    @Res() res,
+    @Res() res: Response,
     @Param('code') code,
     @Body('email') email: string,
     @AuthUser() authUser: UserDocument,
@@ -190,7 +210,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @Post('by-code/:code/delete')
   async deleteUserFromRestaurant(
-    @Res() res,
+    @Res() res: Response,
     @Param('code') code,
     @Body('email') email: string,
     @AuthUser() authUser: UserDocument,

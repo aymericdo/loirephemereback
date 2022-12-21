@@ -7,23 +7,25 @@ import {
   MessageBody,
   ConnectedSocket,
 } from '@nestjs/websockets';
-import { Logger } from '@nestjs/common';
+import { Logger, UseGuards } from '@nestjs/common';
 import { Server } from 'ws';
 import WebSocket = require('ws');
 import { CommandDocument } from './commands/schemas/command.schema';
 import webpush = require('web-push');
+import { WsThrottlerGuard } from 'src/shared/guards/ws-throttler.guard';
+import { WsJwtAuthGuard } from 'src/auth/ws-jwt-auth.guard';
 
 @WebSocketGateway()
-export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
-  @WebSocketServer()
-  server: Server;
+@UseGuards(WsThrottlerGuard)
+export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  @WebSocketServer() server: Server;
   clients: { [code: string]: WebSocket[] } = {};
   waitingQueue: { commandId: string; ws: WebSocket }[] = [];
   waitingQueueSubNotification: { commandId: string; sub: any }[] = [];
   waitingAdminSubNotification: { sub: any }[] = [];
   admins: WebSocket[] = [];
 
-  private logger: Logger = new Logger('AppGateway');
+  private logger: Logger = new Logger(SocketGateway.name);
 
   handleDisconnect(client: WebSocket) {
     this.logger.log(`Client disconnected`);
@@ -125,17 +127,14 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.waitingQueue.push({ commandId: data._id, ws: client });
   }
 
+  @UseGuards(WsJwtAuthGuard)
   @SubscribeMessage('authorization')
-  onAuthorization(
-    @MessageBody() data: string,
-    @ConnectedSocket() client: WebSocket,
-  ): void {
-    if (data === process.env.PASSWORD) {
-      this.admins.push(client);
-    }
+  onAuthorization(@ConnectedSocket() client: WebSocket): void {
+    this.admins.push(client);
+    this.logger.log('Admin connected');
   }
 
-  private sendPushNotif(sub: any, body: string, _command: CommandDocument) {
+  private sendPushNotif(sub: any, body: string, command: CommandDocument) {
     const payload = JSON.stringify({
       notification: {
         title: 'Petite notif gentille',

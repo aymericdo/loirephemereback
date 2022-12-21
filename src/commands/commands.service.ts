@@ -7,14 +7,14 @@ import { randomBytes } from 'crypto';
 import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
 import { PastryDocument } from 'src/pastries/schemas/pastry.schema';
 import { PastriesService } from 'src/pastries/pastries.service';
-import { AppGateway } from 'src/app.gateway';
+import { SocketGateway } from 'src/web-socket.gateway';
 
 @Injectable()
 export class CommandsService {
   constructor(
     @InjectModel(Command.name) private commandModel: Model<CommandDocument>,
     private readonly pastriesService: PastriesService,
-    private readonly appGateway: AppGateway,
+    private readonly socketGateway: SocketGateway,
   ) {}
 
   async findOne(id: string): Promise<CommandDocument> {
@@ -191,7 +191,7 @@ export class CommandsService {
             pastriesGroupById[oldPastry._id],
           );
 
-          this.appGateway.stockChanged(code, {
+          this.socketGateway.stockChanged(code, {
             pastryId: oldP._id,
             newStock: newP.stock,
           });
@@ -201,7 +201,7 @@ export class CommandsService {
           oldPastry as PastryDocument,
           pastriesGroupById[oldPastry._id],
         );
-        this.appGateway.stockChanged(code, {
+        this.socketGateway.stockChanged(code, {
           pastryId: oldPastry._id,
           newStock: pastry.stock,
         });

@@ -11,7 +11,7 @@ import {
 } from 'class-validator';
 import { SIZE } from 'src/shared/helpers/sizes';
 import { PastryDocument } from 'src/pastries/schemas/pastry.schema';
-import { IsInFuture } from 'src/shared/validators/date-is-in-future.decorator';
+import { IsInFuture } from 'src/shared/decorators/validators/date-is-in-future.decorator';
 
 export class CreateCommandDto {
   currentDate: Date = new Date();

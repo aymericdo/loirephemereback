@@ -9,9 +9,9 @@ import {
   Query,
   Res,
   UseGuards,
-  ValidationPipe,
 } from '@nestjs/common';
-import { AppGateway } from 'src/app.gateway';
+import { Response } from 'express';
+import { SocketGateway } from 'src/web-socket.gateway';
 import { PastryDocument } from 'src/pastries/schemas/pastry.schema';
 import { CommandsService } from './commands.service';
 import { CreateCommandDto } from './dto/create-command.dto';
@@ -21,7 +21,7 @@ import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
 import { RestaurantsService } from 'src/restaurants/restaurants.service';
 import { PastriesService } from 'src/pastries/pastries.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { AuthUser } from 'src/shared/middleware/auth-user.decorator';
+import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
 import { UserDocument } from 'src/users/schemas/user.schema';
 
 @Controller('commands')
@@ -30,15 +30,15 @@ export class CommandsController {
     private readonly restaurantsService: RestaurantsService,
     private readonly commandsService: CommandsService,
     private readonly pastriesService: PastriesService,
-    private readonly appGateway: AppGateway,
+    private readonly socketGateway: SocketGateway,
     @InjectConnection() private readonly connection: Connection,
   ) {}
 
   @Post(':code')
   async postCommand(
-    @Res() res,
+    @Res() res: Response,
     @Body() body: CreateCommandDto,
-    @Param('code') code,
+    @Param('code') code: string,
   ) {
     const pastriesGroupById: { [pastryId: string]: number } =
       this.commandsService.reducePastriesById(body.pastries);
@@ -72,7 +72,7 @@ export class CommandsController {
       }
 
       const command = await this.commandsService.create(restaurant, body);
-      this.appGateway.alertNewCommand(code, command as any);
+      this.socketGateway.alertNewCommand(code, command as any);
 
       this.commandsService.stockManagement(code, pastriesGroupById);
 
@@ -88,8 +88,8 @@ export class CommandsController {
   @UseGuards(JwtAuthGuard)
   @Get('by-code/:code')
   async getCommandsByCode(
-    @Res() res,
-    @Param('code') code,
+    @Res() res: Response,
+    @Param('code') code: string,
     @AuthUser() authUser: UserDocument,
     @Query('fromDate') fromDate: string,
     @Query('toDate') toDate: string,
@@ -112,9 +112,9 @@ export class CommandsController {
   @UseGuards(JwtAuthGuard)
   @Patch('/close/:id')
   async patchCommand(
+    @Res() res: Response,
     @Param('id') id: string,
     @AuthUser() authUser: UserDocument,
-    @Res() res,
   ) {
     const code = (await this.commandsService.findOne(id)).restaurant.code;
 
@@ -125,16 +125,16 @@ export class CommandsController {
     }
 
     const command = await this.commandsService.closeCommand(id);
-    this.appGateway.alertCloseCommand(command as any);
+    this.socketGateway.alertCloseCommand(command as any);
     return res.status(HttpStatus.OK).json(command);
   }
 
   @UseGuards(JwtAuthGuard)
   @Patch('/payed/:id')
   async patchCommand2(
+    @Res() res: Response,
     @Param('id') id: string,
     @AuthUser() authUser: UserDocument,
-    @Res() res,
   ) {
     const code = (await this.commandsService.findOne(id)).restaurant.code;
 
@@ -145,13 +145,13 @@ export class CommandsController {
     }
 
     const command = await this.commandsService.payedCommand(id);
-    this.appGateway.alertPayedCommand(command as any);
+    this.socketGateway.alertPayedCommand(command as any);
     return res.status(HttpStatus.OK).json(command);
   }
 
   @Post('notification')
-  async postNotificationSub(@Res() res, @Body() body: { sub: any }) {
-    this.appGateway.addAdminQueueSubNotification(body);
+  async postNotificationSub(@Res() res: Response, @Body() body: { sub: any }) {
+    this.socketGateway.addAdminQueueSubNotification(body);
 
     return res.status(HttpStatus.OK).json();
   }

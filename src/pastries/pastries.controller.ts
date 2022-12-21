@@ -17,10 +17,10 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { diskStorage } from 'multer';
 import { PastriesService } from './pastries.service';
-import { PastryDocument } from 'src/pastries/schemas/pastry.schema';
-import { AppGateway } from 'src/app.gateway';
+import { SocketGateway } from 'src/web-socket.gateway';
 import { CreatePastryDto } from 'src/pastries/dto/create-pastry.dto';
 import { RestaurantsService } from 'src/restaurants/restaurants.service';
 import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
@@ -32,7 +32,7 @@ import { randomBytes } from 'crypto';
 import { UpdatePastryDto } from 'src/pastries/dto/update-pastry.dto';
 import { CommandsService } from 'src/commands/commands.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { AuthUser } from 'src/shared/middleware/auth-user.decorator';
+import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
 import { UserDocument } from 'src/users/schemas/user.schema';
 
 const IMAGE_URL_PATH = './client/photos';
@@ -46,7 +46,7 @@ export class PastriesController {
     private readonly pastriesService: PastriesService,
     private readonly restaurantsService: RestaurantsService,
     private readonly commandsService: CommandsService,
-    private readonly appGateway: AppGateway,
+    private readonly socketGateway: SocketGateway,
   ) {}
 
   @UseInterceptors(ClassSerializerInterceptor)
@@ -62,11 +62,11 @@ export class PastriesController {
   @UseInterceptors(ClassSerializerInterceptor)
   @Post('by-code/:code')
   async createPastry(
-    @Res() res,
+    @Res() res: Response,
     @Body() body: CreatePastryDto,
     @Param('code') code: string,
     @AuthUser() authUser: UserDocument,
-  ): Promise<PastryEntity> {
+  ) {
     if (!this.restaurantsService.isUserInRestaurant(code, authUser._id)) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'user not in restaurant',
@@ -83,14 +83,11 @@ export class PastriesController {
   @UseInterceptors(ClassSerializerInterceptor)
   @Put('by-code/:code')
   async updatePastry(
-    @Res() res,
+    @Res() res: Response,
     @Body() body: UpdatePastryDto,
     @Param('code') code: string,
     @AuthUser() authUser: UserDocument,
-  ): Promise<{
-    pastry: PastryEntity;
-    displaySequenceById: { [pastryId: string]: number };
-  }> {
+  ) {
     if (!this.restaurantsService.isUserInRestaurant(code, authUser._id)) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'user not in restaurant',
@@ -147,10 +144,10 @@ export class PastriesController {
   @UseInterceptors(ClassSerializerInterceptor)
   @Get('by-code/:code/all')
   async getAll(
-    @Res() res,
+    @Res() res: Response,
     @Param('code') code: string,
     @AuthUser() authUser: UserDocument,
-  ): Promise<PastryEntity[]> {
+  ) {
     if (!this.restaurantsService.isUserInRestaurant(code, authUser._id)) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'user not in restaurant',
@@ -166,11 +163,11 @@ export class PastriesController {
   @UseGuards(JwtAuthGuard)
   @Get('by-code/:code/not-exists')
   async validatePastryName(
-    @Res() res,
+    @Res() res: Response,
     @Param('code') code: string,
     @Query('name') name: string,
     @AuthUser() authUser: UserDocument,
-  ): Promise<PastryDocument[]> {
+  ) {
     if (!this.restaurantsService.isUserInRestaurant(code, authUser._id)) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'user not in restaurant',
@@ -185,11 +182,11 @@ export class PastriesController {
   @UseGuards(JwtAuthGuard)
   @Get('by-code/:code/pastries/:pastryId/isAlreadyOrdered')
   async isAlreadyOrdered(
-    @Res() res,
+    @Res() res: Response,
     @Param('code') code: string,
     @Param('pastryId') pastryId: string,
     @AuthUser() authUser: UserDocument,
-  ): Promise<PastryDocument[]> {
+  ) {
     if (!this.restaurantsService.isUserInRestaurant(code, authUser._id)) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'user not in restaurant',
@@ -232,7 +229,7 @@ export class PastriesController {
     }),
   )
   async uploadedFile(
-    @Res() res,
+    @Res() res: Response,
     @UploadedFile(
       new ParseFilePipe({
         validators: [
@@ -262,10 +259,10 @@ export class PastriesController {
 
   @Post('notification')
   async postNotificationSub(
-    @Res() res,
+    @Res() res: Response,
     @Body() body: { sub: any; commandId: string },
   ) {
-    this.appGateway.addWaitingQueueSubNotification(body);
+    this.socketGateway.addWaitingQueueSubNotification(body);
 
     return res.status(HttpStatus.OK).json();
   }

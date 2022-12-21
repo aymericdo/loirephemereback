@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
-import { AppGateway } from 'src/app.gateway';
+import { SocketGateway } from 'src/web-socket.gateway';
 
 @Module({
   imports: [],
   controllers: [],
-  providers: [AppGateway],
-  exports: [AppGateway],
+  providers: [SocketGateway],
+  exports: [SocketGateway],
 })
 export class SharedModule {}
