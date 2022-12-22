@@ -1,4 +1,4 @@
-import { Connection, Model, ObjectId } from 'mongoose';
+import { Connection, Model, ObjectId, Types } from 'mongoose';
 import { Injectable } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import {
@@ -324,7 +324,7 @@ export class PastriesService {
             {
               $match: {
                 'restaurant.code': code,
-                _id: { $in: pastryIds },
+                _id: { $in: pastryIds.map((id) => new Types.ObjectId(id)) },
               },
             },
             {

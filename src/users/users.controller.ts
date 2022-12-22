@@ -170,7 +170,9 @@ export class UsersController {
     @Param('code') code: string,
     @AuthUser() authUser: UserDocument,
   ) {
-    if (!this.restaurantsService.isUserInRestaurant(code, authUser._id)) {
+    if (
+      !(await this.restaurantsService.isUserInRestaurant(code, authUser._id))
+    ) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'user not in restaurant',
       });
@@ -189,7 +191,9 @@ export class UsersController {
     @Body('email') email: string,
     @AuthUser() authUser: UserDocument,
   ) {
-    if (!this.restaurantsService.isUserInRestaurant(code, authUser._id)) {
+    if (
+      !(await this.restaurantsService.isUserInRestaurant(code, authUser._id))
+    ) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'user not in restaurant',
       });
@@ -215,7 +219,9 @@ export class UsersController {
     @Body('email') email: string,
     @AuthUser() authUser: UserDocument,
   ) {
-    if (!this.restaurantsService.isUserInRestaurant(code, authUser._id)) {
+    if (
+      !(await this.restaurantsService.isUserInRestaurant(code, authUser._id))
+    ) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'user not in restaurant',
       });

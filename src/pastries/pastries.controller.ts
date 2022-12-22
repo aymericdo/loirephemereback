@@ -67,7 +67,9 @@ export class PastriesController {
     @Param('code') code: string,
     @AuthUser() authUser: UserDocument,
   ) {
-    if (!this.restaurantsService.isUserInRestaurant(code, authUser._id)) {
+    if (
+      !(await this.restaurantsService.isUserInRestaurant(code, authUser._id))
+    ) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'user not in restaurant',
       });
@@ -88,7 +90,9 @@ export class PastriesController {
     @Param('code') code: string,
     @AuthUser() authUser: UserDocument,
   ) {
-    if (!this.restaurantsService.isUserInRestaurant(code, authUser._id)) {
+    if (
+      !(await this.restaurantsService.isUserInRestaurant(code, authUser._id))
+    ) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'user not in restaurant',
       });
@@ -148,7 +152,9 @@ export class PastriesController {
     @Param('code') code: string,
     @AuthUser() authUser: UserDocument,
   ) {
-    if (!this.restaurantsService.isUserInRestaurant(code, authUser._id)) {
+    if (
+      !(await this.restaurantsService.isUserInRestaurant(code, authUser._id))
+    ) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'user not in restaurant',
       });
@@ -168,7 +174,9 @@ export class PastriesController {
     @Query('name') name: string,
     @AuthUser() authUser: UserDocument,
   ) {
-    if (!this.restaurantsService.isUserInRestaurant(code, authUser._id)) {
+    if (
+      !(await this.restaurantsService.isUserInRestaurant(code, authUser._id))
+    ) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'user not in restaurant',
       });
@@ -187,7 +195,9 @@ export class PastriesController {
     @Param('pastryId') pastryId: string,
     @AuthUser() authUser: UserDocument,
   ) {
-    if (!this.restaurantsService.isUserInRestaurant(code, authUser._id)) {
+    if (
+      !(await this.restaurantsService.isUserInRestaurant(code, authUser._id))
+    ) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'user not in restaurant',
       });
@@ -230,6 +240,10 @@ export class PastriesController {
   )
   async uploadedFile(
     @Res() res: Response,
+    @Param('code')
+    code: string,
+    @AuthUser()
+    authUser: UserDocument,
     @UploadedFile(
       new ParseFilePipe({
         validators: [
@@ -238,12 +252,11 @@ export class PastriesController {
         ],
       }),
     )
-    @Param('code')
-    code: string,
-    @AuthUser() authUser: UserDocument,
     file: Express.Multer.File,
   ) {
-    if (!this.restaurantsService.isUserInRestaurant(code, authUser._id)) {
+    if (
+      !(await this.restaurantsService.isUserInRestaurant(code, authUser._id))
+    ) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'user not in restaurant',
       });

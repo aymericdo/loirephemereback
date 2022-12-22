@@ -62,7 +62,7 @@ export class Command {
   @Prop({ type: Number, required: true, min: 0 })
   totalPrice: number;
 
-  @Prop({ type: Date, required: true, default: null, min: new Date() })
+  @Prop({ type: Date, default: null, min: new Date() })
   pickUpTime: Date;
 }
 

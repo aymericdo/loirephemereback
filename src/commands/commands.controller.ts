@@ -63,7 +63,7 @@ export class CommandsController {
         await this.restaurantsService.findByCode(code);
 
       const pastriesToZero: PastryDocument[] =
-        this.commandsService.pastriesReached0(pastriesGroupById);
+        await this.commandsService.pastriesReached0(pastriesGroupById);
 
       if (pastriesToZero.length) {
         return res
@@ -72,9 +72,9 @@ export class CommandsController {
       }
 
       const command = await this.commandsService.create(restaurant, body);
-      this.socketGateway.alertNewCommand(code, command as any);
+      this.socketGateway.alertNewCommand(code, command);
 
-      this.commandsService.stockManagement(code, pastriesGroupById);
+      await this.commandsService.stockManagement(code, pastriesGroupById);
 
       transactionSession.commitTransaction();
       return res.status(HttpStatus.OK).json(command);
@@ -94,7 +94,9 @@ export class CommandsController {
     @Query('fromDate') fromDate: string,
     @Query('toDate') toDate: string,
   ) {
-    if (!this.restaurantsService.isUserInRestaurant(code, authUser._id)) {
+    if (
+      !(await this.restaurantsService.isUserInRestaurant(code, authUser._id))
+    ) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'user not in restaurant',
       });
@@ -118,7 +120,9 @@ export class CommandsController {
   ) {
     const code = (await this.commandsService.findOne(id)).restaurant.code;
 
-    if (!this.restaurantsService.isUserInRestaurant(code, authUser._id)) {
+    if (
+      !(await this.restaurantsService.isUserInRestaurant(code, authUser._id))
+    ) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'user not in restaurant',
       });
@@ -138,7 +142,9 @@ export class CommandsController {
   ) {
     const code = (await this.commandsService.findOne(id)).restaurant.code;
 
-    if (!this.restaurantsService.isUserInRestaurant(code, authUser._id)) {
+    if (
+      !(await this.restaurantsService.isUserInRestaurant(code, authUser._id))
+    ) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'user not in restaurant',
       });

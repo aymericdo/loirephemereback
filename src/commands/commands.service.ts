@@ -21,20 +21,30 @@ export class CommandsService {
     return await this.commandModel.findOne({ _id: id }).exec();
   }
 
+  async isReferenceExists(reference: string): Promise<boolean> {
+    return (
+      (await this.commandModel
+        .countDocuments({ reference: reference }, { limit: 1 })
+        .exec()) === 1
+    );
+  }
+
   async create(
     restaurant: RestaurantDocument,
     createCommandDto: CreateCommandDto,
-  ): Promise<Command> {
-    const reference: string = randomBytes(24)
-      .toString('hex')
-      .toUpperCase()
-      .slice(0, 4);
+  ): Promise<CommandDocument> {
+    let reference: string;
+    do {
+      reference = randomBytes(24).toString('hex').toUpperCase().slice(0, 4);
+    } while (await this.isReferenceExists(reference));
+
     const createdCommand = new this.commandModel({
       ...createCommandDto,
       name: createCommandDto.name.trim(),
       reference,
       restaurant,
     });
+
     return (await createdCommand.save()).populate('pastries');
   }
 
@@ -91,10 +101,20 @@ export class CommandsService {
         {
           $match: {
             'restaurant.code': code,
-            createdAt: {
-              $gt: new Date(fromDate),
-              $lte: new Date(toDate),
-            },
+            $or: [
+              {
+                createdAt: {
+                  $gt: new Date(fromDate),
+                  $lte: new Date(toDate),
+                },
+              },
+              {
+                isDone: false,
+              },
+              {
+                isPayed: false,
+              },
+            ],
           },
         },
         {
@@ -153,9 +173,9 @@ export class CommandsService {
     }, {});
   }
 
-  pastriesReached0(pastriesGroupById: {
+  async pastriesReached0(pastriesGroupById: {
     [pastryId: string]: number;
-  }): PastryDocument[] {
+  }): Promise<PastryDocument[]> {
     return Object.keys(pastriesGroupById).reduce(
       async (prev: any, pastryId: string) => {
         const oldPastry: PastryDocument = await this.pastriesService.findOne(
@@ -171,10 +191,10 @@ export class CommandsService {
     );
   }
 
-  stockManagement(
+  async stockManagement(
     code: string,
     pastriesGroupById: { [pastryId: string]: number },
-  ): void {
+  ): Promise<void> {
     Object.keys(pastriesGroupById).forEach(async (pastryId) => {
       const oldPastry: PastryDocument = await this.pastriesService.findOne(
         pastryId,

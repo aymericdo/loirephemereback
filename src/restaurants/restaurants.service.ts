@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { User, UserDocument } from 'src/users/schemas/user.schema';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
 import { Restaurant, RestaurantDocument } from './schemas/restaurant.schema';
@@ -41,8 +41,11 @@ export class RestaurantsService {
   async isUserInRestaurant(code: string, userId: string): Promise<boolean> {
     return (
       (await this.restaurantModel
-        .countDocuments({ code: code, users: userId }, { limit: 1 })
-        .exec()) === 0
+        .countDocuments(
+          { code: code, users: new Types.ObjectId(userId) },
+          { limit: 1 },
+        )
+        .exec()) === 1
     );
   }
 

@@ -59,29 +59,29 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   alertNewCommand(code: string, command: CommandDocument) {
-    this.admins[code].forEach((client: Client) =>
+    this.admins[code]?.forEach((client: Client) =>
       client.send(JSON.stringify({ addCommand: command })),
     );
 
-    this.adminsWaitingSubNotification[code].forEach((adminSub) => {
+    this.adminsWaitingSubNotification[code]?.forEach((adminSub) => {
       this.sendPushNotif(adminSub, 'Une nouvelle commande est arrivée !');
     });
   }
 
   alertCloseCommand(code: string, command: CommandDocument) {
-    this.admins[code].forEach((client: Client) =>
+    this.admins[code]?.forEach((client: Client) =>
       client.send(JSON.stringify({ closeCommand: command })),
     );
   }
 
   alertPayedCommand(code: string, command: CommandDocument) {
-    this.admins[code].forEach((client: Client) =>
+    this.admins[code]?.forEach((client: Client) =>
       client.send(JSON.stringify({ payedCommand: command })),
     );
   }
 
   stockChanged(code: string, newStock: { pastryId: string; newStock: number }) {
-    this.clients[code].forEach((client: Client) =>
+    this.clients[code]?.forEach((client: Client) =>
       client.send(JSON.stringify({ stockChanged: newStock })),
     );
   }
