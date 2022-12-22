@@ -11,7 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Response } from 'express';
-import { SocketGateway } from 'src/web-socket.gateway';
+import { SocketGateway } from 'src/shared/gateways/web-socket.gateway';
 import { PastryDocument } from 'src/pastries/schemas/pastry.schema';
 import { CommandsService } from './commands.service';
 import { CreateCommandDto } from './dto/create-command.dto';
@@ -23,6 +23,7 @@ import { PastriesService } from 'src/pastries/pastries.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
 import { UserDocument } from 'src/users/schemas/user.schema';
+import { WebPushGateway } from 'src/shared/gateways/web-push.gateway';
 
 @Controller('commands')
 export class CommandsController {
@@ -31,6 +32,7 @@ export class CommandsController {
     private readonly commandsService: CommandsService,
     private readonly pastriesService: PastriesService,
     private readonly socketGateway: SocketGateway,
+    private readonly webPushGateway: WebPushGateway,
     @InjectConnection() private readonly connection: Connection,
   ) {}
 
@@ -73,6 +75,7 @@ export class CommandsController {
 
       const command = await this.commandsService.create(restaurant, body);
       this.socketGateway.alertNewCommand(code, command);
+      this.webPushGateway.alertNewCommand(code);
 
       await this.commandsService.stockManagement(code, pastriesGroupById);
 
@@ -161,7 +164,7 @@ export class CommandsController {
     @Res() res: Response,
     @Body() body: { sub: PushSubscription; code: string },
   ) {
-    this.socketGateway.addAdminQueueSubNotification(body);
+    this.webPushGateway.addAdminQueueSubNotification(body);
 
     return res.status(HttpStatus.OK).json();
   }
@@ -172,7 +175,7 @@ export class CommandsController {
     @Res() res: Response,
     @Body() body: { sub: PushSubscription; code: string },
   ) {
-    this.socketGateway.deleteAdminQueueSubNotification(body);
+    this.webPushGateway.deleteAdminQueueSubNotification(body);
 
     return res.status(HttpStatus.OK).json();
   }

@@ -7,7 +7,7 @@ import { randomBytes } from 'crypto';
 import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
 import { PastryDocument } from 'src/pastries/schemas/pastry.schema';
 import { PastriesService } from 'src/pastries/pastries.service';
-import { SocketGateway } from 'src/web-socket.gateway';
+import { SocketGateway } from 'src/shared/gateways/web-socket.gateway';
 
 @Injectable()
 export class CommandsService {

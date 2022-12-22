@@ -9,12 +9,12 @@ import {
 } from '@nestjs/websockets';
 import { Logger, UseGuards } from '@nestjs/common';
 import WebSocket, { Server } from 'ws';
-import { CommandDocument } from './commands/schemas/command.schema';
-import webpush = require('web-push');
+import { CommandDocument } from '../../commands/schemas/command.schema';
 import { WsThrottlerGuard } from 'src/shared/guards/ws-throttler.guard';
 import { WsJwtAuthGuard } from 'src/auth/ws-jwt-auth.guard';
 import { Request } from 'express';
 import { RestaurantsService } from 'src/restaurants/restaurants.service';
+import { WebPushGateway } from 'src/shared/gateways/web-push.gateway';
 
 interface Client extends WebSocket {
   request: Request;
@@ -23,16 +23,16 @@ interface Client extends WebSocket {
 @WebSocketGateway()
 @UseGuards(WsThrottlerGuard)
 export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
-  constructor(private readonly restaurantsService: RestaurantsService) {}
+  constructor(
+    private readonly restaurantsService: RestaurantsService,
+    private readonly webPushGateway: WebPushGateway,
+  ) {}
 
   @WebSocketServer() server: Server;
   clients: { [code: string]: Client[] } = {};
   admins: { [code: string]: Client[] } = {};
-  adminsWaitingSubNotification: { [code: string]: PushSubscription[] } = {};
 
   clientWaitingQueue: { [commandId: string]: Client } = {};
-  clientWaitingQueueSubNotification: { [commandId: string]: PushSubscription } =
-    {};
 
   private logger: Logger = new Logger(SocketGateway.name);
 
@@ -62,10 +62,6 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.admins[code]?.forEach((client: Client) =>
       client.send(JSON.stringify({ addCommand: command })),
     );
-
-    this.adminsWaitingSubNotification[code]?.forEach((adminSub) => {
-      this.sendPushNotif(adminSub, 'Une nouvelle commande est arrivée !');
-    });
   }
 
   alertCloseCommand(code: string, command: CommandDocument) {
@@ -86,50 +82,11 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     );
   }
 
-  addClientWaitingQueueSubNotification(subNotif: {
-    sub: PushSubscription;
-    commandId: string;
-  }) {
-    this.clientWaitingQueueSubNotification[subNotif.commandId] = subNotif.sub;
-  }
-
-  addAdminQueueSubNotification(subNotif: {
-    sub: PushSubscription;
-    code: string;
-  }) {
-    if (this.adminsWaitingSubNotification.hasOwnProperty(subNotif.code)) {
-      if (
-        !this.adminsWaitingSubNotification[subNotif.code].some(
-          (notif) => notif.endpoint === subNotif.sub.endpoint,
-        )
-      ) {
-        this.adminsWaitingSubNotification[subNotif.code].push(subNotif.sub);
-      }
-    } else {
-      this.adminsWaitingSubNotification[subNotif.code] = [subNotif.sub];
-    }
-  }
-
-  deleteAdminQueueSubNotification(subNotif: {
-    sub: PushSubscription;
-    code: string;
-  }) {
-    if (this.adminsWaitingSubNotification.hasOwnProperty(subNotif.code)) {
-      this.adminsWaitingSubNotification[subNotif.code] =
-        this.adminsWaitingSubNotification[subNotif.code].filter(
-          (notif) => notif.endpoint !== subNotif.sub.endpoint,
-        );
-    }
-  }
-
   @SubscribeMessage('wizzer')
   onWizzer(@MessageBody() data: CommandDocument): void {
-    const ws = this.clientWaitingQueue[data._id];
-    const subNotification = this.clientWaitingQueueSubNotification[data._id];
+    this.webPushGateway.sendCommandReady(data);
 
-    if (subNotification) {
-      this.sendPushNotif(subNotification, 'Votre commande est prête !');
-    }
+    const ws = this.clientWaitingQueue[data._id];
 
     if (ws) {
       ws.send(JSON.stringify({ wizz: data._id }));
@@ -137,7 +94,6 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     // remove old waiting info
     delete this.clientWaitingQueue[data._id];
-    delete this.clientWaitingQueueSubNotification[data._id];
   }
 
   @SubscribeMessage('addclientWaitingQueue')
@@ -170,34 +126,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   cleanup() {
     this.admins = {};
     this.clients = {};
-    this.adminsWaitingSubNotification = {};
     this.clientWaitingQueue = {};
-    this.clientWaitingQueueSubNotification = {};
-  }
-
-  private sendPushNotif(sub: PushSubscription, body: string) {
-    const payload = JSON.stringify({
-      notification: {
-        title: 'Petite notif gentille',
-        body,
-        icon: 'assets/icons/icon-128x128.png',
-        vibrate: [
-          500, 110, 500, 110, 450, 110, 200, 110, 170, 40, 450, 110, 200, 110,
-          170, 40, 500,
-        ],
-        data: {
-          dateOfArrival: Date.now(),
-          primaryKey: 1,
-        },
-      },
-    });
-
-    webpush
-      .sendNotification(sub, payload)
-      .then(() => {
-        console.log('notif sent');
-      })
-      .catch((err) => console.error(err));
   }
 
   private getCodeFromQueryParam(url: string): string {

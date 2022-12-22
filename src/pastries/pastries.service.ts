@@ -10,12 +10,16 @@ import {
 import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
 import { CreatePastryDto } from 'src/pastries/dto/create-pastry.dto';
 import { UpdatePastryDto } from 'src/pastries/dto/update-pastry.dto';
+import { RestaurantsService } from 'src/restaurants/restaurants.service';
 
 @Injectable()
 export class PastriesService {
   constructor(
-    @InjectModel(Pastry.name) private pastryModel: Model<PastryDocument>,
+    @InjectModel(Pastry.name)
+    @InjectModel(Pastry.name)
+    private pastryModel: Model<PastryDocument>,
     @InjectConnection() private readonly connection: Connection,
+    private readonly restaurantsService: RestaurantsService,
   ) {}
 
   async findOne(id: string): Promise<PastryDocument> {
@@ -67,6 +71,41 @@ export class PastriesService {
           historical,
         },
         { new: true },
+      )
+      .exec();
+  }
+
+  async removeCommonStock(code: string, commonStock: string): Promise<void> {
+    const restaurantId = await this.restaurantsService.findIdByCode(code);
+
+    await this.pastryModel
+      .updateMany(
+        {
+          restaurant: new Types.ObjectId(restaurantId),
+          commonStock: commonStock,
+        },
+        {
+          $unset: { commonStock: 1 },
+        },
+      )
+      .exec();
+  }
+
+  async addCommonStock(
+    code: string,
+    pastries: PastryDocument[],
+    commonStock: string,
+  ): Promise<void> {
+    const restaurantId = await this.restaurantsService.findIdByCode(code);
+    await this.pastryModel
+      .updateMany(
+        {
+          restaurant: new Types.ObjectId(restaurantId),
+          _id: { $in: pastries.map((p) => new Types.ObjectId(p._id)) },
+        },
+        {
+          $set: { commonStock: commonStock },
+        },
       )
       .exec();
   }

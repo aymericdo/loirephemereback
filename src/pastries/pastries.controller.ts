@@ -20,7 +20,7 @@ import {
 import { Response } from 'express';
 import { diskStorage } from 'multer';
 import { PastriesService } from './pastries.service';
-import { SocketGateway } from 'src/web-socket.gateway';
+import { SocketGateway } from 'src/shared/gateways/web-socket.gateway';
 import { CreatePastryDto } from 'src/pastries/dto/create-pastry.dto';
 import { RestaurantsService } from 'src/restaurants/restaurants.service';
 import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
@@ -34,6 +34,8 @@ import { CommandsService } from 'src/commands/commands.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
 import { UserDocument } from 'src/users/schemas/user.schema';
+import { WebPushGateway } from 'src/shared/gateways/web-push.gateway';
+import { Pastry, PastryDocument } from 'src/pastries/schemas/pastry.schema';
 
 export const IMAGE_URL_PATH = './client/photos';
 
@@ -46,7 +48,7 @@ export class PastriesController {
     private readonly pastriesService: PastriesService,
     private readonly restaurantsService: RestaurantsService,
     private readonly commandsService: CommandsService,
-    private readonly socketGateway: SocketGateway,
+    private readonly webPushGateway: WebPushGateway,
   ) {}
 
   @UseInterceptors(ClassSerializerInterceptor)
@@ -142,6 +144,39 @@ export class PastriesController {
       pastry: new PastryEntity(pastry.toObject()),
       displaySequenceById,
     });
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
+  @Put('by-code/:code/common-stock')
+  async putCommonStock(
+    @Res() res: Response,
+    @Param('code') code: string,
+    @Body('pastries') pastries: PastryDocument[],
+    @Body('commonStock') commonStock: string,
+    @AuthUser() authUser: UserDocument,
+  ) {
+    if (
+      !(await this.restaurantsService.isUserInRestaurant(code, authUser._id))
+    ) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'user not in restaurant',
+      });
+    }
+
+    if (pastries.length === 1) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: "can't associate only one pastry",
+      });
+    }
+
+    await this.pastriesService.removeCommonStock(code, commonStock);
+    await this.pastriesService.addCommonStock(code, pastries, commonStock);
+
+    const newPastries = await this.pastriesService.findAllByCode(code);
+    return res
+      .status(HttpStatus.OK)
+      .json(newPastries.map((p) => new PastryEntity(p)));
   }
 
   @UseGuards(JwtAuthGuard)
@@ -275,7 +310,7 @@ export class PastriesController {
     @Res() res: Response,
     @Body() body: { sub: PushSubscription; commandId: string },
   ) {
-    this.socketGateway.addClientWaitingQueueSubNotification(body);
+    this.webPushGateway.addClientWaitingQueueSubNotification(body);
 
     return res.status(HttpStatus.OK).json();
   }
