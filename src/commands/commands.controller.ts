@@ -10,82 +10,62 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { AppGateway } from 'src/app.gateway';
-import { PastriesService } from 'src/pastries/pastries.service';
+import { Response } from 'express';
+import { SocketGateway } from 'src/shared/gateways/web-socket.gateway';
 import { PastryDocument } from 'src/pastries/schemas/pastry.schema';
-import { AuthGuard } from './auth.guard';
 import { CommandsService } from './commands.service';
 import { CreateCommandDto } from './dto/create-command.dto';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
+import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
+import { RestaurantsService } from 'src/restaurants/restaurants.service';
+import { PastriesService } from 'src/pastries/pastries.service';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
+import { UserDocument } from 'src/users/schemas/user.schema';
+import { WebPushGateway } from 'src/shared/gateways/web-push.gateway';
 
 @Controller('commands')
 export class CommandsController {
   constructor(
-    private readonly pastriesService: PastriesService,
+    private readonly restaurantsService: RestaurantsService,
     private readonly commandsService: CommandsService,
-    private readonly appGateway: AppGateway,
+    private readonly pastriesService: PastriesService,
+    private readonly socketGateway: SocketGateway,
+    private readonly webPushGateway: WebPushGateway,
     @InjectConnection() private readonly connection: Connection,
   ) {}
 
-  @Get()
-  @UseGuards(AuthGuard)
-  async getAll(@Res() res, @Query() query) {
-    const commands = await this.commandsService.findAll(query.year);
+  @Post(':code')
+  async postCommand(
+    @Res() res: Response,
+    @Body() body: CreateCommandDto,
+    @Param('code') code: string,
+  ) {
+    const pastriesGroupById: { [pastryId: string]: number } =
+      this.commandsService.reducePastriesById(body.pastries);
 
-    return res.status(HttpStatus.OK).json(commands);
-  }
-
-  @Patch('/close/:id')
-  async patchCommand(@Param('id') id: string, @Res() res) {
-    const command = await this.commandsService.closeCommand(id);
-    this.appGateway.alertCloseCommand(command as any);
-    return res.status(HttpStatus.OK).json(command);
-  }
-
-  @Patch('/payed/:id')
-  async patchCommand2(@Param('id') id: string, @Res() res) {
-    const command = await this.commandsService.payedCommand(id);
-    this.appGateway.alertPayedCommand(command as any);
-    return res.status(HttpStatus.OK).json(command);
-  }
-
-  @Post()
-  async postCommand(@Res() res, @Body() createCatDto: CreateCommandDto) {
-    const pastriesGroupBy = createCatDto.pastries.reduce(
-      (prev, pastry: PastryDocument) => {
-        if (pastry.stock === undefined || pastry.stock === null) {
-          return prev;
-        }
-
-        if (!prev.hasOwnProperty(pastry._id)) {
-          prev[pastry._id] = 1;
-        } else {
-          prev[pastry._id] = prev[pastry._id] + 1;
-        }
-        return prev;
-      },
-      {},
-    );
+    if (
+      !(await this.pastriesService.verifyAllPastriesRestaurant(
+        code,
+        Object.keys(pastriesGroupById),
+      ))
+    ) {
+      return res
+        .status(HttpStatus.BAD_REQUEST)
+        .json({ message: 'mismatch between pastries and restaurant' });
+    }
 
     const transactionSession = await this.connection.startSession();
 
     try {
       transactionSession.startTransaction();
 
-      const pastriesToZero = await Object.keys(pastriesGroupBy).reduce(
-        async (prev: any, pastryId) => {
-          const oldPastry: PastryDocument = await this.pastriesService.findOne(
-            pastryId,
-          );
+      const restaurant: RestaurantDocument =
+        await this.restaurantsService.findByCode(code);
 
-          if (oldPastry.stock - pastriesGroupBy[pastryId] < 0) {
-            prev.push(oldPastry);
-          }
-          return prev;
-        },
-        [],
-      );
+      const pastriesToZero: PastryDocument[] =
+        await this.commandsService.pastriesReached0(pastriesGroupById);
 
       if (pastriesToZero.length) {
         return res
@@ -93,41 +73,11 @@ export class CommandsController {
           .json({ outOfStock: pastriesToZero });
       }
 
-      const command = await this.commandsService.create(createCatDto);
-      this.appGateway.alertNewCommand(command as any);
+      const command = await this.commandsService.create(restaurant, body);
+      this.socketGateway.alertNewCommand(code, command);
+      this.webPushGateway.alertNewCommand(code);
 
-      Object.keys(pastriesGroupBy).forEach(async (pastryId) => {
-        const oldPastry: PastryDocument = await this.pastriesService.findOne(
-          pastryId,
-        );
-
-        if (oldPastry.commonStock) {
-          const oldPastries = await this.pastriesService.findByCommonStock(
-            oldPastry.commonStock,
-          );
-
-          oldPastries.forEach(async (oldP: PastryDocument) => {
-            const newP = await this.pastriesService.decrementStock(
-              oldP as PastryDocument,
-              pastriesGroupBy[oldPastry._id],
-            );
-
-            this.appGateway.stockChanged({
-              pastryId: oldP._id,
-              newStock: newP.stock,
-            });
-          });
-        } else {
-          const pastry = await this.pastriesService.decrementStock(
-            oldPastry as PastryDocument,
-            pastriesGroupBy[oldPastry._id],
-          );
-          this.appGateway.stockChanged({
-            pastryId: oldPastry._id,
-            newStock: pastry.stock,
-          });
-        }
-      });
+      await this.commandsService.stockManagement(code, pastriesGroupById);
 
       transactionSession.commitTransaction();
       return res.status(HttpStatus.OK).json(command);
@@ -138,10 +88,95 @@ export class CommandsController {
     }
   }
 
-  @Post('notification')
-  async postNotificationSub(@Res() res, @Body() body: { sub: any }) {
-    this.appGateway.addAdminQueueSubNotification(body);
+  @UseGuards(JwtAuthGuard)
+  @Get('by-code/:code')
+  async getCommandsByCode(
+    @Res() res: Response,
+    @Param('code') code: string,
+    @AuthUser() authUser: UserDocument,
+    @Query('fromDate') fromDate: string,
+    @Query('toDate') toDate: string,
+  ) {
+    if (
+      !(await this.restaurantsService.isUserInRestaurant(code, authUser._id))
+    ) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'user not in restaurant',
+      });
+    }
 
-    res.status(HttpStatus.OK).json();
+    const commands = await this.commandsService.findByCode(
+      code,
+      fromDate,
+      toDate,
+    );
+
+    return res.status(HttpStatus.OK).json(commands);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('/close/:id')
+  async patchCommand(
+    @Res() res: Response,
+    @Param('id') id: string,
+    @AuthUser() authUser: UserDocument,
+  ) {
+    const code = (await this.commandsService.findOne(id)).restaurant.code;
+
+    if (
+      !(await this.restaurantsService.isUserInRestaurant(code, authUser._id))
+    ) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'user not in restaurant',
+      });
+    }
+
+    const command = await this.commandsService.closeCommand(id);
+    this.socketGateway.alertCloseCommand(code, command as any);
+    return res.status(HttpStatus.OK).json(command);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('/payed/:id')
+  async patchCommand2(
+    @Res() res: Response,
+    @Param('id') id: string,
+    @AuthUser() authUser: UserDocument,
+  ) {
+    const code = (await this.commandsService.findOne(id)).restaurant.code;
+
+    if (
+      !(await this.restaurantsService.isUserInRestaurant(code, authUser._id))
+    ) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'user not in restaurant',
+      });
+    }
+
+    const command = await this.commandsService.payedCommand(id);
+    this.socketGateway.alertPayedCommand(code, command);
+    return res.status(HttpStatus.OK).json(command);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('notification')
+  async postNotificationSub(
+    @Res() res: Response,
+    @Body() body: { sub: PushSubscription; code: string },
+  ) {
+    this.webPushGateway.addAdminQueueSubNotification(body);
+
+    return res.status(HttpStatus.OK).json();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('notification/delete')
+  async deleteNotificationSub(
+    @Res() res: Response,
+    @Body() body: { sub: PushSubscription; code: string },
+  ) {
+    this.webPushGateway.deleteAdminQueueSubNotification(body);
+
+    return res.status(HttpStatus.OK).json();
   }
 }
