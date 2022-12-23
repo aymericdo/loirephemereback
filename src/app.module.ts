@@ -1,4 +1,9 @@
-import { CacheModule, MiddlewareConsumer, Module } from '@nestjs/common';
+import {
+  CacheModule,
+  HttpException,
+  MiddlewareConsumer,
+  Module,
+} from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -13,8 +18,10 @@ import { UsersModule } from 'src/users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { MailModule } from './mail/mail.module';
 import { ApiLoggerMiddleware } from 'src/shared/middlewares/api-logger.middleware';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
+import { SentryModule } from '@ntegral/nestjs-sentry';
+import { SentryInterceptor } from '@ntegral/nestjs-sentry';
 
 @Module({
   imports: [
@@ -33,6 +40,13 @@ import { ScheduleModule } from '@nestjs/schedule';
       ttl: 60,
       limit: 30,
     }),
+    SentryModule.forRoot({
+      dsn: process.env.SENTRY_DNS,
+      debug: false,
+      environment: process.env.ENVIRONMENT,
+      release: '1.0',
+      logLevels: ['debug'], //based on sentry.io loglevel //
+    }),
     PastriesModule,
     CommandsModule,
     RestaurantsModule,
@@ -47,6 +61,18 @@ import { ScheduleModule } from '@nestjs/schedule';
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useFactory: () =>
+        new SentryInterceptor({
+          filters: [
+            {
+              type: HttpException,
+              filter: (exception: HttpException) => 500 > exception.getStatus(),
+            },
+          ],
+        }),
     },
   ],
 })
