@@ -61,7 +61,7 @@ export class PastriesService {
 
   async update(
     updatePastryDto: UpdatePastryDto,
-    historical: Historical,
+    historical: Historical[],
   ): Promise<PastryDocument> {
     return await this.pastryModel
       .findOneAndUpdate(

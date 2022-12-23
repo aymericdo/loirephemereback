@@ -5,14 +5,14 @@ import { SIZE } from 'src/shared/helpers/sizes';
 
 export type PastryDocument = Pastry & Document;
 
-export const pastryTypes = ['pastry', 'drink', 'tips', 'other'] as const;
+export const pastryTypes = ['pastry', 'drink', 'tip', 'other'] as const;
 type PastryType = typeof pastryTypes[number];
 
 export const statsAttributes = ['price', 'type'];
 export interface Historical {
   date: Date;
   price?: [number, number];
-  type?: [string, string];
+  type?: [string | null, string];
 }
 
 @Schema({ timestamps: true })
@@ -77,6 +77,7 @@ export class Pastry {
 
   @Prop({
     type: [{ type: Object }],
+    default: [],
   })
   historical: Historical[];
 }

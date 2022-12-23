@@ -20,7 +20,6 @@ import {
 import { Response } from 'express';
 import { diskStorage } from 'multer';
 import { PastriesService } from './pastries.service';
-import { SocketGateway } from 'src/shared/gateways/web-socket.gateway';
 import { CreatePastryDto } from 'src/pastries/dto/create-pastry.dto';
 import { RestaurantsService } from 'src/restaurants/restaurants.service';
 import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
@@ -35,7 +34,7 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
 import { UserDocument } from 'src/users/schemas/user.schema';
 import { WebPushGateway } from 'src/shared/gateways/web-push.gateway';
-import { Pastry, PastryDocument } from 'src/pastries/schemas/pastry.schema';
+import { PastryDocument } from 'src/pastries/schemas/pastry.schema';
 
 export const IMAGE_URL_PATH = './client/photos';
 
@@ -121,7 +120,7 @@ export class PastriesController {
       currentPastry.displaySequence,
     );
 
-    let historical = null;
+    let historical = [];
     // Update historical
     if (this.pastriesService.isStatsAttributesChanged(currentPastry, body)) {
       historical = (
