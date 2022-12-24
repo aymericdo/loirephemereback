@@ -46,7 +46,7 @@ export class WebPushGateway {
     if (this.adminsWaitingSubNotification.hasOwnProperty(subNotif.code)) {
       this.adminsWaitingSubNotification[subNotif.code] =
         this.adminsWaitingSubNotification[subNotif.code].filter(
-          (notif) => notif.endpoint !== subNotif.sub.endpoint,
+          (notif) => notif.endpoint !== subNotif.sub?.endpoint,
         );
     }
   }
