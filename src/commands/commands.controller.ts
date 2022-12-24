@@ -149,7 +149,7 @@ export class CommandsController {
       !(await this.restaurantsService.isUserInRestaurant(code, authUser._id))
     ) {
       return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'user not in restaurant',
+        message: 'user not in the restaurant',
       });
     }
 
