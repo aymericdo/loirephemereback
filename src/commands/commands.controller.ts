@@ -36,7 +36,7 @@ export class CommandsController {
     @InjectConnection() private readonly connection: Connection,
   ) {}
 
-  @Post(':code')
+  @Post('by-code/:code')
   async postCommand(
     @Res() res: Response,
     @Body() body: CreateCommandDto,
