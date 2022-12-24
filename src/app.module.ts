@@ -45,7 +45,7 @@ import { SentryInterceptor } from '@ntegral/nestjs-sentry';
       debug: false,
       environment: process.env.ENVIRONMENT,
       release: '1.0',
-      logLevels: ['debug'], //based on sentry.io loglevel //
+      logLevels: ['debug'],
     }),
     PastriesModule,
     CommandsModule,
