@@ -53,7 +53,7 @@ export class PastriesController {
   @UseInterceptors(ClassSerializerInterceptor)
   @Get('by-code/:code')
   async getPastriesByCode(@Res() res: Response, @Param('code') code: string) {
-    return res.status(HttpStatus.BAD_REQUEST).json('TEST');
+    return res.status(HttpStatus.UNAUTHORIZED).json('TEST');
 
     const pastries = await this.pastriesService.findDisplayableByCode(code);
     return res
