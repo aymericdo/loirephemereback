@@ -254,6 +254,8 @@ export class PastriesController {
           const name = file.originalname
             .split('.')[0]
             .toLowerCase()
+            .normalize('NFD')
+            .replaceAll(/[\u0300-\u036f]/g, '')
             .replaceAll(/[^a-z0-9- ]/g, '')
             .replaceAll(' ', '-');
           const fileExtName = extname(file.originalname);
