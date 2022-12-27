@@ -20,13 +20,13 @@ export class UsersService {
   }
 
   async findOneByEmail(email: string): Promise<UserDocument | undefined> {
-    return await this.userModel.findOne({ email: email }).exec();
+    return await this.userModel.findOne({ email: email.toLowerCase() }).exec();
   }
 
   async isEmailExists(email: string): Promise<boolean> {
     return (
       (await this.userModel
-        .countDocuments({ email: email }, { limit: 1 })
+        .countDocuments({ email: email.toLowerCase() }, { limit: 1 })
         .exec()) === 1
     );
   }
@@ -34,7 +34,7 @@ export class UsersService {
   async isEmailNotExists(email: string): Promise<boolean> {
     return (
       (await this.userModel
-        .countDocuments({ email: email }, { limit: 1 })
+        .countDocuments({ email: email.toLowerCase() }, { limit: 1 })
         .exec()) === 0
     );
   }
@@ -42,7 +42,7 @@ export class UsersService {
   async create(createUserDto: CreateUserDto): Promise<UserDocument> {
     const createdUser = new this.userModel({
       ...createUserDto,
-      email: createUserDto.email.toLowerCase(),
+      email: createUserDto.email,
       password: await this.encryptPassword(createUserDto.password),
     });
     return await createdUser.save();
