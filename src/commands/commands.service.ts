@@ -8,6 +8,7 @@ import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
 import { PastryDocument } from 'src/pastries/schemas/pastry.schema';
 import { PastriesService } from 'src/pastries/pastries.service';
 import { SocketGateway } from 'src/shared/gateways/web-socket.gateway';
+import { WebPushGateway } from 'src/shared/gateways/web-push.gateway';
 
 @Injectable()
 export class CommandsService {
@@ -15,6 +16,7 @@ export class CommandsService {
     @InjectModel(Command.name) private commandModel: Model<CommandDocument>,
     private readonly pastriesService: PastriesService,
     private readonly socketGateway: SocketGateway,
+    private readonly webPushGateway: WebPushGateway,
   ) {}
 
   async findOne(id: string): Promise<CommandDocument> {
@@ -45,29 +47,45 @@ export class CommandsService {
       restaurant,
     });
 
-    return (await createdCommand.save()).populate('pastries');
+    const savedCommand = (await (
+      await createdCommand.save()
+    ).populate('pastries')) as CommandDocument;
+
+    this.socketGateway.alertNewCommand(restaurant.code, savedCommand);
+    this.webPushGateway.alertNewCommand(restaurant.code);
+
+    return savedCommand;
   }
 
   async closeCommand(id: string): Promise<Command> {
-    return await this.commandModel
+    const command = await this.commandModel
       .findByIdAndUpdate(
         id,
         { isDone: true },
         { new: true, useFindAndModify: false },
       )
       .populate('pastries')
+      .populate('restaurant')
       .exec();
+
+    this.socketGateway.alertCloseCommand(command.restaurant.code, command);
+
+    return command;
   }
 
   async payedCommand(id: string): Promise<CommandDocument> {
-    return await this.commandModel
+    const command = await this.commandModel
       .findByIdAndUpdate(
         id,
         { isPayed: true },
         { new: true, useFindAndModify: false },
       )
       .populate('pastries')
+      .populate('restaurant')
       .exec();
+
+    this.socketGateway.alertPayedCommand(command.restaurant.code, command);
+    return command;
   }
 
   async findAll(year = new Date().getFullYear()): Promise<CommandDocument[]> {
@@ -156,7 +174,7 @@ export class CommandsService {
       .exec();
   }
 
-  reducePastriesById(pastries: PastryDocument[]): {
+  reduceCountByPastryId(pastries: PastryDocument[]): {
     [pastryId: string]: number;
   } {
     return pastries.reduce((prev, pastry: PastryDocument) => {
@@ -173,16 +191,16 @@ export class CommandsService {
     }, {});
   }
 
-  async pastriesReached0(pastriesGroupById: {
+  async pastriesReached0(countByPastryId: {
     [pastryId: string]: number;
   }): Promise<PastryDocument[]> {
-    return Object.keys(pastriesGroupById).reduce(
+    return Object.keys(countByPastryId).reduce(
       async (prev: any, pastryId: string) => {
         const oldPastry: PastryDocument = await this.pastriesService.findOne(
           pastryId,
         );
 
-        if (oldPastry.stock - pastriesGroupById[pastryId] < 0) {
+        if (oldPastry.stock - countByPastryId[pastryId] < 0) {
           prev.push(oldPastry as PastryDocument);
         }
         return prev;
@@ -191,41 +209,18 @@ export class CommandsService {
     );
   }
 
-  async stockManagement(
-    code: string,
-    pastriesGroupById: { [pastryId: string]: number },
-  ): Promise<void> {
-    Object.keys(pastriesGroupById).forEach(async (pastryId) => {
-      const oldPastry: PastryDocument = await this.pastriesService.findOne(
+  async stockManagement(countByPastryId: {
+    [pastryId: string]: number;
+  }): Promise<void> {
+    Object.keys(countByPastryId).forEach(async (pastryId) => {
+      const currentPastry: PastryDocument = await this.pastriesService.findOne(
         pastryId,
       );
 
-      if (oldPastry.commonStock) {
-        const oldPastries = await this.pastriesService.findByCommonStock(
-          oldPastry.commonStock,
-        );
-
-        oldPastries.forEach(async (oldP: PastryDocument) => {
-          const newP = await this.pastriesService.decrementStock(
-            oldP as PastryDocument,
-            pastriesGroupById[oldPastry._id],
-          );
-
-          this.socketGateway.stockChanged(code, {
-            pastryId: oldP._id,
-            newStock: newP.stock,
-          });
-        });
-      } else {
-        const pastry = await this.pastriesService.decrementStock(
-          oldPastry as PastryDocument,
-          pastriesGroupById[oldPastry._id],
-        );
-        this.socketGateway.stockChanged(code, {
-          pastryId: oldPastry._id,
-          newStock: pastry.stock,
-        });
-      }
+      await this.pastriesService.decrementStock(
+        currentPastry as PastryDocument,
+        countByPastryId[currentPastry._id],
+      );
     });
   }
 }

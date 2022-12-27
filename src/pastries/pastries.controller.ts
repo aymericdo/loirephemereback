@@ -35,6 +35,7 @@ import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
 import { UserDocument } from 'src/users/schemas/user.schema';
 import { WebPushGateway } from 'src/shared/gateways/web-push.gateway';
 import { PastryDocument } from 'src/pastries/schemas/pastry.schema';
+import { UsersService } from 'src/users/users.service';
 
 export const IMAGE_URL_PATH = './client/photos';
 
@@ -46,6 +47,7 @@ export class PastriesController {
   constructor(
     private readonly pastriesService: PastriesService,
     private readonly restaurantsService: RestaurantsService,
+    private readonly usersService: UsersService,
     private readonly commandsService: CommandsService,
     private readonly webPushGateway: WebPushGateway,
   ) {}
@@ -68,9 +70,7 @@ export class PastriesController {
     @Param('code') code: string,
     @AuthUser() authUser: UserDocument,
   ) {
-    if (
-      !(await this.restaurantsService.isUserInRestaurant(code, authUser._id))
-    ) {
+    if (!(await this.usersService.isAuthorized(authUser, code))) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'user not in restaurant',
       });
@@ -91,9 +91,7 @@ export class PastriesController {
     @Param('code') code: string,
     @AuthUser() authUser: UserDocument,
   ) {
-    if (
-      !(await this.restaurantsService.isUserInRestaurant(code, authUser._id))
-    ) {
+    if (!(await this.usersService.isAuthorized(authUser, code))) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'user not in restaurant',
       });
@@ -103,6 +101,8 @@ export class PastriesController {
     const currentPastry = await this.pastriesService.findOne(
       body._id.toString(),
     );
+
+    const isUpdatingStock: boolean = currentPastry.stock !== body.stock;
 
     if (
       currentPastry.name !== body.name &&
@@ -137,6 +137,7 @@ export class PastriesController {
         displaySequence: displaySequenceById[currentPastry._id],
       },
       historical,
+      isUpdatingStock,
     );
 
     return res.status(HttpStatus.OK).json({
@@ -155,9 +156,7 @@ export class PastriesController {
     @Body('commonStock') commonStock: string,
     @AuthUser() authUser: UserDocument,
   ) {
-    if (
-      !(await this.restaurantsService.isUserInRestaurant(code, authUser._id))
-    ) {
+    if (!(await this.usersService.isAuthorized(authUser, code))) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'user not in restaurant',
       });
@@ -186,9 +185,7 @@ export class PastriesController {
     @Param('code') code: string,
     @AuthUser() authUser: UserDocument,
   ) {
-    if (
-      !(await this.restaurantsService.isUserInRestaurant(code, authUser._id))
-    ) {
+    if (!(await this.usersService.isAuthorized(authUser, code))) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'user not in restaurant',
       });
@@ -208,9 +205,7 @@ export class PastriesController {
     @Query('name') name: string,
     @AuthUser() authUser: UserDocument,
   ) {
-    if (
-      !(await this.restaurantsService.isUserInRestaurant(code, authUser._id))
-    ) {
+    if (!(await this.usersService.isAuthorized(authUser, code))) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'user not in restaurant',
       });
@@ -229,9 +224,7 @@ export class PastriesController {
     @Param('pastryId') pastryId: string,
     @AuthUser() authUser: UserDocument,
   ) {
-    if (
-      !(await this.restaurantsService.isUserInRestaurant(code, authUser._id))
-    ) {
+    if (!(await this.usersService.isAuthorized(authUser, code))) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'user not in restaurant',
       });
@@ -290,9 +283,7 @@ export class PastriesController {
     )
     file: Express.Multer.File,
   ) {
-    if (
-      !(await this.restaurantsService.isUserInRestaurant(code, authUser._id))
-    ) {
+    if (!(await this.usersService.isAuthorized(authUser, code))) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'user not in restaurant',
       });

@@ -12,6 +12,10 @@ export class RestaurantsService {
     private restaurantModel: Model<RestaurantDocument>,
   ) {}
 
+  async findAll(): Promise<RestaurantDocument[]> {
+    return await this.restaurantModel.find().sort({ createdAt: 1 }).exec();
+  }
+
   async findAllByUserId(userId: string): Promise<RestaurantDocument[]> {
     return await this.restaurantModel
       .find({ users: userId })

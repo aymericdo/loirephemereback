@@ -24,14 +24,15 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
 import { UserDocument } from 'src/users/schemas/user.schema';
 import { WebPushGateway } from 'src/shared/gateways/web-push.gateway';
+import { UsersService } from 'src/users/users.service';
 
 @Controller('commands')
 export class CommandsController {
   constructor(
     private readonly restaurantsService: RestaurantsService,
     private readonly commandsService: CommandsService,
+    private readonly usersService: UsersService,
     private readonly pastriesService: PastriesService,
-    private readonly socketGateway: SocketGateway,
     private readonly webPushGateway: WebPushGateway,
     @InjectConnection() private readonly connection: Connection,
   ) {}
@@ -42,13 +43,13 @@ export class CommandsController {
     @Body() body: CreateCommandDto,
     @Param('code') code: string,
   ) {
-    const pastriesGroupById: { [pastryId: string]: number } =
-      this.commandsService.reducePastriesById(body.pastries);
+    const countByPastryId: { [pastryId: string]: number } =
+      this.commandsService.reduceCountByPastryId(body.pastries);
 
     if (
       !(await this.pastriesService.verifyAllPastriesRestaurant(
         code,
-        Object.keys(pastriesGroupById),
+        Object.keys(countByPastryId),
       ))
     ) {
       return res
@@ -65,7 +66,7 @@ export class CommandsController {
         await this.restaurantsService.findByCode(code);
 
       const pastriesToZero: PastryDocument[] =
-        await this.commandsService.pastriesReached0(pastriesGroupById);
+        await this.commandsService.pastriesReached0(countByPastryId);
 
       if (pastriesToZero.length) {
         return res
@@ -74,10 +75,8 @@ export class CommandsController {
       }
 
       const command = await this.commandsService.create(restaurant, body);
-      this.socketGateway.alertNewCommand(code, command);
-      this.webPushGateway.alertNewCommand(code);
 
-      await this.commandsService.stockManagement(code, pastriesGroupById);
+      await this.commandsService.stockManagement(countByPastryId);
 
       transactionSession.commitTransaction();
       return res.status(HttpStatus.OK).json(command);
@@ -97,9 +96,7 @@ export class CommandsController {
     @Query('fromDate') fromDate: string,
     @Query('toDate') toDate: string,
   ) {
-    if (
-      !(await this.restaurantsService.isUserInRestaurant(code, authUser._id))
-    ) {
+    if (!(await this.usersService.isAuthorized(authUser, code))) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'user not in restaurant',
       });
@@ -123,16 +120,13 @@ export class CommandsController {
   ) {
     const code = (await this.commandsService.findOne(id)).restaurant.code;
 
-    if (
-      !(await this.restaurantsService.isUserInRestaurant(code, authUser._id))
-    ) {
+    if (!(await this.usersService.isAuthorized(authUser, code))) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'user not in restaurant',
       });
     }
 
     const command = await this.commandsService.closeCommand(id);
-    this.socketGateway.alertCloseCommand(code, command as any);
     return res.status(HttpStatus.OK).json(command);
   }
 
@@ -145,16 +139,13 @@ export class CommandsController {
   ) {
     const code = (await this.commandsService.findOne(id)).restaurant.code;
 
-    if (
-      !(await this.restaurantsService.isUserInRestaurant(code, authUser._id))
-    ) {
+    if (!(await this.usersService.isAuthorized(authUser, code))) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'user not in the restaurant',
       });
     }
 
     const command = await this.commandsService.payedCommand(id);
-    this.socketGateway.alertPayedCommand(code, command);
     return res.status(HttpStatus.OK).json(command);
   }
 

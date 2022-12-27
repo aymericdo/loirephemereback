@@ -4,6 +4,7 @@ import { CommandsModule } from 'src/commands/commands.module';
 import { ImageCleanerService } from 'src/pastries/cron/image-cleaner.service';
 import { RestaurantsModule } from 'src/restaurants/restaurants.module';
 import { SharedModule } from 'src/shared/shared.module';
+import { UsersModule } from 'src/users/users.module';
 import { PastriesController } from './pastries.controller';
 import { PastriesService } from './pastries.service';
 import { Pastry, PastrySchema } from './schemas/pastry.schema';
@@ -13,6 +14,7 @@ import { Pastry, PastrySchema } from './schemas/pastry.schema';
     forwardRef(() => CommandsModule),
     SharedModule,
     RestaurantsModule,
+    UsersModule,
     MongooseModule.forFeature([{ name: Pastry.name, schema: PastrySchema }]),
   ],
   controllers: [PastriesController],

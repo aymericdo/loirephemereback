@@ -11,15 +11,15 @@ import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
 import { CreatePastryDto } from 'src/pastries/dto/create-pastry.dto';
 import { UpdatePastryDto } from 'src/pastries/dto/update-pastry.dto';
 import { RestaurantsService } from 'src/restaurants/restaurants.service';
+import { SocketGateway } from 'src/shared/gateways/web-socket.gateway';
 
 @Injectable()
 export class PastriesService {
   constructor(
-    @InjectModel(Pastry.name)
-    @InjectModel(Pastry.name)
-    private pastryModel: Model<PastryDocument>,
+    @InjectModel(Pastry.name) private pastryModel: Model<PastryDocument>,
     @InjectConnection() private readonly connection: Connection,
     private readonly restaurantsService: RestaurantsService,
+    private readonly socketGateway: SocketGateway,
   ) {}
 
   async findOne(id: string): Promise<PastryDocument> {
@@ -51,8 +51,8 @@ export class PastriesService {
     changes: Historical,
   ): Promise<PastryDocument> {
     return await this.pastryModel
-      .findOneAndUpdate(
-        { _id: updatePastryDto._id.toString() },
+      .findByIdAndUpdate(
+        updatePastryDto._id,
         { $push: { historical: changes } },
         { new: true },
       )
@@ -62,10 +62,35 @@ export class PastriesService {
   async update(
     updatePastryDto: UpdatePastryDto,
     historical: Historical[],
+    isUpdatingStock = false,
   ): Promise<PastryDocument> {
+    if (isUpdatingStock && updatePastryDto.commonStock) {
+      const commonStockPastries = await this.findByCommonStock(
+        updatePastryDto.commonStock,
+      );
+
+      commonStockPastries.forEach(async (commonStockPastry: PastryDocument) => {
+        const newCommonStockPastry = await this.pastryModel
+          .findByIdAndUpdate(
+            commonStockPastry._id,
+            {
+              $set: { stock: updatePastryDto.stock },
+            },
+            { new: true },
+          )
+          .populate('restaurant')
+          .exec();
+
+        this.socketGateway.stockChanged(newCommonStockPastry.restaurant.code, {
+          pastryId: commonStockPastry._id,
+          newStock: newCommonStockPastry.stock,
+        });
+      });
+    }
+
     return await this.pastryModel
-      .findOneAndUpdate(
-        { _id: updatePastryDto._id.toString() },
+      .findByIdAndUpdate(
+        updatePastryDto._id,
         {
           ...updatePastryDto,
           historical,
@@ -104,7 +129,7 @@ export class PastriesService {
           _id: { $in: pastries.map((p) => new Types.ObjectId(p._id)) },
         },
         {
-          $set: { commonStock: commonStock },
+          $set: { commonStock: commonStock, stock: 0 },
         },
       )
       .exec();
@@ -329,19 +354,18 @@ export class PastriesService {
     );
   }
 
-  async decrementStock(
-    pastry: PastryDocument,
-    count: number,
-  ): Promise<PastryDocument> {
-    return await this.pastryModel
-      .findByIdAndUpdate(
-        pastry._id,
-        {
-          stock: pastry.stock - count,
-        },
-        { new: true, useFindAndModify: false },
-      )
-      .exec();
+  async decrementStock(pastry: PastryDocument, count: number): Promise<void> {
+    if (pastry.commonStock) {
+      const commonStockPastries = await this.findByCommonStock(
+        pastry.commonStock,
+      );
+
+      commonStockPastries.forEach(async (commonStockPastry: PastryDocument) => {
+        await this.decrementStockPastry(commonStockPastry, count);
+      });
+    } else {
+      await this.decrementStockPastry(pastry, count);
+    }
   }
 
   async verifyAllPastriesRestaurant(
@@ -431,6 +455,27 @@ export class PastriesService {
     });
 
     return historical;
+  }
+
+  private async decrementStockPastry(
+    pastry: PastryDocument,
+    count: number,
+  ): Promise<PastryDocument> {
+    const newPastry = await this.pastryModel
+      .findByIdAndUpdate(
+        pastry._id,
+        { stock: pastry.stock - count },
+        { new: true, useFindAndModify: false },
+      )
+      .populate('restaurant')
+      .exec();
+
+    this.socketGateway.stockChanged(newPastry.restaurant.code, {
+      pastryId: newPastry._id,
+      newStock: newPastry.stock,
+    });
+
+    return newPastry;
   }
 
   private async getDisplaySequence(

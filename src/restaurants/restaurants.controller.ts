@@ -41,9 +41,9 @@ export class RestaurantsController {
   @UseGuards(JwtAuthGuard)
   @Get()
   async getAllByUser(@Res() res: Response, @AuthUser() authUser: UserDocument) {
-    const restaurants = await this.restaurantsService.findAllByUserId(
-      authUser._id,
-    );
+    const restaurants = process.env.GOD_MODE.split('/').includes(authUser.email)
+      ? await this.restaurantsService.findAll()
+      : await this.restaurantsService.findAllByUserId(authUser._id);
 
     return res.status(HttpStatus.OK).json(restaurants);
   }

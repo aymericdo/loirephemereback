@@ -5,12 +5,14 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { User, UserDocument } from './schemas/user.schema';
 import * as bcrypt from 'bcrypt';
 import { UpdateUserDto } from 'src/users/dto/update-user.dto';
+import { RestaurantsService } from 'src/restaurants/restaurants.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectModel(User.name)
     private userModel: Model<UserDocument>,
+    private readonly restaurantsService: RestaurantsService,
   ) {}
 
   async findOne(id: string): Promise<UserDocument | undefined> {
@@ -56,6 +58,18 @@ export class UsersService {
         { new: true },
       )
       .exec();
+  }
+
+  async isAuthorized(user: UserDocument, code: string): Promise<boolean> {
+    if (process.env.GOD_MODE.split('/').includes(user.email)) {
+      return true;
+    } else if (
+      await this.restaurantsService.isUserInRestaurant(code, user._id)
+    ) {
+      return true;
+    } else {
+      return false;
+    }
   }
 
   private async encryptPassword(password: string): Promise<string> {
