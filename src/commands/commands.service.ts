@@ -15,8 +15,8 @@ export class CommandsService {
   constructor(
     @InjectModel(Command.name) private commandModel: Model<CommandDocument>,
     private readonly pastriesService: PastriesService,
-    private readonly socketGateway: SocketGateway,
     private readonly webPushGateway: WebPushGateway,
+    private readonly socketGateway: SocketGateway,
   ) {}
 
   async findOne(id: string): Promise<CommandDocument> {
