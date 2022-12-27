@@ -5,7 +5,12 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { User, UserDocument } from './schemas/user.schema';
 import * as bcrypt from 'bcrypt';
 import { UpdateUserDto } from 'src/users/dto/update-user.dto';
-import { RestaurantsService } from 'src/restaurants/restaurants.service';
+import {
+  DEMO_RESTO,
+  RestaurantsService,
+} from 'src/restaurants/restaurants.service';
+
+export const USER_ORESTO = 'user@oresto.app';
 
 @Injectable()
 export class UsersService {
@@ -63,6 +68,8 @@ export class UsersService {
 
   async isAuthorized(user: UserDocument, code: string): Promise<boolean> {
     if (process.env.GOD_MODE.split('/').includes(user.email)) {
+      return true;
+    } else if (DEMO_RESTO === code) {
       return true;
     } else if (
       await this.restaurantsService.isUserInRestaurant(code, user._id)

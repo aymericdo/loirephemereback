@@ -12,13 +12,16 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { Throttle } from '@nestjs/throttler';
-import { UsersService } from './users.service';
+import { UsersService, USER_ORESTO } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User, UserDocument } from 'src/users/schemas/user.schema';
 import { LocalAuthGuard } from 'src/auth/local-auth.guard';
 import { AuthService } from 'src/auth/auth.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { RestaurantsService } from 'src/restaurants/restaurants.service';
+import {
+  DEMO_RESTO,
+  RestaurantsService,
+} from 'src/restaurants/restaurants.service';
 import { EmailUserDto } from 'src/users/dto/email-user.dto';
 import { RecoverUserDto } from 'src/users/dto/recover-user.dto';
 import { UpdateUserDto } from 'src/users/dto/update-user.dto';
@@ -197,7 +200,7 @@ export class UsersController {
 
     const user = await this.usersService.findOneByEmail(email);
 
-    if (this.restaurantsService.isUserInRestaurant(code, user._id)) {
+    if (await this.restaurantsService.isUserInRestaurant(code, user._id)) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'user already in restaurant',
       });
@@ -218,6 +221,12 @@ export class UsersController {
     if (!(await this.usersService.isAuthorized(authUser, code))) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'user not in restaurant',
+      });
+    }
+
+    if (authUser.email === USER_ORESTO && code === DEMO_RESTO) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'user not deletable',
       });
     }
 

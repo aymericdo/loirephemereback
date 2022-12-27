@@ -106,11 +106,11 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @UseGuards(WsJwtAuthGuard)
   @SubscribeMessage('authorization')
-  onAuthorization(@ConnectedSocket() client: Client): void {
+  async onAuthorization(@ConnectedSocket() client: Client): Promise<void> {
     const code = this.getCodeFromQueryParam(client.request.url);
 
     const userId = (client.request.user as { userId: string }).userId;
-    if (!this.restaurantsService.isUserInRestaurant(code, userId)) {
+    if (!(await this.restaurantsService.isUserInRestaurant(code, userId))) {
       return;
     }
 

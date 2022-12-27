@@ -5,6 +5,8 @@ import { User, UserDocument } from 'src/users/schemas/user.schema';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
 import { Restaurant, RestaurantDocument } from './schemas/restaurant.schema';
 
+export const DEMO_RESTO = 'demo-resto';
+
 @Injectable()
 export class RestaurantsService {
   constructor(
@@ -16,9 +18,22 @@ export class RestaurantsService {
     return await this.restaurantModel.find().sort({ createdAt: 1 }).exec();
   }
 
-  async findAllByUserId(userId: string): Promise<RestaurantDocument[]> {
+  async findDemoResto(): Promise<RestaurantDocument> {
+    return await this.findByCode(DEMO_RESTO);
+  }
+
+  async findAllByUserId(
+    userId: string,
+    plusDemoResto = false,
+  ): Promise<RestaurantDocument[]> {
+    let filter = {};
+    if (plusDemoResto) {
+      filter = { $or: [{ users: userId }, { code: DEMO_RESTO }] };
+    } else {
+      filter = { users: userId };
+    }
     return await this.restaurantModel
-      .find({ users: userId })
+      .find(filter)
       .sort({ createdAt: 1 })
       .exec();
   }
