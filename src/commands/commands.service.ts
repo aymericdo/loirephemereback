@@ -20,7 +20,10 @@ export class CommandsService {
   ) {}
 
   async findOne(id: string): Promise<CommandDocument> {
-    return await this.commandModel.findOne({ _id: id }).exec();
+    return await this.commandModel
+      .findOne({ _id: id })
+      .populate('restaurant')
+      .exec();
   }
 
   async isReferenceExists(reference: string): Promise<boolean> {
