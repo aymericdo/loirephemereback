@@ -1,20 +1,22 @@
 import {
+  BadRequestException,
   Body,
+  ClassSerializerInterceptor,
   Controller,
+  ForbiddenException,
   Get,
-  HttpStatus,
   Param,
   Post,
   Query,
   Req,
-  Res,
+  SerializeOptions,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
-import { Response } from 'express';
 import { Throttle } from '@nestjs/throttler';
 import { UsersService, USER_ORESTO } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { User, UserDocument } from 'src/users/schemas/user.schema';
+import { UserDocument } from 'src/users/schemas/user.schema';
 import { LocalAuthGuard } from 'src/auth/local-auth.guard';
 import { AuthService } from 'src/auth/auth.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
@@ -26,6 +28,7 @@ import { EmailUserDto } from 'src/users/dto/email-user.dto';
 import { RecoverUserDto } from 'src/users/dto/recover-user.dto';
 import { UpdateUserDto } from 'src/users/dto/update-user.dto';
 import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
+import { UserEntity } from 'src/users/serializers/user.serializer';
 
 @Controller('users')
 export class UsersController {
@@ -37,51 +40,43 @@ export class UsersController {
 
   @Throttle(60, 10)
   @Get('not-exists')
-  async notExistsUserEmail(
-    @Res() res: Response,
-    @Query('email') email: string,
-  ) {
-    const isValid = await this.usersService.isEmailNotExists(email);
-
-    return res.status(HttpStatus.OK).json(isValid);
+  async notExistsUserEmail(@Query('email') email: string): Promise<boolean> {
+    return await this.usersService.isEmailNotExists(email);
   }
 
   @Throttle(60, 10)
   @Post('/confirm-email')
-  async confirmUserWithEmail(@Res() res: Response, @Body() body: EmailUserDto) {
+  async confirmUserWithEmail(@Body() body: EmailUserDto): Promise<string> {
     const user = await this.usersService.findOneByEmail(body.email);
 
     if (user) {
-      return res
-        .status(HttpStatus.BAD_REQUEST)
-        .json({ message: 'email not valid' });
+      throw new BadRequestException({
+        message: 'email not valid',
+      });
     }
 
-    const code2 = await this.authService.confirmEmail(body);
-    return res.status(HttpStatus.OK).json(code2);
+    return await this.authService.confirmEmail(body);
   }
 
   @Throttle(60, 10)
   @Post('/confirm-recover-email')
   async confirmUserWithRecoverEmail(
-    @Res() res: Response,
     @Body() body: EmailUserDto,
-  ) {
+  ): Promise<string> {
     const user = await this.usersService.findOneByEmail(body.email);
 
     if (!user) {
-      return res
-        .status(HttpStatus.BAD_REQUEST)
-        .json({ message: 'email not valid' });
+      throw new BadRequestException({
+        message: 'email not valid',
+      });
     }
 
-    const code2 = await this.authService.confirmRecoverEmail(body);
-    return res.status(HttpStatus.OK).json(code2);
+    return await this.authService.confirmRecoverEmail(body);
   }
 
   @Throttle(60, 10)
   @Post('/change-password')
-  async changePassword(@Res() res: Response, @Body() body: UpdateUserDto) {
+  async changePassword(@Body() body: UpdateUserDto): Promise<boolean> {
     const user = await this.usersService.findOneByEmail(body.email);
 
     const isValid = await this.authService.validateCodes(
@@ -91,24 +86,22 @@ export class UsersController {
     );
 
     if (!user || !isValid) {
-      return res
-        .status(HttpStatus.BAD_REQUEST)
-        .json({ message: 'email not valid' });
+      throw new BadRequestException({
+        message: 'email not valid',
+      });
     }
 
     await this.authService.deleteCodes(body.email);
-
     await this.usersService.update(body);
 
-    return res.status(HttpStatus.OK).json(true);
+    return true;
   }
 
   @Throttle(60, 10)
   @Post('/validate-recover-email-code')
   async validateRecoverEmailCode(
-    @Res() res: Response,
     @Body() body: RecoverUserDto,
-  ) {
+  ): Promise<boolean> {
     const isValid = await this.authService.validateCodes(
       body.email,
       body.emailCode,
@@ -116,17 +109,18 @@ export class UsersController {
     );
 
     if (!isValid) {
-      return res
-        .status(HttpStatus.BAD_REQUEST)
-        .json({ message: 'code not valid' });
+      throw new BadRequestException({
+        message: 'code not valid',
+      });
     } else {
-      return res.status(HttpStatus.OK).json(true);
+      return true;
     }
   }
 
   @Throttle(60, 5)
+  @UseInterceptors(ClassSerializerInterceptor)
   @Post('/')
-  async postUser(@Res() res: Response, @Body() body: CreateUserDto) {
+  async postUser(@Body() body: CreateUserDto): Promise<UserEntity> {
     const isValid = await this.authService.validateCodes(
       body.email,
       body.emailCode,
@@ -136,64 +130,79 @@ export class UsersController {
     await this.authService.deleteCodes(body.email);
 
     if (!isValid) {
-      return res
-        .status(HttpStatus.BAD_REQUEST)
-        .json({ message: 'code not valid' });
+      throw new BadRequestException({
+        message: 'code not valid',
+      });
     }
-    const user = await this.usersService.create(body);
-    return res.status(HttpStatus.OK).json(user);
+
+    const newUser = await this.usersService.create(body);
+    return new UserEntity(newUser.toObject());
   }
 
   @Throttle(60, 10)
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
   @Get('exists')
-  async existsUserEmail(@Res() res: Response, @Query('email') email: string) {
-    const isValid = await this.usersService.isEmailExists(email);
-
-    return res.status(HttpStatus.OK).json(isValid);
+  async existsUserEmail(@Query('email') email: string): Promise<boolean> {
+    return await this.usersService.isEmailExists(email);
   }
 
   @Throttle(60, 10)
   @UseGuards(LocalAuthGuard)
   @Post('/auth/login')
-  async login(@Req() req) {
+  async login(@Req() req: { user: UserDocument }): Promise<{
+    access_token: string;
+  }> {
     return await this.authService.login(req.user);
   }
 
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
   @Get()
-  async getUser(@AuthUser() authUser: UserDocument): Promise<User> {
-    return await this.usersService.findOne(authUser._id);
+  async getUser(@AuthUser() authUser: UserDocument): Promise<UserEntity> {
+    return new UserEntity(authUser.toObject());
   }
 
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
   @Get('by-code/:code/all')
   async getAll(
-    @Res() res: Response,
     @Param('code') code: string,
     @AuthUser() authUser: UserDocument,
-  ) {
+  ): Promise<UserEntity[]> {
     if (!(await this.usersService.isAuthorized(authUser, code))) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: 'user not in restaurant',
       });
     }
 
     const users = await this.restaurantsService.findUsersByCode(code);
-    return res.status(HttpStatus.OK).json(users);
+    return users.map((user) => new UserEntity(user));
   }
 
   @Throttle(60, 5)
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
   @Post('by-code/:code')
   async postUserToRestaurant(
-    @Res() res: Response,
     @Param('code') code,
     @Body('email') email: string,
     @AuthUser() authUser: UserDocument,
-  ) {
+  ): Promise<UserEntity> {
     if (!(await this.usersService.isAuthorized(authUser, code))) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: 'user not in restaurant',
       });
     }
@@ -201,31 +210,34 @@ export class UsersController {
     const user = await this.usersService.findOneByEmail(email);
 
     if (await this.restaurantsService.isUserInRestaurant(code, user._id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: 'user already in restaurant',
       });
     }
 
     await this.restaurantsService.addUserToRestaurant(code, user);
-    return res.status(HttpStatus.OK).json(user);
+    return new UserEntity(user);
   }
 
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
   @Post('by-code/:code/delete')
   async deleteUserFromRestaurant(
-    @Res() res: Response,
     @Param('code') code,
     @Body('email') email: string,
     @AuthUser() authUser: UserDocument,
-  ) {
+  ): Promise<boolean> {
     if (!(await this.usersService.isAuthorized(authUser, code))) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: 'user not in restaurant',
       });
     }
 
     if (authUser.email === USER_ORESTO && code === DEMO_RESTO) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: 'user not deletable',
       });
     }
@@ -233,13 +245,11 @@ export class UsersController {
     const usersCount = await this.restaurantsService.findUsersByCodeCount(code);
 
     if (usersCount === 1) {
-      return res.status(HttpStatus.FORBIDDEN).json({
-        message: 'no more users in the restaurant',
-      });
+      throw new ForbiddenException({});
     }
 
     const user = await this.usersService.findOneByEmail(email);
     await this.restaurantsService.deleteUserToRestaurant(code, user);
-    return res.status(HttpStatus.OK).json(true);
+    return true;
   }
 }

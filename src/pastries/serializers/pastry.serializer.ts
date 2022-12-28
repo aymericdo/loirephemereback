@@ -1,5 +1,6 @@
-import { Expose, Transform } from 'class-transformer';
+import { Exclude, Expose, Transform } from 'class-transformer';
 import { ObjectId } from 'mongoose';
+import { Historical } from 'src/pastries/schemas/pastry.schema';
 import { Restaurant } from 'src/restaurants/schemas/restaurant.schema';
 
 export class PastryEntity {
@@ -31,11 +32,24 @@ export class PastryEntity {
   @Expose()
   displaySequence: number;
 
-  @Expose()
+  @Expose({ groups: ['admin'] })
   type: string;
 
-  @Expose()
+  @Expose({ groups: ['admin'] })
+  createdAt: string;
+
+  @Expose({ groups: ['admin'] })
+  updatedAt: string;
+
+  @Expose({ groups: ['admin'] })
+  historical: Historical[];
+
+  // never
+  @Exclude()
   restaurant: Restaurant;
+
+  @Exclude()
+  __v: number;
 
   constructor(partial: Partial<PastryEntity>) {
     Object.assign(this, partial);

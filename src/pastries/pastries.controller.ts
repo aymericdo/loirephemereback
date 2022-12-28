@@ -1,29 +1,27 @@
 import {
+  BadRequestException,
   Body,
   ClassSerializerInterceptor,
   Controller,
   FileTypeValidator,
   Get,
-  HttpStatus,
   MaxFileSizeValidator,
   Param,
   ParseFilePipe,
   Post,
   Put,
   Query,
-  Res,
   SerializeOptions,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { Response } from 'express';
 import { diskStorage } from 'multer';
 import { PastriesService } from './pastries.service';
 import { CreatePastryDto } from 'src/pastries/dto/create-pastry.dto';
 import { RestaurantsService } from 'src/restaurants/restaurants.service';
 import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
-import { PastryEntity } from 'src/pastries/serializers/pastries.serializer';
+import { PastryEntity } from 'src/pastries/serializers/pastry.serializer';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { extname } from 'path';
 import * as fs from 'fs';
@@ -40,9 +38,6 @@ import { UsersService } from 'src/users/users.service';
 export const IMAGE_URL_PATH = './client/photos';
 
 @Controller('pastries')
-@SerializeOptions({
-  strategy: 'excludeAll',
-})
 export class PastriesController {
   constructor(
     private readonly pastriesService: PastriesService,
@@ -54,24 +49,35 @@ export class PastriesController {
 
   @UseInterceptors(ClassSerializerInterceptor)
   @Get('by-code/:code')
-  async getPastriesByCode(@Res() res: Response, @Param('code') code: string) {
+  async getPastriesByCode(
+    @Param('code') code: string,
+  ): Promise<PastryEntity[]> {
     const pastries = await this.pastriesService.findDisplayableByCode(code);
-    return res
-      .status(HttpStatus.OK)
-      .json(pastries.map((p) => new PastryEntity(p)));
+    return pastries.map((p) => new PastryEntity(p));
+  }
+
+  @Post('notification')
+  async postNotificationSub(
+    @Body() body: { sub: PushSubscription; commandId: string },
+  ): Promise<boolean> {
+    this.webPushGateway.addClientWaitingQueueSubNotification(body);
+
+    return true;
   }
 
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
   @Post('by-code/:code')
   async createPastry(
-    @Res() res: Response,
     @Body() body: CreatePastryDto,
     @Param('code') code: string,
     @AuthUser() authUser: UserDocument,
-  ) {
+  ): Promise<PastryEntity> {
     if (!(await this.usersService.isAuthorized(authUser, code))) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: 'user not in restaurant',
       });
     }
@@ -79,20 +85,26 @@ export class PastriesController {
     const restaurant: RestaurantDocument =
       await this.restaurantsService.findByCode(code);
     const pastry = await this.pastriesService.create(restaurant, body);
-    return res.status(HttpStatus.OK).json(new PastryEntity(pastry.toObject()));
+
+    return new PastryEntity(pastry.toObject());
   }
 
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
   @Put('by-code/:code')
   async updatePastry(
-    @Res() res: Response,
     @Body() body: UpdatePastryDto,
     @Param('code') code: string,
     @AuthUser() authUser: UserDocument,
-  ) {
+  ): Promise<{
+    pastry: PastryEntity;
+    displaySequenceById: { [id: string]: number };
+  }> {
     if (!(await this.usersService.isAuthorized(authUser, code))) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: 'user not in restaurant',
       });
     }
@@ -109,7 +121,7 @@ export class PastriesController {
       (await this.commandsService.findByPastry(code, body._id.toString()))
         .length > 0
     ) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: 'you cannot edit the name of a pastry already ordered',
       });
     }
@@ -140,30 +152,32 @@ export class PastriesController {
       isUpdatingStock,
     );
 
-    return res.status(HttpStatus.OK).json({
+    return {
       pastry: new PastryEntity(pastry.toObject()),
       displaySequenceById,
-    });
+    };
   }
 
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
   @Put('by-code/:code/common-stock')
   async putCommonStock(
-    @Res() res: Response,
     @Param('code') code: string,
     @Body('pastries') pastries: PastryDocument[],
     @Body('commonStock') commonStock: string,
     @AuthUser() authUser: UserDocument,
-  ) {
+  ): Promise<PastryEntity[]> {
     if (!(await this.usersService.isAuthorized(authUser, code))) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: 'user not in restaurant',
       });
     }
 
     if (pastries.length === 1) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: "can't associate only one pastry",
       });
     }
@@ -172,71 +186,74 @@ export class PastriesController {
     await this.pastriesService.addCommonStock(code, pastries, commonStock);
 
     const newPastries = await this.pastriesService.findAllByCode(code);
-    return res
-      .status(HttpStatus.OK)
-      .json(newPastries.map((p) => new PastryEntity(p)));
+    return newPastries.map((p) => new PastryEntity(p));
   }
 
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
   @Get('by-code/:code/all')
   async getAll(
-    @Res() res: Response,
     @Param('code') code: string,
     @AuthUser() authUser: UserDocument,
-  ) {
+  ): Promise<PastryEntity[]> {
     if (!(await this.usersService.isAuthorized(authUser, code))) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: 'user not in restaurant',
       });
     }
 
     const pastries = await this.pastriesService.findAllByCode(code);
-    return res
-      .status(HttpStatus.OK)
-      .json(pastries.map((p) => new PastryEntity(p)));
+    return pastries.map((p) => new PastryEntity(p));
   }
 
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
   @Get('by-code/:code/not-exists')
   async validatePastryName(
-    @Res() res: Response,
     @Param('code') code: string,
     @Query('name') name: string,
     @AuthUser() authUser: UserDocument,
-  ) {
+  ): Promise<boolean> {
     if (!(await this.usersService.isAuthorized(authUser, code))) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: 'user not in restaurant',
       });
     }
 
-    const isValid = await this.pastriesService.isNameNotExists(code, name);
-
-    return res.status(HttpStatus.OK).json(isValid);
+    return await this.pastriesService.isNameNotExists(code, name);
   }
 
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
   @Get('by-code/:code/pastries/:pastryId/isAlreadyOrdered')
   async isAlreadyOrdered(
-    @Res() res: Response,
     @Param('code') code: string,
     @Param('pastryId') pastryId: string,
     @AuthUser() authUser: UserDocument,
-  ) {
+  ): Promise<boolean> {
     if (!(await this.usersService.isAuthorized(authUser, code))) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: 'user not in restaurant',
       });
     }
 
-    const isValid =
-      (await this.commandsService.findByPastry(code, pastryId)).length > 0;
-
-    return res.status(HttpStatus.OK).json(isValid);
+    return (await this.commandsService.findByPastry(code, pastryId)).length > 0;
   }
 
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
   @Post('by-code/:code/upload-image')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -268,7 +285,6 @@ export class PastriesController {
     }),
   )
   async uploadedFile(
-    @Res() res: Response,
     @Param('code')
     code: string,
     @AuthUser()
@@ -282,9 +298,12 @@ export class PastriesController {
       }),
     )
     file: Express.Multer.File,
-  ) {
+  ): Promise<{
+    originalname: string;
+    filename: string;
+  }> {
     if (!(await this.usersService.isAuthorized(authUser, code))) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: 'user not in restaurant',
       });
     }
@@ -294,16 +313,6 @@ export class PastriesController {
       filename: file.filename,
     };
 
-    return res.status(HttpStatus.OK).json(response);
-  }
-
-  @Post('notification')
-  async postNotificationSub(
-    @Res() res: Response,
-    @Body() body: { sub: PushSubscription; commandId: string },
-  ) {
-    this.webPushGateway.addClientWaitingQueueSubNotification(body);
-
-    return res.status(HttpStatus.OK).json();
+    return response;
   }
 }
