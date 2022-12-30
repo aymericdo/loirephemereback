@@ -9,6 +9,7 @@ import { PastryDocument } from 'src/pastries/schemas/pastry.schema';
 import { PastriesService } from 'src/pastries/pastries.service';
 import { SocketGateway } from 'src/shared/gateways/web-socket.gateway';
 import { WebPushGateway } from 'src/shared/gateways/web-push.gateway';
+import { CommandPastryDto } from 'src/pastries/dto/command-pastry.dto';
 
 @Injectable()
 export class CommandsService {
@@ -46,6 +47,9 @@ export class CommandsService {
     const createdCommand = new this.commandModel({
       ...createCommandDto,
       name: createCommandDto.name.trim(),
+      totalPrice: createCommandDto.pastries.reduce((prev, pastry) => {
+        return prev + pastry.price;
+      }, 0),
       reference,
       restaurant,
     });
@@ -60,7 +64,7 @@ export class CommandsService {
     return savedCommand;
   }
 
-  async closeCommand(id: string): Promise<Command> {
+  async closeCommand(id: string): Promise<CommandDocument> {
     const command = await this.commandModel
       .findByIdAndUpdate(
         id,
@@ -108,7 +112,7 @@ export class CommandsService {
     code: string,
     fromDate: string,
     toDate: string,
-  ): Promise<Command[]> {
+  ): Promise<CommandDocument[]> {
     return await this.commandModel
       .aggregate([
         {
@@ -177,10 +181,10 @@ export class CommandsService {
       .exec();
   }
 
-  reduceCountByPastryId(pastries: PastryDocument[]): {
+  reduceCountByPastryId(pastries: CommandPastryDto[]): {
     [pastryId: string]: number;
   } {
-    return pastries.reduce((prev, pastry: PastryDocument) => {
+    return pastries.reduce((prev, pastry: CommandPastryDto) => {
       if (pastry.stock === undefined || pastry.stock === null) {
         return prev;
       }

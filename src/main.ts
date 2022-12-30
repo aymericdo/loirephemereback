@@ -14,7 +14,12 @@ async function bootstrap() {
     }),
   );
   app.useWebSocketAdapter(new WsAdapter(app));
-  app.useGlobalPipes(new ValidationPipe({ transform: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      // whitelist: true,
+    }),
+  );
 
   const publicVapidKey = process.env.PUBLIC_VAPID_KEY;
   const privateVapidKey = process.env.PRIVATE_VAPID_KEY;

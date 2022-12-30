@@ -1,13 +1,18 @@
 import { Exclude, Expose, Transform } from 'class-transformer';
 import { ObjectId } from 'mongoose';
+import { User, UserDocument } from 'src/users/schemas/user.schema';
+import { UserEntity } from 'src/users/serializers/user.serializer';
 
-export class UserEntity {
+export class RestaurantEntity {
   @Expose()
   @Transform((params) => params.obj._id.toString())
   id: ObjectId;
 
   @Expose()
-  email: string;
+  name: string;
+
+  @Expose()
+  code: string;
 
   @Expose({ groups: ['admin'] })
   createdAt: Date;
@@ -20,12 +25,15 @@ export class UserEntity {
   _id: number;
 
   @Exclude()
-  __v: number;
+  @Transform(({ value }) => {
+    return value.map((user: UserDocument) => new UserEntity(user));
+  })
+  users: User[];
 
   @Exclude()
-  password: string;
+  __v: number;
 
-  constructor(partial: Partial<UserEntity>) {
+  constructor(partial: Partial<RestaurantEntity>) {
     Object.assign(this, partial);
   }
 }

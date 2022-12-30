@@ -110,9 +110,7 @@ export class PastriesController {
     }
 
     let displaySequenceById = {};
-    const currentPastry = await this.pastriesService.findOne(
-      body._id.toString(),
-    );
+    const currentPastry = await this.pastriesService.findOne(body._id);
 
     const isUpdatingStock: boolean = currentPastry.stock !== body.stock;
 
@@ -137,7 +135,7 @@ export class PastriesController {
     if (this.pastriesService.isStatsAttributesChanged(currentPastry, body)) {
       historical = (
         await this.pastriesService.updateHistorical(
-          { ...body },
+          { ...body, _id: body._id },
           this.pastriesService.getStatsAttributesChanged(currentPastry, body),
         )
       ).historical;
@@ -146,6 +144,7 @@ export class PastriesController {
     const pastry = await this.pastriesService.update(
       {
         ...body,
+        _id: body._id,
         displaySequence: displaySequenceById[currentPastry._id],
       },
       historical,
@@ -234,7 +233,7 @@ export class PastriesController {
   @SerializeOptions({
     groups: ['admin'],
   })
-  @Get('by-code/:code/pastries/:pastryId/isAlreadyOrdered')
+  @Get('by-code/:code/pastries/:pastryId/is-already-ordered')
   async isAlreadyOrdered(
     @Param('code') code: string,
     @Param('pastryId') pastryId: string,

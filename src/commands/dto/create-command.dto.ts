@@ -10,15 +10,16 @@ import {
   IsOptional,
 } from 'class-validator';
 import { SIZE } from 'src/shared/helpers/sizes';
-import { PastryDocument } from 'src/pastries/schemas/pastry.schema';
 import { IsInFuture } from 'src/shared/decorators/validators/date-is-in-future.decorator';
+import { CommandPastryDto } from 'src/pastries/dto/command-pastry.dto';
 
 export class CreateCommandDto {
   currentDate: Date = new Date();
 
   @ValidateNested()
   @IsNotEmpty()
-  readonly pastries: PastryDocument[];
+  @Transform(({ obj }) => obj.pastries.map((p) => ({ ...p, _id: p.id })))
+  readonly pastries: CommandPastryDto[];
 
   @IsString()
   @MinLength(SIZE.MIN)

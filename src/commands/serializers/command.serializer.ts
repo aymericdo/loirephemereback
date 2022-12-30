@@ -1,49 +1,47 @@
 import { Exclude, Expose, Transform } from 'class-transformer';
 import { ObjectId } from 'mongoose';
-import { Historical } from 'src/pastries/schemas/pastry.schema';
+import { Pastry, PastryDocument } from 'src/pastries/schemas/pastry.schema';
+import { PastryEntity } from 'src/pastries/serializers/pastry.serializer';
 import { Restaurant } from 'src/restaurants/schemas/restaurant.schema';
 import { RestaurantEntity } from 'src/restaurants/serializer/restaurant.serializer';
 
-export class PastryEntity {
+export class CommandEntity {
   @Expose()
   @Transform((params) => params.obj._id.toString())
   id: ObjectId;
 
   @Expose()
+  @Transform(({ value }) => {
+    return value.map((pastry: PastryDocument) => new PastryEntity(pastry));
+  })
+  pastries: Pastry[];
+
+  @Expose()
   name: string;
 
   @Expose()
-  description: string;
+  reference: string;
 
   @Expose()
-  price: number;
+  takeAway: boolean;
 
   @Expose()
-  stock: number;
+  isDone: boolean;
 
   @Expose()
-  imageUrl: string;
+  isPayed: boolean;
 
   @Expose()
-  ingredients: string[];
+  totalPrice: number;
 
   @Expose()
-  hidden: boolean;
+  pickUpTime: Date;
 
   @Expose()
-  displaySequence: number;
-
-  @Expose({ groups: ['admin'] })
-  type: string;
-
-  @Expose({ groups: ['admin'] })
   createdAt: Date;
 
   @Expose({ groups: ['admin'] })
   updatedAt: Date;
-
-  @Expose({ groups: ['admin'] })
-  historical: Historical[];
 
   // never
   @Exclude()
@@ -56,7 +54,7 @@ export class PastryEntity {
   @Exclude()
   __v: number;
 
-  constructor(partial: Partial<PastryEntity>) {
+  constructor(partial: Partial<CommandEntity>) {
     Object.assign(this, partial);
   }
 }

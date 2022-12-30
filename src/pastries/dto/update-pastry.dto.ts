@@ -6,14 +6,17 @@ import {
   IsString,
   IsMongoId,
 } from 'class-validator';
-import { ObjectId } from 'mongoose';
 import { CreatePastryDto } from './create-pastry.dto';
 
 export class UpdatePastryDto extends PartialType(CreatePastryDto) {
   @IsString()
   @IsMongoId()
   @IsNotEmpty()
-  readonly _id: ObjectId;
+  readonly id: string;
+
+  get _id(): string {
+    return this.id;
+  }
 
   @IsNumber()
   @IsNotEmpty()

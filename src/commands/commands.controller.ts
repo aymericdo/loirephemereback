@@ -1,17 +1,18 @@
 import {
+  BadRequestException,
   Body,
+  ClassSerializerInterceptor,
   Controller,
   Get,
-  HttpStatus,
   Param,
   Patch,
   Post,
   Query,
-  Res,
+  SerializeOptions,
+  UnprocessableEntityException,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
-import { Response } from 'express';
-import { SocketGateway } from 'src/shared/gateways/web-socket.gateway';
 import { PastryDocument } from 'src/pastries/schemas/pastry.schema';
 import { CommandsService } from './commands.service';
 import { CreateCommandDto } from './dto/create-command.dto';
@@ -25,6 +26,8 @@ import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
 import { UserDocument } from 'src/users/schemas/user.schema';
 import { WebPushGateway } from 'src/shared/gateways/web-push.gateway';
 import { UsersService } from 'src/users/users.service';
+import { CommandEntity } from 'src/commands/serializers/command.serializer';
+import { CommandDocument } from 'src/commands/schemas/command.schema';
 
 @Controller('commands')
 export class CommandsController {
@@ -37,12 +40,12 @@ export class CommandsController {
     @InjectConnection() private readonly connection: Connection,
   ) {}
 
+  @UseInterceptors(ClassSerializerInterceptor)
   @Post('by-code/:code')
   async postCommand(
-    @Res() res: Response,
     @Body() body: CreateCommandDto,
     @Param('code') code: string,
-  ) {
+  ): Promise<CommandEntity> {
     const countByPastryId: { [pastryId: string]: number } =
       this.commandsService.reduceCountByPastryId(body.pastries);
 
@@ -52,9 +55,9 @@ export class CommandsController {
         Object.keys(countByPastryId),
       ))
     ) {
-      return res
-        .status(HttpStatus.BAD_REQUEST)
-        .json({ message: 'mismatch between pastries and restaurant' });
+      throw new BadRequestException({
+        message: 'mismatch between pastries and restaurant',
+      });
     }
 
     const transactionSession = await this.connection.startSession();
@@ -69,9 +72,10 @@ export class CommandsController {
         await this.commandsService.pastriesReached0(countByPastryId);
 
       if (pastriesToZero.length) {
-        return res
-          .status(HttpStatus.UNPROCESSABLE_ENTITY)
-          .json({ outOfStock: pastriesToZero });
+        throw new UnprocessableEntityException({
+          message: 'pastry out of stock',
+          outOfStock: pastriesToZero,
+        });
       }
 
       const command = await this.commandsService.create(restaurant, body);
@@ -79,7 +83,7 @@ export class CommandsController {
       await this.commandsService.stockManagement(countByPastryId);
 
       transactionSession.commitTransaction();
-      return res.status(HttpStatus.OK).json(command);
+      return new CommandEntity(command.toObject());
     } catch (err) {
       transactionSession.abortTransaction();
     } finally {
@@ -88,86 +92,101 @@ export class CommandsController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
   @Get('by-code/:code')
   async getCommandsByCode(
-    @Res() res: Response,
     @Param('code') code: string,
     @AuthUser() authUser: UserDocument,
     @Query('fromDate') fromDate: string,
     @Query('toDate') toDate: string,
-  ) {
+  ): Promise<CommandEntity[]> {
     if (!(await this.usersService.isAuthorized(authUser, code))) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: 'user not in restaurant',
       });
     }
 
-    const commands = await this.commandsService.findByCode(
+    const commands: CommandDocument[] = await this.commandsService.findByCode(
       code,
       fromDate,
       toDate,
     );
 
-    return res.status(HttpStatus.OK).json(commands);
+    return commands.map((command) => new CommandEntity(command));
   }
 
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
   @Patch('/close/:id')
   async patchCommand(
-    @Res() res: Response,
     @Param('id') id: string,
     @AuthUser() authUser: UserDocument,
-  ) {
+  ): Promise<CommandEntity> {
     const code = (await this.commandsService.findOne(id)).restaurant.code;
 
     if (!(await this.usersService.isAuthorized(authUser, code))) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: 'user not in restaurant',
       });
     }
 
     const command = await this.commandsService.closeCommand(id);
-    return res.status(HttpStatus.OK).json(command);
+    return new CommandEntity(command.toObject());
   }
 
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
   @Patch('/payed/:id')
   async patchCommand2(
-    @Res() res: Response,
     @Param('id') id: string,
     @AuthUser() authUser: UserDocument,
-  ) {
+  ): Promise<CommandEntity> {
     const code = (await this.commandsService.findOne(id)).restaurant.code;
 
     if (!(await this.usersService.isAuthorized(authUser, code))) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'user not in the restaurant',
+      throw new BadRequestException({
+        message: 'user not in restaurant',
       });
     }
 
     const command = await this.commandsService.payedCommand(id);
-    return res.status(HttpStatus.OK).json(command);
+    return new CommandEntity(command.toObject());
   }
 
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
   @Post('notification')
   async postNotificationSub(
-    @Res() res: Response,
     @Body() body: { sub: PushSubscription; code: string },
-  ) {
+  ): Promise<boolean> {
     this.webPushGateway.addAdminQueueSubNotification(body);
 
-    return res.status(HttpStatus.OK).json();
+    return true;
   }
 
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
   @Post('notification/delete')
   async deleteNotificationSub(
-    @Res() res: Response,
     @Body() body: { sub: PushSubscription; code: string },
-  ) {
+  ): Promise<boolean> {
     this.webPushGateway.deleteAdminQueueSubNotification(body);
 
-    return res.status(HttpStatus.OK).json();
+    return true;
   }
 }

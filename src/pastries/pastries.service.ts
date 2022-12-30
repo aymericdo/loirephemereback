@@ -298,24 +298,26 @@ export class PastriesService {
   }
 
   async findAllByCode(code: string): Promise<PastryDocument[]> {
-    return await this.pastryModel.aggregate([
-      {
-        $lookup: {
-          from: 'restaurants',
-          localField: 'restaurant',
-          foreignField: '_id',
-          as: 'restaurant',
+    return await this.pastryModel
+      .aggregate([
+        {
+          $lookup: {
+            from: 'restaurants',
+            localField: 'restaurant',
+            foreignField: '_id',
+            as: 'restaurant',
+          },
         },
-      },
-      {
-        $match: { 'restaurant.code': code },
-      },
-      {
-        $sort: {
-          displaySequence: 1,
+        {
+          $match: { 'restaurant.code': code },
         },
-      },
-    ]);
+        {
+          $sort: {
+            displaySequence: 1,
+          },
+        },
+      ])
+      .exec();
   }
 
   async findByCommonStock(commonStock: string): Promise<PastryDocument[]> {

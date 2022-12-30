@@ -1,6 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, SchemaTypes } from 'mongoose';
-import { Restaurant } from 'src/restaurants/schemas/restaurant.schema';
+import {
+  Restaurant,
+  RestaurantDocument,
+} from 'src/restaurants/schemas/restaurant.schema';
 import { SIZE } from 'src/shared/helpers/sizes';
 
 export type PastryDocument = Pastry & Document;
@@ -22,7 +25,7 @@ export class Pastry {
     ref: Restaurant.name,
     required: true,
   })
-  restaurant: Restaurant;
+  restaurant: RestaurantDocument;
 
   @Prop({
     type: String,
