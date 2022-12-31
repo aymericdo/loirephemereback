@@ -252,4 +252,32 @@ export class UsersController {
     await this.restaurantsService.deleteUserToRestaurant(code, user);
     return true;
   }
+
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
+  @Post('change-old-password')
+  async changeOldPassword(
+    @Body('oldPassword') oldPassword: string,
+    @Body('password') password: string,
+    @AuthUser() authUser: UserDocument,
+  ): Promise<boolean> {
+    if (!(await this.authService.validateUser(authUser.email, oldPassword))) {
+      throw new BadRequestException({
+        message: 'old password not ok',
+        code: 'old-password-not-ok',
+      });
+    }
+
+    if (oldPassword === password) {
+      throw new BadRequestException({
+        message: 'new password need to be different',
+      });
+    }
+
+    await this.usersService.updatePassword(authUser._id, password);
+    return true;
+  }
 }

@@ -66,6 +66,23 @@ export class UsersService {
       .exec();
   }
 
+  async updatePassword(
+    userId: string,
+    password: string,
+  ): Promise<UserDocument> {
+    return await this.userModel
+      .findByIdAndUpdate(
+        userId,
+        {
+          $set: {
+            password: await this.encryptPassword(password),
+          },
+        },
+        { new: true },
+      )
+      .exec();
+  }
+
   async isAuthorized(user: UserDocument, code: string): Promise<boolean> {
     if (process.env.GOD_MODE.split('/').includes(user.email)) {
       return true;
