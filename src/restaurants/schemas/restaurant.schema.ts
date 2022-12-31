@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, SchemaTypes } from 'mongoose';
 import { SIZE } from 'src/shared/helpers/sizes';
-import { User } from 'src/users/schemas/user.schema';
+import { User, UserDocument } from 'src/users/schemas/user.schema';
 
 export type RestaurantDocument = Restaurant & Document;
 
@@ -30,7 +30,7 @@ export class Restaurant {
     required: true,
     validate: [(val: string) => val.length > 0, '{PATH} is less than 1'],
   })
-  users: User[];
+  users: UserDocument[];
 }
 
 export const RestaurantSchema = SchemaFactory.createForClass(Restaurant);

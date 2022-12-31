@@ -186,7 +186,7 @@ export class UsersController {
     }
 
     const users = await this.restaurantsService.findUsersByCode(code);
-    return users.map((user) => new UserEntity(user));
+    return users.map((user) => new UserEntity(user.toObject()));
   }
 
   @Throttle(60, 5)

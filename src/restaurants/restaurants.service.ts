@@ -48,13 +48,13 @@ export class RestaurantsService {
     )?._id;
   }
 
-  async findUsersByCode(code: string): Promise<User[]> {
+  async findUsersByCode(code: string): Promise<UserDocument[]> {
     return (
       await this.restaurantModel
         .findOne({ code: code }, { users: 1 })
         .populate('users')
         .exec()
-    ).users;
+    ).users as UserDocument[];
   }
 
   async findUsersByCodeCount(code: string): Promise<number> {
