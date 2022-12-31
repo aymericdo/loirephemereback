@@ -1,10 +1,11 @@
-import { MaxLength, IsNotEmpty, MinLength, IsEmail } from 'class-validator';
-import { SIZE } from 'src/shared/helpers/sizes';
+import { OmitType, PartialType } from '@nestjs/mapped-types';
+import { CreateUserDto } from 'src/users/dto/create-user.dto';
 
-export class EmailUserDto {
-  @IsEmail()
-  @MinLength(SIZE.MIN)
-  @MaxLength(SIZE.SMALL)
-  @IsNotEmpty()
-  readonly email: string;
-}
+export class EmailUserDto extends PartialType(
+  OmitType(CreateUserDto, [
+    'password',
+    'emailCode',
+    'code2',
+    'password',
+  ] as const),
+) {}

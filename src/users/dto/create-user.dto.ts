@@ -1,10 +1,20 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { MaxLength, IsNotEmpty, Matches, MinLength } from 'class-validator';
+import {
+  MaxLength,
+  IsNotEmpty,
+  Matches,
+  MinLength,
+  IsEmail,
+} from 'class-validator';
 import { REGEX } from 'src/shared/helpers/regex';
 import { SIZE } from 'src/shared/helpers/sizes';
-import { EmailUserDto } from 'src/users/dto/email-user.dto';
 
-export class CreateUserDto extends PartialType(EmailUserDto) {
+export class CreateUserDto {
+  @IsEmail()
+  @MinLength(SIZE.MIN)
+  @MaxLength(SIZE.SMALL)
+  @IsNotEmpty()
+  readonly email: string;
+
   @MinLength(SIZE.MIN_PASSWORD)
   @MaxLength(SIZE.LARGE)
   @Matches(REGEX.PASSWORD)

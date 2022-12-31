@@ -17,7 +17,8 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
-      // whitelist: true,
+      whitelist: true,
+      enableDebugMessages: process.env.ENVIRONMENT === 'dev',
     }),
   );
 

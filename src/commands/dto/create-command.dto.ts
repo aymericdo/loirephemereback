@@ -8,17 +8,17 @@ import {
   IsDate,
   MinLength,
   IsOptional,
+  IsArray,
 } from 'class-validator';
 import { SIZE } from 'src/shared/helpers/sizes';
 import { IsInFuture } from 'src/shared/decorators/validators/date-is-in-future.decorator';
 import { CommandPastryDto } from 'src/pastries/dto/command-pastry.dto';
 
 export class CreateCommandDto {
-  currentDate: Date = new Date();
-
-  @ValidateNested()
+  @IsArray()
   @IsNotEmpty()
-  @Transform(({ obj }) => obj.pastries.map((p) => ({ ...p, _id: p.id })))
+  @Type(() => CommandPastryDto)
+  @ValidateNested({ each: true })
   readonly pastries: CommandPastryDto[];
 
   @IsString()
