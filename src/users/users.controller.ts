@@ -61,6 +61,7 @@ export class UsersController {
   }
 
   @Throttle(60, 10)
+  @UseGuards(CaptchaGuard)
   @Post('/confirm-recover-email')
   async confirmUserWithRecoverEmail(
     @Body() body: EmailUserDto,
