@@ -29,7 +29,7 @@ import { RecoverUserDto } from 'src/users/dto/recover-user.dto';
 import { UpdateUserDto } from 'src/users/dto/update-user.dto';
 import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
 import { UserEntity } from 'src/users/serializers/user.serializer';
-import { verify } from 'hcaptcha';
+import { CaptchaGuard } from 'src/shared/guards/catcha.guard';
 
 @Controller('users')
 export class UsersController {
@@ -46,21 +46,9 @@ export class UsersController {
   }
 
   @Throttle(60, 10)
+  @UseGuards(CaptchaGuard)
   @Post('/confirm-email')
-  async confirmUserWithEmail(
-    @Body('captchaToken') captchaToken: string,
-    @Body() body: EmailUserDto,
-  ): Promise<string> {
-    if (process.env.ENVIRONMENT !== 'dev') {
-      const data = await verify(process.env.HCAPTCHA_SECRET, captchaToken);
-
-      if (!data.success) {
-        throw new BadRequestException({
-          message: 'Captcha invalid',
-        });
-      }
-    }
-
+  async confirmUserWithEmail(@Body() body: EmailUserDto): Promise<string> {
     const user = await this.usersService.findOneByEmail(body.email);
 
     if (user) {

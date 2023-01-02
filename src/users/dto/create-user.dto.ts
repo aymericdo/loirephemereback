@@ -4,6 +4,7 @@ import {
   Matches,
   MinLength,
   IsEmail,
+  IsString,
 } from 'class-validator';
 import { REGEX } from 'src/shared/helpers/regex';
 import { SIZE } from 'src/shared/helpers/sizes';
@@ -21,11 +22,13 @@ export class CreateUserDto {
   @IsNotEmpty()
   readonly password: string;
 
+  @IsString()
   @MinLength(4)
   @MaxLength(4)
   @IsNotEmpty()
   readonly emailCode: string;
 
+  @IsString()
   @MinLength(4)
   @MaxLength(4)
   @IsNotEmpty()
