@@ -34,6 +34,9 @@ export class PastryEntity {
   displaySequence: number;
 
   @Expose({ groups: ['admin'] })
+  commonStock: string;
+
+  @Expose({ groups: ['admin'] })
   type: string;
 
   @Expose({ groups: ['admin'] })

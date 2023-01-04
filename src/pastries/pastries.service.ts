@@ -118,7 +118,7 @@ export class PastriesService {
 
   async addCommonStock(
     code: string,
-    pastries: PastryDocument[],
+    pastryIds: string[],
     commonStock: string,
   ): Promise<void> {
     const restaurantId = await this.restaurantsService.findIdByCode(code);
@@ -126,7 +126,7 @@ export class PastriesService {
       .updateMany(
         {
           restaurant: new Types.ObjectId(restaurantId),
-          _id: { $in: pastries.map((p) => new Types.ObjectId(p._id)) },
+          _id: { $in: pastryIds.map((id) => new Types.ObjectId(id)) },
         },
         {
           $set: { commonStock: commonStock, stock: 0 },

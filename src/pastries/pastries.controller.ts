@@ -165,7 +165,7 @@ export class PastriesController {
   @Put('by-code/:code/common-stock')
   async putCommonStock(
     @Param('code') code: string,
-    @Body('pastries') pastries: PastryDocument[],
+    @Body('pastries') pastries: UpdatePastryDto[],
     @Body('commonStock') commonStock: string,
     @AuthUser() authUser: UserDocument,
   ): Promise<PastryEntity[]> {
@@ -182,7 +182,11 @@ export class PastriesController {
     }
 
     await this.pastriesService.removeCommonStock(code, commonStock);
-    await this.pastriesService.addCommonStock(code, pastries, commonStock);
+    await this.pastriesService.addCommonStock(
+      code,
+      pastries.map((p) => p.id),
+      commonStock,
+    );
 
     const newPastries = await this.pastriesService.findAllByCode(code);
     return newPastries.map((p) => new PastryEntity(p));
