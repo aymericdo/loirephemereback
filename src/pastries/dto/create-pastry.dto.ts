@@ -52,11 +52,6 @@ export class CreatePastryDto {
   @Min(0)
   readonly stock: number;
 
-  @IsNumber()
-  @IsOptional()
-  @Min(0)
-  readonly displaySequence: number;
-
   @IsString()
   @IsEnum(pastryTypes)
   @IsNotEmpty()

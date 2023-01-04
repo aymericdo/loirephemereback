@@ -32,7 +32,7 @@ export class PastriesService {
   ): Promise<PastryDocument> {
     const displaySequence: number = await this.getDisplaySequence(
       restaurant.code,
-      createPastryDto.displaySequence,
+      null,
     );
 
     const createdPastry = new this.pastryModel({
@@ -145,6 +145,11 @@ export class PastriesService {
     if (newDisplaySequence > oldDisplaySequence) {
       newDisplaySequence += 1;
     }
+
+    newDisplaySequence = await this.getDisplaySequence(
+      code,
+      newDisplaySequence,
+    );
 
     if (newDisplaySequence !== oldDisplaySequence) {
       const transactionSession = await this.connection.startSession();
@@ -276,7 +281,7 @@ export class PastriesService {
     }, {});
   }
 
-  async findDisplayableByCode(code: string): Promise<PastryDocument[]> {
+  async findDisplayableByCode(code: string): Promise<Pastry[]> {
     return await this.pastryModel
       .aggregate([
         {
@@ -297,7 +302,7 @@ export class PastriesService {
       .exec();
   }
 
-  async findAllByCode(code: string): Promise<PastryDocument[]> {
+  async findAllByCode(code: string): Promise<Pastry[]> {
     return await this.pastryModel
       .aggregate([
         {
@@ -484,15 +489,19 @@ export class PastriesService {
     code: string,
     displaySequence: number,
   ): Promise<number> {
-    return displaySequence
-      ? displaySequence
-      : await this.getDefaultDisplaySequence(code);
-  }
-
-  private async getDefaultDisplaySequence(code: string): Promise<number> {
     const currentMaxDisplaySequence = await this.getCurrentMaxDisplaySequence(
       code,
     );
+
+    return displaySequence !== null &&
+      displaySequence <= currentMaxDisplaySequence + 1
+      ? displaySequence
+      : await this.getDefaultDisplaySequence(currentMaxDisplaySequence);
+  }
+
+  private async getDefaultDisplaySequence(
+    currentMaxDisplaySequence: number | null,
+  ): Promise<number> {
     return currentMaxDisplaySequence === null
       ? 0
       : currentMaxDisplaySequence + 1;

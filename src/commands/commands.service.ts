@@ -10,11 +10,13 @@ import { PastriesService } from 'src/pastries/pastries.service';
 import { SocketGateway } from 'src/shared/gateways/web-socket.gateway';
 import { WebPushGateway } from 'src/shared/gateways/web-push.gateway';
 import { CommandPastryDto } from 'src/pastries/dto/command-pastry.dto';
+import { RestaurantsService } from 'src/restaurants/restaurants.service';
 
 @Injectable()
 export class CommandsService {
   constructor(
     @InjectModel(Command.name) private commandModel: Model<CommandDocument>,
+    private readonly restaurantsService: RestaurantsService,
     private readonly pastriesService: PastriesService,
     private readonly webPushGateway: WebPushGateway,
     private readonly socketGateway: SocketGateway,
@@ -23,6 +25,7 @@ export class CommandsService {
   async findOne(id: string): Promise<CommandDocument> {
     return await this.commandModel
       .findOne({ _id: id })
+      .populate('pastries')
       .populate('restaurant')
       .exec();
   }
@@ -54,14 +57,16 @@ export class CommandsService {
       restaurant,
     });
 
-    const savedCommand = (await (
-      await createdCommand.save()
-    ).populate('pastries')) as CommandDocument;
+    const savedCommand = await createdCommand.save();
 
     this.socketGateway.alertNewCommand(restaurant.code, savedCommand);
     this.webPushGateway.alertNewCommand(restaurant.code);
 
-    return savedCommand;
+    return await this.commandModel
+      .findById(new Types.ObjectId(savedCommand._id))
+      .populate('restaurant')
+      .populate('pastries')
+      .exec();
   }
 
   async closeCommand(id: string): Promise<CommandDocument> {
@@ -95,89 +100,51 @@ export class CommandsService {
     return command;
   }
 
-  async findAll(year = new Date().getFullYear()): Promise<CommandDocument[]> {
-    return await this.commandModel
-      .find({
-        createdAt: {
-          $gt: new Date(+year, 0, 1),
-          $lte: new Date(+year + 1, 0, 1),
-        },
-      })
-      .sort({ createdAt: 1 })
-      .populate('pastries')
-      .exec();
-  }
-
   async findByCode(
     code: string,
     fromDate: string,
     toDate: string,
   ): Promise<CommandDocument[]> {
+    const restaurantId = await this.restaurantsService.findIdByCode(code);
+
     return await this.commandModel
-      .aggregate([
-        {
-          $lookup: {
-            from: 'restaurants',
-            localField: 'restaurant',
-            foreignField: '_id',
-            as: 'restaurant',
+      .find({
+        restaurant: new Types.ObjectId(restaurantId),
+        $or: [
+          {
+            createdAt: {
+              $gt: new Date(fromDate),
+              $lte: new Date(toDate),
+            },
           },
-        },
-        {
-          $match: {
-            'restaurant.code': code,
-            $or: [
-              {
-                createdAt: {
-                  $gt: new Date(fromDate),
-                  $lte: new Date(toDate),
-                },
-              },
-              {
-                isDone: false,
-              },
-              {
-                isPayed: false,
-              },
-            ],
+          {
+            isDone: false,
           },
-        },
-        {
-          $lookup: {
-            from: 'pastries',
-            localField: 'pastries',
-            foreignField: '_id',
-            as: 'pastries',
+          {
+            isPayed: false,
           },
-        },
-        {
-          $sort: { createdAt: 1 },
-        },
-      ])
+        ],
+      })
+      .populate('pastries')
+      .populate('restaurant')
+      .sort({ createdAt: 1 })
       .exec();
   }
 
-  async findByPastry(code: string, pastryId: string): Promise<Command[]> {
+  async findByPastry(
+    code: string,
+    pastryId: string,
+  ): Promise<CommandDocument[]> {
+    const restaurantId = await this.restaurantsService.findIdByCode(code);
+
     return await this.commandModel
-      .aggregate([
-        {
-          $lookup: {
-            from: 'restaurants',
-            localField: 'restaurant',
-            foreignField: '_id',
-            as: 'restaurant',
-          },
-        },
-        {
-          $match: {
-            'restaurant.code': code,
-            pastries: new Types.ObjectId(pastryId),
-          },
-        },
-        {
-          $sort: { createdAt: 1 },
-        },
-      ])
+      .find({
+        restaurant: new Types.ObjectId(restaurantId),
+        pastries: new Types.ObjectId(pastryId),
+      })
+      .populate('pastries')
+      .populate('restaurant')
+      .sort({ createdAt: 1 })
       .exec();
   }
 

@@ -115,7 +115,7 @@ export class CommandsController {
       toDate,
     );
 
-    return commands.map((command) => new CommandEntity(command));
+    return commands.map((command) => new CommandEntity(command.toObject()));
   }
 
   @UseGuards(JwtAuthGuard)
