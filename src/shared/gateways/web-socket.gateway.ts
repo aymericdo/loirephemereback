@@ -7,24 +7,33 @@ import {
   MessageBody,
   ConnectedSocket,
 } from '@nestjs/websockets';
-import { Logger, UseGuards } from '@nestjs/common';
+import { Logger, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import WebSocket, { Server } from 'ws';
 import { CommandDocument } from '../../commands/schemas/command.schema';
 import { WsThrottlerGuard } from 'src/shared/guards/ws-throttler.guard';
 import { WsJwtAuthGuard } from 'src/auth/ws-jwt-auth.guard';
 import { Request } from 'express';
-import { RestaurantsService } from 'src/restaurants/restaurants.service';
 import { WebPushGateway } from 'src/shared/gateways/web-push.gateway';
+import { UsersService } from 'src/users/users.service';
+import { CommandEntity } from 'src/commands/serializers/command.serializer';
+import { UpdateCommandDto } from 'src/commands/dto/update-command.dto';
+import { instanceToPlain } from 'class-transformer';
 
 interface Client extends WebSocket {
   request: Request;
 }
 
+@UsePipes(
+  new ValidationPipe({
+    transform: true,
+    whitelist: true,
+  }),
+)
 @WebSocketGateway()
 @UseGuards(WsThrottlerGuard)
 export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
-    private readonly restaurantsService: RestaurantsService,
+    private readonly usersService: UsersService,
     private readonly webPushGateway: WebPushGateway,
   ) {}
 
@@ -38,8 +47,8 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   handleDisconnect(client: Client) {
     const code = this.getCodeFromQueryParam(client.request.url);
-    this.clients[code] = this.clients[code]?.filter((c) => c !== client);
-    this.admins[code] = this.admins[code]?.filter((c) => c !== client);
+    this.clients[code] = this.clients[code]?.filter((c) => c !== client) || [];
+    this.admins[code] = this.admins[code]?.filter((c) => c !== client) || [];
 
     this.logger.log(`Client disconnected`);
     client.send(JSON.stringify({ bye: 'au revoir' }));
@@ -59,20 +68,29 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   alertNewCommand(code: string, command: CommandDocument) {
+    const serializeCommand = instanceToPlain(
+      new CommandEntity(command.toObject()),
+    );
     this.admins[code]?.forEach((client: Client) =>
-      client.send(JSON.stringify({ addCommand: command })),
+      client.send(JSON.stringify({ addCommand: serializeCommand })),
     );
   }
 
   alertCloseCommand(code: string, command: CommandDocument) {
+    const serializeCommand = instanceToPlain(
+      new CommandEntity(command.toObject()),
+    );
     this.admins[code]?.forEach((client: Client) =>
-      client.send(JSON.stringify({ closeCommand: command })),
+      client.send(JSON.stringify({ closeCommand: serializeCommand })),
     );
   }
 
   alertPayedCommand(code: string, command: CommandDocument) {
+    const serializeCommand = instanceToPlain(
+      new CommandEntity(command.toObject()),
+    );
     this.admins[code]?.forEach((client: Client) =>
-      client.send(JSON.stringify({ payedCommand: command })),
+      client.send(JSON.stringify({ payedCommand: serializeCommand })),
     );
   }
 
@@ -83,25 +101,25 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('wizzer')
-  onWizzer(@MessageBody() data: CommandDocument): void {
-    this.webPushGateway.sendCommandReady(data);
+  onWizzer(@MessageBody() command: UpdateCommandDto): void {
+    this.webPushGateway.sendCommandReady({ ...command, _id: command._id });
 
-    const ws = this.clientWaitingQueue[data._id];
+    const ws = this.clientWaitingQueue[command._id];
 
     if (ws) {
-      ws.send(JSON.stringify({ wizz: data._id }));
+      ws.send(JSON.stringify({ wizz: command._id }));
     }
 
     // remove old waiting info
-    delete this.clientWaitingQueue[data._id];
+    // delete this.clientWaitingQueue[command._id];
   }
 
-  @SubscribeMessage('addclientWaitingQueue')
-  onAddclientWaitingQueue(
-    @MessageBody() data: CommandDocument,
+  @SubscribeMessage('addWaitingQueue')
+  onAddWaitingQueue(
+    @MessageBody() command: UpdateCommandDto,
     @ConnectedSocket() client: Client,
   ): void {
-    this.clientWaitingQueue[data._id] = client;
+    this.clientWaitingQueue[command._id] = client;
   }
 
   @UseGuards(WsJwtAuthGuard)
@@ -110,7 +128,9 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const code = this.getCodeFromQueryParam(client.request.url);
 
     const userId = (client.request.user as { userId: string }).userId;
-    if (!(await this.restaurantsService.isUserInRestaurant(code, userId))) {
+    const user = await this.usersService.findOne(userId);
+
+    if (!(await this.usersService.isAuthorized(user, code))) {
       return;
     }
 

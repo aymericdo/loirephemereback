@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { CommandDocument } from '../../commands/schemas/command.schema';
 import webpush = require('web-push');
+import { UpdateCommandDto } from 'src/commands/dto/update-command.dto';
 
 export class WebPushGateway {
   adminsWaitingSubNotification: { [code: string]: PushSubscription[] } = {};
@@ -51,7 +52,7 @@ export class WebPushGateway {
     }
   }
 
-  sendCommandReady(data: CommandDocument): void {
+  sendCommandReady(data: UpdateCommandDto): void {
     const subNotification = this.clientWaitingQueueSubNotification[data._id];
 
     if (subNotification) {

@@ -28,6 +28,7 @@ import { WebPushGateway } from 'src/shared/gateways/web-push.gateway';
 import { UsersService } from 'src/users/users.service';
 import { CommandEntity } from 'src/commands/serializers/command.serializer';
 import { CommandDocument } from 'src/commands/schemas/command.schema';
+import { SocketGateway } from 'src/shared/gateways/web-socket.gateway';
 
 @Controller('commands')
 export class CommandsController {
@@ -37,6 +38,7 @@ export class CommandsController {
     private readonly usersService: UsersService,
     private readonly pastriesService: PastriesService,
     private readonly webPushGateway: WebPushGateway,
+    private readonly socketGateway: SocketGateway,
     @InjectConnection() private readonly connection: Connection,
   ) {}
 
@@ -86,6 +88,7 @@ export class CommandsController {
       return new CommandEntity(command.toObject());
     } catch (err) {
       transactionSession.abortTransaction();
+      throw err;
     } finally {
       transactionSession.endSession();
     }

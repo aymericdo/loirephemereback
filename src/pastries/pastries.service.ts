@@ -23,7 +23,10 @@ export class PastriesService {
   ) {}
 
   async findOne(id: string): Promise<PastryDocument> {
-    return await this.pastryModel.findOne({ _id: id }).exec();
+    return await this.pastryModel
+      .findOne({ _id: id })
+      .populate('restaurant')
+      .exec();
   }
 
   async create(
@@ -64,6 +67,8 @@ export class PastriesService {
     historical: Historical[],
     isUpdatingStock = false,
   ): Promise<PastryDocument> {
+    const pastry = await this.findOne(updatePastryDto.id);
+
     if (isUpdatingStock && updatePastryDto.commonStock) {
       const commonStockPastries = await this.findByCommonStock(
         updatePastryDto.commonStock,
@@ -85,6 +90,11 @@ export class PastriesService {
           pastryId: commonStockPastry._id,
           newStock: newCommonStockPastry.stock,
         });
+      });
+    } else if (isUpdatingStock) {
+      this.socketGateway.stockChanged(pastry.restaurant.code, {
+        pastryId: updatePastryDto._id,
+        newStock: updatePastryDto.stock,
       });
     }
 

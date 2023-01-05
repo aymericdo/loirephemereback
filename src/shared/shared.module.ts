@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
-import { RestaurantsModule } from 'src/restaurants/restaurants.module';
 import { WsCleanerService } from 'src/shared/crons/ws-cleaner.service';
 import { WebPushGateway } from 'src/shared/gateways/web-push.gateway';
 import { SocketGateway } from 'src/shared/gateways/web-socket.gateway';
+import { UsersModule } from 'src/users/users.module';
 
 @Module({
-  imports: [RestaurantsModule],
+  imports: [UsersModule],
   controllers: [],
   providers: [SocketGateway, WebPushGateway, WsCleanerService],
   exports: [SocketGateway, WebPushGateway],

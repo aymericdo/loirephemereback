@@ -59,14 +59,16 @@ export class CommandsService {
 
     const savedCommand = await createdCommand.save();
 
-    this.socketGateway.alertNewCommand(restaurant.code, savedCommand);
-    this.webPushGateway.alertNewCommand(restaurant.code);
-
-    return await this.commandModel
+    const newCommand = await this.commandModel
       .findById(new Types.ObjectId(savedCommand._id))
       .populate('restaurant')
       .populate('pastries')
       .exec();
+
+    this.socketGateway.alertNewCommand(restaurant.code, newCommand);
+    this.webPushGateway.alertNewCommand(restaurant.code);
+
+    return newCommand;
   }
 
   async closeCommand(id: string): Promise<CommandDocument> {
