@@ -92,6 +92,9 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.admins[code]?.forEach((client: Client) =>
       client.send(JSON.stringify({ payedCommand: serializeCommand })),
     );
+
+    // remove old waiting info
+    // delete this.clientWaitingQueue[command._id];
   }
 
   stockChanged(code: string, newStock: { pastryId: string; newStock: number }) {
@@ -109,9 +112,6 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (ws) {
       ws.send(JSON.stringify({ wizz: command._id }));
     }
-
-    // remove old waiting info
-    // delete this.clientWaitingQueue[command._id];
   }
 
   @SubscribeMessage('addWaitingQueue')
