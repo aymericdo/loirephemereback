@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { User, UserDocument } from 'src/users/schemas/user.schema';
+import { UserDocument } from 'src/users/schemas/user.schema';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
 import { Restaurant, RestaurantDocument } from './schemas/restaurant.schema';
 
@@ -41,6 +41,7 @@ export class RestaurantsService {
   async findById(id: string): Promise<RestaurantDocument> {
     return await this.restaurantModel.findOne({ _id: id }).exec();
   }
+
   async findByCode(code: string): Promise<RestaurantDocument> {
     return await this.restaurantModel.findOne({ code: code }).exec();
   }
@@ -74,6 +75,14 @@ export class RestaurantsService {
           { limit: 1 },
         )
         .exec()) === 1
+    );
+  }
+
+  async isCodeNotExists(code: string): Promise<boolean> {
+    return (
+      (await this.restaurantModel
+        .countDocuments({ code: code }, { limit: 1 })
+        .exec()) === 0
     );
   }
 

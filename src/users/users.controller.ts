@@ -5,6 +5,7 @@ import {
   Controller,
   ForbiddenException,
   Get,
+  NotFoundException,
   Param,
   Post,
   Query,
@@ -19,7 +20,6 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UserDocument } from 'src/users/schemas/user.schema';
 import { LocalAuthGuard } from 'src/auth/local-auth.guard';
 import { AuthService } from 'src/auth/auth.service';
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import {
   DEMO_RESTO,
   RestaurantsService,
@@ -29,7 +29,9 @@ import { RecoverUserDto } from 'src/users/dto/recover-user.dto';
 import { UpdateUserDto } from 'src/users/dto/update-user.dto';
 import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
 import { UserEntity } from 'src/users/serializers/user.serializer';
-import { CaptchaGuard } from 'src/shared/guards/catcha.guard';
+import { CaptchaGuard } from 'src/shared/guards/captcha.guard';
+import { AuthorizationGuard } from 'src/shared/guards/authorization.guard';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @Controller('users')
 export class UsersController {
@@ -172,45 +174,35 @@ export class UsersController {
     return new UserEntity(authUser.toObject());
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AuthorizationGuard)
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],
   })
   @Get('by-code/:code/all')
-  async getAll(
-    @Param('code') code: string,
-    @AuthUser() authUser: UserDocument,
-  ): Promise<UserEntity[]> {
-    if (!(await this.usersService.isAuthorized(authUser, code))) {
-      throw new BadRequestException({
-        message: 'user not in restaurant',
-      });
-    }
-
+  async getAll(@Param('code') code: string): Promise<UserEntity[]> {
     const users = await this.restaurantsService.findUsersByCode(code);
     return users.map((user) => new UserEntity(user.toObject()));
   }
 
   @Throttle(60, 5)
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AuthorizationGuard)
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],
   })
   @Post('by-code/:code')
   async postUserToRestaurant(
-    @Param('code') code,
+    @Param('code') code: string,
     @Body('email') email: string,
-    @AuthUser() authUser: UserDocument,
   ): Promise<UserEntity> {
-    if (!(await this.usersService.isAuthorized(authUser, code))) {
-      throw new BadRequestException({
-        message: 'user not in restaurant',
+    const user: UserDocument = await this.usersService.findOneByEmail(email);
+
+    if (!user) {
+      throw new NotFoundException({
+        message: 'user not found',
       });
     }
-
-    const user = await this.usersService.findOneByEmail(email);
 
     if (await this.restaurantsService.isUserInRestaurant(code, user._id)) {
       throw new BadRequestException({
@@ -219,27 +211,20 @@ export class UsersController {
     }
 
     await this.restaurantsService.addUserToRestaurant(code, user);
-    return new UserEntity(user);
+    return new UserEntity(user.toObject());
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AuthorizationGuard)
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],
   })
   @Post('by-code/:code/delete')
   async deleteUserFromRestaurant(
-    @Param('code') code,
+    @Param('code') code: string,
     @Body('email') email: string,
-    @AuthUser() authUser: UserDocument,
   ): Promise<boolean> {
-    if (!(await this.usersService.isAuthorized(authUser, code))) {
-      throw new BadRequestException({
-        message: 'user not in restaurant',
-      });
-    }
-
-    if (authUser.email === USER_ORESTO && code === DEMO_RESTO) {
+    if (email === USER_ORESTO && code === DEMO_RESTO) {
       throw new BadRequestException({
         message: 'user not deletable',
       });

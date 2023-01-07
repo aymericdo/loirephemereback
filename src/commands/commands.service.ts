@@ -170,18 +170,19 @@ export class CommandsService {
   async pastriesReached0(countByPastryId: {
     [pastryId: string]: number;
   }): Promise<PastryDocument[]> {
-    return Object.keys(countByPastryId).reduce(
-      async (prev: any, pastryId: string) => {
+    return await Object.keys(countByPastryId).reduce(
+      async (previousValue, pastryId: string) => {
         const oldPastry: PastryDocument = await this.pastriesService.findOne(
           pastryId,
         );
 
         if (oldPastry.stock - countByPastryId[pastryId] < 0) {
-          prev.push(oldPastry as PastryDocument);
+          (await previousValue).push(oldPastry);
         }
-        return prev;
+
+        return previousValue;
       },
-      [] as PastryDocument[],
+      Promise.resolve([] as PastryDocument[]),
     );
   }
 

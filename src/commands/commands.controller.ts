@@ -21,24 +21,18 @@ import { Connection } from 'mongoose';
 import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
 import { RestaurantsService } from 'src/restaurants/restaurants.service';
 import { PastriesService } from 'src/pastries/pastries.service';
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
-import { UserDocument } from 'src/users/schemas/user.schema';
 import { WebPushGateway } from 'src/shared/gateways/web-push.gateway';
-import { UsersService } from 'src/users/users.service';
 import { CommandEntity } from 'src/commands/serializers/command.serializer';
 import { CommandDocument } from 'src/commands/schemas/command.schema';
-import { SocketGateway } from 'src/shared/gateways/web-socket.gateway';
+import { AuthorizationGuard } from 'src/shared/guards/authorization.guard';
 
 @Controller('commands')
 export class CommandsController {
   constructor(
     private readonly restaurantsService: RestaurantsService,
     private readonly commandsService: CommandsService,
-    private readonly usersService: UsersService,
     private readonly pastriesService: PastriesService,
     private readonly webPushGateway: WebPushGateway,
-    private readonly socketGateway: SocketGateway,
     @InjectConnection() private readonly connection: Connection,
   ) {}
 
@@ -94,7 +88,7 @@ export class CommandsController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AuthorizationGuard)
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],
@@ -102,16 +96,9 @@ export class CommandsController {
   @Get('by-code/:code')
   async getCommandsByCode(
     @Param('code') code: string,
-    @AuthUser() authUser: UserDocument,
     @Query('fromDate') fromDate: string,
     @Query('toDate') toDate: string,
   ): Promise<CommandEntity[]> {
-    if (!(await this.usersService.isAuthorized(authUser, code))) {
-      throw new BadRequestException({
-        message: 'user not in restaurant',
-      });
-    }
-
     const commands: CommandDocument[] = await this.commandsService.findByCode(
       code,
       fromDate,
@@ -121,21 +108,22 @@ export class CommandsController {
     return commands.map((command) => new CommandEntity(command.toObject()));
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AuthorizationGuard)
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],
   })
-  @Patch('/close/:id')
+  @Patch('by-code/:code/close/:id')
   async patchCommand(
     @Param('id') id: string,
-    @AuthUser() authUser: UserDocument,
+    @Param('code') code: string,
   ): Promise<CommandEntity> {
-    const code = (await this.commandsService.findOne(id)).restaurant.code;
+    const commandRestaurantCode = (await this.commandsService.findOne(id))
+      .restaurant.code;
 
-    if (!(await this.usersService.isAuthorized(authUser, code))) {
+    if (commandRestaurantCode !== code) {
       throw new BadRequestException({
-        message: 'user not in restaurant',
+        message: 'mismatch between command and restaurant',
       });
     }
 
@@ -143,21 +131,22 @@ export class CommandsController {
     return new CommandEntity(command.toObject());
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AuthorizationGuard)
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],
   })
-  @Patch('/payed/:id')
+  @Patch('by-code/:code/payed/:id')
   async patchCommand2(
     @Param('id') id: string,
-    @AuthUser() authUser: UserDocument,
+    @Param('code') code: string,
   ): Promise<CommandEntity> {
-    const code = (await this.commandsService.findOne(id)).restaurant.code;
+    const commandRestaurantCode = (await this.commandsService.findOne(id))
+      .restaurant.code;
 
-    if (!(await this.usersService.isAuthorized(authUser, code))) {
+    if (commandRestaurantCode !== code) {
       throw new BadRequestException({
-        message: 'user not in restaurant',
+        message: 'mismatch between command and restaurant',
       });
     }
 
@@ -165,30 +154,32 @@ export class CommandsController {
     return new CommandEntity(command.toObject());
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AuthorizationGuard)
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],
   })
-  @Post('notification')
+  @Post('by-code/:code/notification')
   async postNotificationSub(
-    @Body() body: { sub: PushSubscription; code: string },
+    @Body() body: { sub: PushSubscription },
+    @Param('code') code: string,
   ): Promise<boolean> {
-    this.webPushGateway.addAdminQueueSubNotification(body);
+    this.webPushGateway.addAdminQueueSubNotification(code, body.sub);
 
     return true;
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AuthorizationGuard)
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],
   })
-  @Post('notification/delete')
+  @Post('by-code/:code/notification/delete')
   async deleteNotificationSub(
-    @Body() body: { sub: PushSubscription; code: string },
+    @Body() body: { sub: PushSubscription },
+    @Param('code') code: string,
   ): Promise<boolean> {
-    this.webPushGateway.deleteAdminQueueSubNotification(body);
+    this.webPushGateway.deleteAdminQueueSubNotification(code, body.sub);
 
     return true;
   }

@@ -9,7 +9,7 @@ import {
 } from '@nestjs/websockets';
 import { Logger, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import WebSocket, { Server } from 'ws';
-import { CommandDocument } from '../../commands/schemas/command.schema';
+import { CommandDocument } from 'src/commands/schemas/command.schema';
 import { WsThrottlerGuard } from 'src/shared/guards/ws-throttler.guard';
 import { WsJwtAuthGuard } from 'src/auth/ws-jwt-auth.guard';
 import { Request } from 'express';

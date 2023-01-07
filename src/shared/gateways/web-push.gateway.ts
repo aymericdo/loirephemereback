@@ -1,5 +1,4 @@
 import { Logger } from '@nestjs/common';
-import { CommandDocument } from '../../commands/schemas/command.schema';
 import webpush = require('web-push');
 import { UpdateCommandDto } from 'src/commands/dto/update-command.dto';
 
@@ -16,38 +15,32 @@ export class WebPushGateway {
     });
   }
 
-  addClientWaitingQueueSubNotification(subNotif: {
-    sub: PushSubscription;
-    commandId: string;
-  }) {
-    this.clientWaitingQueueSubNotification[subNotif.commandId] = subNotif.sub;
+  addClientWaitingQueueSubNotification(
+    sub: PushSubscription,
+    commandId: string,
+  ) {
+    this.clientWaitingQueueSubNotification[commandId] = sub;
   }
 
-  addAdminQueueSubNotification(subNotif: {
-    sub: PushSubscription;
-    code: string;
-  }) {
-    if (this.adminsWaitingSubNotification.hasOwnProperty(subNotif.code)) {
+  addAdminQueueSubNotification(code: string, sub: PushSubscription) {
+    if (this.adminsWaitingSubNotification.hasOwnProperty(code)) {
       if (
-        !this.adminsWaitingSubNotification[subNotif.code].some(
-          (notif) => notif.endpoint === subNotif.sub.endpoint,
+        !this.adminsWaitingSubNotification[code].some(
+          (notif) => notif.endpoint === sub.endpoint,
         )
       ) {
-        this.adminsWaitingSubNotification[subNotif.code].push(subNotif.sub);
+        this.adminsWaitingSubNotification[code].push(sub);
       }
     } else {
-      this.adminsWaitingSubNotification[subNotif.code] = [subNotif.sub];
+      this.adminsWaitingSubNotification[code] = [sub];
     }
   }
 
-  deleteAdminQueueSubNotification(subNotif: {
-    sub: PushSubscription;
-    code: string;
-  }) {
-    if (this.adminsWaitingSubNotification.hasOwnProperty(subNotif.code)) {
-      this.adminsWaitingSubNotification[subNotif.code] =
-        this.adminsWaitingSubNotification[subNotif.code].filter(
-          (notif) => notif.endpoint !== subNotif.sub?.endpoint,
+  deleteAdminQueueSubNotification(code: string, sub: PushSubscription) {
+    if (this.adminsWaitingSubNotification.hasOwnProperty(code)) {
+      this.adminsWaitingSubNotification[code] =
+        this.adminsWaitingSubNotification[code].filter(
+          (notif) => notif.endpoint !== sub?.endpoint,
         );
     }
   }
@@ -90,6 +83,6 @@ export class WebPushGateway {
       .then(() => {
         this.logger.log('webpush sent');
       })
-      .catch((err) => this.logger.error(err));
+      .catch((err: any) => this.logger.error(err));
   }
 }

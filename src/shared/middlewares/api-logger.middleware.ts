@@ -6,7 +6,7 @@ import { Logger } from '@nestjs/common';
 export class ApiLoggerMiddleware implements NestMiddleware {
   private logger: Logger = new Logger(ApiLoggerMiddleware.name);
 
-  use(req: Request, res: Response, next: NextFunction) {
+  use(req: Request, _res: Response, next: NextFunction) {
     this.logger.log(`${req.method} ${req.originalUrl}`);
     next();
   }

@@ -13,10 +13,10 @@ import {
 } from '@nestjs/common';
 import { RestaurantsService } from './restaurants.service';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { UserDocument } from 'src/users/schemas/user.schema';
 import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
 import { RestaurantEntity } from 'src/restaurants/serializer/restaurant.serializer';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @Controller('restaurants')
 export class RestaurantsController {
@@ -30,7 +30,7 @@ export class RestaurantsController {
 
   @UseInterceptors(ClassSerializerInterceptor)
   @Get('by-code/:code')
-  async getRestaurant(@Param('code') code): Promise<RestaurantEntity> {
+  async getRestaurant(@Param('code') code: string): Promise<RestaurantEntity> {
     const restaurant = await this.restaurantsService.findByCode(code);
 
     if (restaurant) {

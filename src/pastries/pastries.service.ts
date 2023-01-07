@@ -288,7 +288,7 @@ export class PastriesService {
     ).reduce((prev, data) => {
       prev[data._id.toString()] = data.displaySequence;
       return prev;
-    }, {});
+    }, {} as { [id: string]: number });
   }
 
   async findDisplayableByCode(code: string): Promise<Pastry[]> {
@@ -452,7 +452,7 @@ export class PastriesService {
     oldPastry: PastryDocument,
     newPastry: UpdatePastryDto,
   ): boolean {
-    return statsAttributes.some((attribute) => {
+    return statsAttributes.some((attribute: string) => {
       return oldPastry[attribute] !== newPastry[attribute];
     });
   }
@@ -465,7 +465,7 @@ export class PastriesService {
       date: new Date(),
     };
 
-    statsAttributes.forEach((attribute) => {
+    statsAttributes.forEach((attribute: string) => {
       if (oldPastry[attribute] !== newPastry[attribute]) {
         historical[attribute] = [oldPastry[attribute], newPastry[attribute]];
       }

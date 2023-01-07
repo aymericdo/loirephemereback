@@ -20,11 +20,11 @@ export class UsersService {
     private readonly restaurantsService: RestaurantsService,
   ) {}
 
-  async findOne(id: string): Promise<UserDocument | undefined> {
+  async findOne(id: string): Promise<UserDocument> {
     return await this.userModel.findOne({ _id: id }).exec();
   }
 
-  async findOneByEmail(email: string): Promise<UserDocument | undefined> {
+  async findOneByEmail(email: string): Promise<UserDocument> {
     return await this.userModel.findOne({ email: email.toLowerCase() }).exec();
   }
 

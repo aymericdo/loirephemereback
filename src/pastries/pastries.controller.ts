@@ -28,12 +28,8 @@ import * as fs from 'fs';
 import { randomBytes } from 'crypto';
 import { UpdatePastryDto } from 'src/pastries/dto/update-pastry.dto';
 import { CommandsService } from 'src/commands/commands.service';
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
-import { UserDocument } from 'src/users/schemas/user.schema';
 import { WebPushGateway } from 'src/shared/gateways/web-push.gateway';
-import { PastryDocument } from 'src/pastries/schemas/pastry.schema';
-import { UsersService } from 'src/users/users.service';
+import { AuthorizationGuard } from 'src/shared/guards/authorization.guard';
 
 export const IMAGE_URL_PATH = './client/photos';
 
@@ -42,7 +38,6 @@ export class PastriesController {
   constructor(
     private readonly pastriesService: PastriesService,
     private readonly restaurantsService: RestaurantsService,
-    private readonly usersService: UsersService,
     private readonly commandsService: CommandsService,
     private readonly webPushGateway: WebPushGateway,
   ) {}
@@ -58,14 +53,18 @@ export class PastriesController {
 
   @Post('notification')
   async postNotificationSub(
-    @Body() body: { sub: PushSubscription; commandId: string },
+    @Body() body: { sub: PushSubscription },
+    @Body('commandId') commandId: string,
   ): Promise<boolean> {
-    this.webPushGateway.addClientWaitingQueueSubNotification(body);
+    this.webPushGateway.addClientWaitingQueueSubNotification(
+      body.sub,
+      commandId,
+    );
 
     return true;
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AuthorizationGuard)
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],
@@ -74,14 +73,7 @@ export class PastriesController {
   async createPastry(
     @Body() body: CreatePastryDto,
     @Param('code') code: string,
-    @AuthUser() authUser: UserDocument,
   ): Promise<PastryEntity> {
-    if (!(await this.usersService.isAuthorized(authUser, code))) {
-      throw new BadRequestException({
-        message: 'user not in restaurant',
-      });
-    }
-
     const restaurant: RestaurantDocument =
       await this.restaurantsService.findByCode(code);
     const pastry = await this.pastriesService.create(restaurant, body);
@@ -89,7 +81,7 @@ export class PastriesController {
     return new PastryEntity(pastry.toObject());
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AuthorizationGuard)
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],
@@ -98,19 +90,19 @@ export class PastriesController {
   async updatePastry(
     @Body() body: UpdatePastryDto,
     @Param('code') code: string,
-    @AuthUser() authUser: UserDocument,
   ): Promise<{
     pastry: PastryEntity;
     displaySequenceById: { [id: string]: number };
   }> {
-    if (!(await this.usersService.isAuthorized(authUser, code))) {
+    const currentPastry = await this.pastriesService.findOne(body._id);
+
+    if (currentPastry.restaurant.code !== code) {
       throw new BadRequestException({
-        message: 'user not in restaurant',
+        message: 'mismatch between pastry and restaurant',
       });
     }
 
     let displaySequenceById = {};
-    const currentPastry = await this.pastriesService.findOne(body._id);
 
     const isUpdatingStock: boolean = currentPastry.stock !== body.stock;
 
@@ -157,7 +149,7 @@ export class PastriesController {
     };
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AuthorizationGuard)
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],
@@ -167,14 +159,7 @@ export class PastriesController {
     @Param('code') code: string,
     @Body('pastryIds') pastryIds: string[],
     @Body('commonStock') commonStock: string,
-    @AuthUser() authUser: UserDocument,
   ): Promise<PastryEntity[]> {
-    if (!(await this.usersService.isAuthorized(authUser, code))) {
-      throw new BadRequestException({
-        message: 'user not in restaurant',
-      });
-    }
-
     if (pastryIds.length === 1) {
       throw new BadRequestException({
         message: "can't associate only one pastry",
@@ -188,27 +173,18 @@ export class PastriesController {
     return newPastries.map((p) => new PastryEntity(p));
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AuthorizationGuard)
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],
   })
   @Get('by-code/:code/all')
-  async getAll(
-    @Param('code') code: string,
-    @AuthUser() authUser: UserDocument,
-  ): Promise<PastryEntity[]> {
-    if (!(await this.usersService.isAuthorized(authUser, code))) {
-      throw new BadRequestException({
-        message: 'user not in restaurant',
-      });
-    }
-
+  async getAll(@Param('code') code: string): Promise<PastryEntity[]> {
     const pastries = await this.pastriesService.findAllByCode(code);
     return pastries.map((p) => new PastryEntity(p));
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AuthorizationGuard)
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],
@@ -217,18 +193,11 @@ export class PastriesController {
   async validatePastryName(
     @Param('code') code: string,
     @Query('name') name: string,
-    @AuthUser() authUser: UserDocument,
   ): Promise<boolean> {
-    if (!(await this.usersService.isAuthorized(authUser, code))) {
-      throw new BadRequestException({
-        message: 'user not in restaurant',
-      });
-    }
-
     return await this.pastriesService.isNameNotExists(code, name);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AuthorizationGuard)
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],
@@ -237,18 +206,11 @@ export class PastriesController {
   async isAlreadyOrdered(
     @Param('code') code: string,
     @Param('pastryId') pastryId: string,
-    @AuthUser() authUser: UserDocument,
   ): Promise<boolean> {
-    if (!(await this.usersService.isAuthorized(authUser, code))) {
-      throw new BadRequestException({
-        message: 'user not in restaurant',
-      });
-    }
-
     return (await this.commandsService.findByPastry(code, pastryId)).length > 0;
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AuthorizationGuard)
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],
@@ -284,10 +246,6 @@ export class PastriesController {
     }),
   )
   async uploadedFile(
-    @Param('code')
-    code: string,
-    @AuthUser()
-    authUser: UserDocument,
     @UploadedFile(
       new ParseFilePipe({
         validators: [
@@ -301,12 +259,6 @@ export class PastriesController {
     originalname: string;
     filename: string;
   }> {
-    if (!(await this.usersService.isAuthorized(authUser, code))) {
-      throw new BadRequestException({
-        message: 'user not in restaurant',
-      });
-    }
-
     const response = {
       originalname: file.originalname,
       filename: file.filename,
