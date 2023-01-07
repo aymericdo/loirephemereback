@@ -9,9 +9,9 @@ export class MailService {
   async sendUserConfirmation(email: EmailUserDto, code: string) {
     await this.mailerService.sendMail({
       to: email.email,
-      from: `"oResto" <${process.env.MAIL_FROM}>`, // override default from
-      subject: 'Bienvenue ! 😊 Confirmez votre email svp',
-      template: './transactional',
+      from: `"Oresto" <${process.env.MAIL_FROM}>`, // override default from
+      subject: 'Bienvenue ! 😊',
+      template: './email-confirmation',
       context: {
         code,
       },
@@ -21,9 +21,9 @@ export class MailService {
   async sendUserRecoverConfirmation(email: EmailUserDto, code: string) {
     await this.mailerService.sendMail({
       to: email.email,
-      from: `"oResto" <${process.env.MAIL_FROM}>`, // override default from
-      subject: 'Mot de passe oublié ! 😓 Confirmez votre email svp',
-      template: './transactional',
+      from: `"Oresto" <${process.env.MAIL_FROM}>`, // override default from
+      subject: 'Mot de passe oublié ! 😓',
+      template: './password-forgotten',
       context: {
         code,
       },
