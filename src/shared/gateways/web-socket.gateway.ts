@@ -110,7 +110,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const ws = this.clientWaitingQueue[command._id];
 
     if (ws) {
-      ws.send(JSON.stringify({ wizz: command._id }));
+      ws.send(JSON.stringify({ wizz: { commandId: command._id } }));
     }
   }
 
