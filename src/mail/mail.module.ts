@@ -13,7 +13,12 @@ import { ConfigService } from '@nestjs/config';
         transport: {
           host: config.get('MAIL_HOST'),
           port: config.get('MAIL_PORT'),
-          secure: false,
+          secure: true,
+          dkim: {
+            domainName: config.get('DKIM_DOMAIN'),
+            keySelector: config.get('DKIM_SELECTOR'),
+            privateKey: config.get('DKIM_PRIVATE_KEY'),
+          },
           requireTLS: true,
           auth: {
             user: config.get('MAIL_USER'),
