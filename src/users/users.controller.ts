@@ -54,8 +54,8 @@ export class UsersController {
     const user = await this.usersService.findOneByEmail(body.email);
 
     if (user) {
-      throw new BadRequestException({
-        message: 'email not valid',
+      throw new NotFoundException({
+        message: 'email not found',
       });
     }
 
@@ -71,8 +71,8 @@ export class UsersController {
     const user = await this.usersService.findOneByEmail(body.email);
 
     if (!user) {
-      throw new BadRequestException({
-        message: 'email not valid',
+      throw new NotFoundException({
+        message: 'email not found',
       });
     }
 
