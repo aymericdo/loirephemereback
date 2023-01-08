@@ -42,6 +42,13 @@ export class RestaurantsController {
     }
   }
 
+  @UseInterceptors(ClassSerializerInterceptor)
+  @Get('demo-resto')
+  async getDemoResto(): Promise<RestaurantEntity> {
+    const restaurant = await this.restaurantsService.findDemoResto();
+    return new RestaurantEntity(restaurant.toObject());
+  }
+
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
