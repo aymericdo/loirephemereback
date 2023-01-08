@@ -26,7 +26,7 @@ async function bootstrap() {
   const privateVapidKey = process.env.PRIVATE_VAPID_KEY;
 
   webpush.setVapidDetails(
-    'http://loirephemere.netlify.app/',
+    'https://oresto.app/',
     publicVapidKey,
     privateVapidKey,
   );
