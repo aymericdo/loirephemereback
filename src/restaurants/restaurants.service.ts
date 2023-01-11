@@ -24,10 +24,10 @@ export class RestaurantsService {
 
   async findAllByUserId(
     userId: string,
-    plusDemoResto = false,
+    concatDemoResto = false,
   ): Promise<RestaurantDocument[]> {
     let filter = {};
-    if (plusDemoResto) {
+    if (concatDemoResto) {
       filter = { $or: [{ users: userId }, { code: DEMO_RESTO }] };
     } else {
       filter = { users: userId };
@@ -103,6 +103,7 @@ export class RestaurantsService {
       code: this.generateCode(createRestaurantDto.name),
       users: [userId],
     });
+
     return await createdRestaurant.save();
   }
 

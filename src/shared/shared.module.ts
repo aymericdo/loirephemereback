@@ -8,6 +8,6 @@ import { UsersModule } from 'src/users/users.module';
   imports: [UsersModule],
   controllers: [],
   providers: [SocketGateway, WebPushGateway, WsCleanerService],
-  exports: [SocketGateway, WebPushGateway],
+  exports: [SocketGateway, WebPushGateway, WsCleanerService],
 })
 export class SharedModule {}

@@ -1,4 +1,26 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateUserDto } from 'src/users/dto/create-user.dto';
+import {
+  IsString,
+  IsMongoId,
+  IsNotEmpty,
+  IsArray,
+  ArrayMaxSize,
+  IsEnum,
+} from 'class-validator';
+import { Access, ACCESS_LIST } from 'src/users/schemas/user.schema';
 
-export class UpdateUserDto extends PartialType(CreateUserDto) {}
+export class UpdateUserDto {
+  @IsString()
+  @IsMongoId()
+  @IsNotEmpty()
+  readonly id: string;
+
+  get _id(): string {
+    return this.id;
+  }
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsEnum(ACCESS_LIST, { each: true })
+  @ArrayMaxSize(4)
+  readonly access: Access[];
+}

@@ -11,9 +11,9 @@ import { EmailUserDto } from 'src/users/dto/email-user.dto';
 export class AuthService {
   constructor(
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
-    private usersService: UsersService,
-    private jwtService: JwtService,
-    private mailService: MailService,
+    private readonly usersService: UsersService,
+    private readonly jwtService: JwtService,
+    private readonly mailService: MailService,
   ) {}
 
   async validateUser(

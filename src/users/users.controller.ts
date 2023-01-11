@@ -7,6 +7,7 @@ import {
   Get,
   NotFoundException,
   Param,
+  Patch,
   Post,
   Query,
   Req,
@@ -32,6 +33,7 @@ import { UserEntity } from 'src/users/serializers/user.serializer';
 import { CaptchaGuard } from 'src/shared/guards/captcha.guard';
 import { AuthorizationGuard } from 'src/shared/guards/authorization.guard';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { ChangePasswordUserDto } from 'src/users/dto/change-password-user.dto';
 
 @Controller('users')
 export class UsersController {
@@ -81,7 +83,7 @@ export class UsersController {
 
   @Throttle(60, 10)
   @Post('/change-password')
-  async changePassword(@Body() body: UpdateUserDto): Promise<boolean> {
+  async changePassword(@Body() body: ChangePasswordUserDto): Promise<boolean> {
     const user = await this.usersService.findOneByEmail(body.email);
 
     const isValid = await this.authService.validateCodes(
@@ -97,7 +99,7 @@ export class UsersController {
     }
 
     await this.authService.deleteCodes(body.email);
-    await this.usersService.update(body);
+    await this.usersService.updatePassword(user._id, body.password);
 
     return true;
   }
@@ -124,6 +126,9 @@ export class UsersController {
 
   @Throttle(60, 5)
   @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
   @Post('/')
   async postUser(@Body() body: CreateUserDto): Promise<UserEntity> {
     const isValid = await this.authService.validateCodes(
@@ -182,7 +187,8 @@ export class UsersController {
   @Get('by-code/:code/all')
   async getAll(@Param('code') code: string): Promise<UserEntity[]> {
     const users = await this.restaurantsService.findUsersByCode(code);
-    return users.map((user) => new UserEntity(user.toObject()));
+    const restaurant = await this.restaurantsService.findByCode(code);
+    return users.map((user) => new UserEntity(user.toObject(), restaurant._id));
   }
 
   @Throttle(60, 5)
@@ -205,13 +211,17 @@ export class UsersController {
     }
 
     if (await this.restaurantsService.isUserInRestaurant(code, user._id)) {
-      throw new BadRequestException({
+      throw new ForbiddenException({
         message: 'user already in restaurant',
       });
     }
 
-    await this.restaurantsService.addUserToRestaurant(code, user);
-    return new UserEntity(user.toObject());
+    const restaurant = await this.restaurantsService.addUserToRestaurant(
+      code,
+      user,
+    );
+
+    return new UserEntity(user.toObject(), restaurant._id);
   }
 
   @UseGuards(AuthorizationGuard)
@@ -222,23 +232,52 @@ export class UsersController {
   @Post('by-code/:code/delete')
   async deleteUserFromRestaurant(
     @Param('code') code: string,
-    @Body('email') email: string,
+    @Body('id') _id: string,
+    @AuthUser() authUser: UserDocument,
   ): Promise<boolean> {
-    if (email === USER_ORESTO && code === DEMO_RESTO) {
-      throw new BadRequestException({
+    const user = await this.usersService.findOne(_id);
+
+    if (user.email === USER_ORESTO && code === DEMO_RESTO) {
+      throw new ForbiddenException({
         message: 'user not deletable',
       });
     }
 
-    const usersCount = await this.restaurantsService.findUsersByCodeCount(code);
-
-    if (usersCount === 1) {
-      throw new ForbiddenException({});
+    if (authUser._id === _id) {
+      throw new ForbiddenException({
+        message: 'you cannot delete yourself',
+      });
     }
 
-    const user = await this.usersService.findOneByEmail(email);
     await this.restaurantsService.deleteUserToRestaurant(code, user);
     return true;
+  }
+
+  @UseGuards(AuthorizationGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
+  @Patch('by-code/:code')
+  async patchRestaurantUser(
+    @Param('code') code: string,
+    @Body() updateUserDto: UpdateUserDto,
+    @AuthUser() authUser: UserDocument,
+  ): Promise<UserEntity> {
+    if (authUser._id === updateUserDto._id) {
+      throw new ForbiddenException({
+        message: 'you cannot delete yourself from *users section*',
+      });
+    }
+
+    const restaurantId = await this.restaurantsService.findIdByCode(code);
+
+    const user = await this.usersService.updateAccess(
+      updateUserDto._id,
+      updateUserDto.access,
+      restaurantId,
+    );
+    return new UserEntity(user.toObject(), restaurantId);
   }
 
   @UseGuards(JwtAuthGuard)

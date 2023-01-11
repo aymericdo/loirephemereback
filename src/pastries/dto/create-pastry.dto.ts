@@ -11,7 +11,7 @@ import {
   IsOptional,
   IsEnum,
 } from 'class-validator';
-import { pastryTypes } from 'src/pastries/schemas/pastry.schema';
+import { PASTRY_TYPES } from 'src/pastries/schemas/pastry.schema';
 import { SIZE } from 'src/shared/helpers/sizes';
 
 export class CreatePastryDto {
@@ -53,7 +53,7 @@ export class CreatePastryDto {
   readonly stock: number;
 
   @IsString()
-  @IsEnum(pastryTypes)
+  @IsEnum(PASTRY_TYPES)
   @IsNotEmpty()
   readonly type: string;
 

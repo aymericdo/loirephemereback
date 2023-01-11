@@ -2,6 +2,9 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { SIZE } from 'src/shared/helpers/sizes';
 
+export const ACCESS_LIST = ['menu', 'commands', 'stats', 'users'] as const;
+export type Access = typeof ACCESS_LIST[number];
+
 export type UserDocument = User & Document;
 
 @Schema({ timestamps: true })
@@ -22,6 +25,12 @@ export class User {
     maxlength: SIZE.LARGE,
   })
   password: string;
+
+  @Prop({
+    type: Object,
+    required: true,
+  })
+  access: { [restaurantId: string]: Access[] };
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

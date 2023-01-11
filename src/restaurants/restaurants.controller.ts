@@ -13,14 +13,18 @@ import {
 } from '@nestjs/common';
 import { RestaurantsService } from './restaurants.service';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
-import { UserDocument } from 'src/users/schemas/user.schema';
+import { ACCESS_LIST, UserDocument } from 'src/users/schemas/user.schema';
 import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
 import { RestaurantEntity } from 'src/restaurants/serializer/restaurant.serializer';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { UsersService } from 'src/users/users.service';
 
 @Controller('restaurants')
 export class RestaurantsController {
-  constructor(private readonly restaurantsService: RestaurantsService) {}
+  constructor(
+    private readonly restaurantsService: RestaurantsService,
+    private readonly usersService: UsersService,
+  ) {}
 
   @UseInterceptors(ClassSerializerInterceptor)
   @Get('not-exists')
@@ -78,6 +82,14 @@ export class RestaurantsController {
     @AuthUser() authUser: UserDocument,
   ): Promise<RestaurantEntity> {
     const restaurant = await this.restaurantsService.create(body, authUser._id);
+
+    // set initial access
+    await this.usersService.updateAccess(
+      authUser._id,
+      [...ACCESS_LIST],
+      restaurant._id,
+    );
+
     return new RestaurantEntity(restaurant.toObject());
   }
 }

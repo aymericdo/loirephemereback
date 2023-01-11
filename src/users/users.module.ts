@@ -9,7 +9,7 @@ import { RestaurantsModule } from 'src/restaurants/restaurants.module';
 @Module({
   imports: [
     forwardRef(() => AuthModule),
-    RestaurantsModule,
+    forwardRef(() => RestaurantsModule),
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
   ],
   controllers: [UsersController],

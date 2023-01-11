@@ -7,7 +7,7 @@ import { JwtPayload } from 'src/auth/jwt.strategy';
 
 @Injectable()
 export class WsJwtAuthStrategy extends PassportStrategy(Strategy, 'wsjwt') {
-  constructor(private usersService: UsersService) {
+  constructor(private readonly usersService: UsersService) {
     super({
       jwtFromRequest: ExtractJwt.fromUrlQueryParameter('bearerToken'),
       ignoreExpiration: false,
