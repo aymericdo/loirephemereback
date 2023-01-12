@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { UserDocument } from 'src/users/schemas/user.schema';
+import {
+  Access,
+  ACCESS_LIST,
+  UserDocument,
+} from 'src/users/schemas/user.schema';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
 import { Restaurant, RestaurantDocument } from './schemas/restaurant.schema';
 
@@ -131,6 +135,30 @@ export class RestaurantsService {
         { new: true },
       )
       .exec();
+  }
+
+  async fullAccessForAllRestaurants(): Promise<{
+    [restaurantId: string]: Access[];
+  }> {
+    const allRestaurantIds = (await this.findAll()).map(
+      (restaurant) => restaurant._id,
+    );
+
+    return allRestaurantIds.reduce((prev, id) => {
+      prev[id] = [...ACCESS_LIST];
+      return prev;
+    }, {});
+  }
+
+  async fullAccessForDemoResto(user: UserDocument): Promise<{
+    [restaurantId: string]: Access[];
+  }> {
+    const demoRestaurantId = (await this.findDemoResto())._id;
+
+    return {
+      ...user.toObject().access,
+      [demoRestaurantId]: [...ACCESS_LIST],
+    };
   }
 
   private generateCode(name: string): string {

@@ -176,7 +176,17 @@ export class UsersController {
   })
   @Get()
   async getUser(@AuthUser() authUser: UserDocument): Promise<UserEntity> {
-    return new UserEntity(authUser.toObject());
+    if (process.env.GOD_MODE.split('/').includes(authUser.email)) {
+      return new UserEntity({
+        ...authUser.toObject(),
+        access: await this.restaurantsService.fullAccessForAllRestaurants(),
+      });
+    } else {
+      return new UserEntity({
+        ...authUser.toObject(),
+        access: await this.restaurantsService.fullAccessForDemoResto(authUser),
+      });
+    }
   }
 
   @UseGuards(AuthorizationGuard)
