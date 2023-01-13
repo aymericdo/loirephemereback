@@ -8,6 +8,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RestaurantsService } from 'src/restaurants/restaurants.service';
+import { Access } from 'src/users/schemas/user.schema';
 import { UsersService } from 'src/users/users.service';
 
 @Injectable()
@@ -36,9 +37,18 @@ export class AuthorizationGuard extends JwtAuthGuard implements CanActivate {
       });
     }
 
-    if (!(await this.usersService.isAuthorized(user.authUser, params.code))) {
+    const accesses =
+      this.reflector.get<Access[]>('accesses', context.getHandler()) || [];
+
+    if (
+      !(await this.usersService.isAuthorized(
+        user.authUser,
+        params.code,
+        accesses,
+      ))
+    ) {
       throw new ForbiddenException({
-        message: 'user not in restaurant',
+        message: 'user access not granted in restaurant',
       });
     }
 

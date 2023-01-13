@@ -130,7 +130,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const userId = (client.request.user as { userId: string }).userId;
     const user = await this.usersService.findOne(userId);
 
-    if (!(await this.usersService.isAuthorized(user, code))) {
+    if (!(await this.usersService.isAuthorized(user, code, ['commands']))) {
       return;
     }
 

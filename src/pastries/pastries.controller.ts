@@ -30,6 +30,7 @@ import { UpdatePastryDto } from 'src/pastries/dto/update-pastry.dto';
 import { CommandsService } from 'src/commands/commands.service';
 import { WebPushGateway } from 'src/shared/gateways/web-push.gateway';
 import { AuthorizationGuard } from 'src/shared/guards/authorization.guard';
+import { Accesses } from 'src/shared/decorators/accesses.decorator';
 
 export const IMAGE_URL_PATH = './client/photos';
 
@@ -65,6 +66,7 @@ export class PastriesController {
   }
 
   @UseGuards(AuthorizationGuard)
+  @Accesses('menu')
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],
@@ -82,6 +84,7 @@ export class PastriesController {
   }
 
   @UseGuards(AuthorizationGuard)
+  @Accesses('menu')
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],
@@ -150,6 +153,7 @@ export class PastriesController {
   }
 
   @UseGuards(AuthorizationGuard)
+  @Accesses('menu')
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],
@@ -174,6 +178,7 @@ export class PastriesController {
   }
 
   @UseGuards(AuthorizationGuard)
+  @Accesses('menu', 'stats')
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],
@@ -185,6 +190,7 @@ export class PastriesController {
   }
 
   @UseGuards(AuthorizationGuard)
+  @Accesses('menu')
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],
@@ -198,6 +204,7 @@ export class PastriesController {
   }
 
   @UseGuards(AuthorizationGuard)
+  @Accesses('menu')
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],
@@ -211,6 +218,7 @@ export class PastriesController {
   }
 
   @UseGuards(AuthorizationGuard)
+  @Accesses('menu')
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],

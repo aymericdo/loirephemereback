@@ -34,6 +34,7 @@ import { CaptchaGuard } from 'src/shared/guards/captcha.guard';
 import { AuthorizationGuard } from 'src/shared/guards/authorization.guard';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { ChangePasswordUserDto } from 'src/users/dto/change-password-user.dto';
+import { Accesses } from 'src/shared/decorators/accesses.decorator';
 
 @Controller('users')
 export class UsersController {
@@ -190,6 +191,7 @@ export class UsersController {
   }
 
   @UseGuards(AuthorizationGuard)
+  @Accesses('users')
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],
@@ -203,6 +205,7 @@ export class UsersController {
 
   @Throttle(60, 5)
   @UseGuards(AuthorizationGuard)
+  @Accesses('users')
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],
@@ -235,6 +238,7 @@ export class UsersController {
   }
 
   @UseGuards(AuthorizationGuard)
+  @Accesses('users')
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],
@@ -264,6 +268,7 @@ export class UsersController {
   }
 
   @UseGuards(AuthorizationGuard)
+  @Accesses('users')
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],

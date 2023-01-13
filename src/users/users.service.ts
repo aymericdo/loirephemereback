@@ -88,17 +88,32 @@ export class UsersService {
       .exec();
   }
 
-  async isAuthorized(user: UserDocument, code: string): Promise<boolean> {
+  async hasAccess(
+    id: string,
+    code: string,
+    accesses: Access[],
+  ): Promise<boolean> {
+    const currentUserAccess = await this.findCurrentAccess(id);
+    const restaurantId = await this.restaurantsService.findIdByCode(code);
+    return accesses.some((access) =>
+      currentUserAccess[restaurantId].includes(access),
+    );
+  }
+
+  async isAuthorized(
+    user: UserDocument,
+    code: string,
+    accesses: Access[],
+  ): Promise<boolean> {
     if (process.env.GOD_MODE.split('/').includes(user.email)) {
       return true;
     } else if (DEMO_RESTO === code) {
       return true;
-    } else if (
-      await this.restaurantsService.isUserInRestaurant(code, user._id)
-    ) {
-      return true;
     } else {
-      return false;
+      return (
+        (await this.restaurantsService.isUserInRestaurant(code, user._id)) &&
+        (await this.hasAccess(user._id, code, accesses))
+      );
     }
   }
 

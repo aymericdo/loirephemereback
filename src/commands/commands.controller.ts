@@ -25,6 +25,7 @@ import { WebPushGateway } from 'src/shared/gateways/web-push.gateway';
 import { CommandEntity } from 'src/commands/serializers/command.serializer';
 import { CommandDocument } from 'src/commands/schemas/command.schema';
 import { AuthorizationGuard } from 'src/shared/guards/authorization.guard';
+import { Accesses } from 'src/shared/decorators/accesses.decorator';
 
 @Controller('commands')
 export class CommandsController {
@@ -89,6 +90,7 @@ export class CommandsController {
   }
 
   @UseGuards(AuthorizationGuard)
+  @Accesses('commands', 'stats')
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],
@@ -109,6 +111,7 @@ export class CommandsController {
   }
 
   @UseGuards(AuthorizationGuard)
+  @Accesses('commands')
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],
@@ -132,6 +135,7 @@ export class CommandsController {
   }
 
   @UseGuards(AuthorizationGuard)
+  @Accesses('commands')
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],
@@ -155,6 +159,7 @@ export class CommandsController {
   }
 
   @UseGuards(AuthorizationGuard)
+  @Accesses('commands')
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],
@@ -170,6 +175,7 @@ export class CommandsController {
   }
 
   @UseGuards(AuthorizationGuard)
+  @Accesses('commands')
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],
