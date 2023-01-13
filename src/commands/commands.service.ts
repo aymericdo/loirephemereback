@@ -104,8 +104,8 @@ export class CommandsService {
 
   async findByCode(
     code: string,
-    fromDate: string,
-    toDate: string,
+    fromDate: Date,
+    toDate: Date,
   ): Promise<CommandDocument[]> {
     const restaurantId = await this.restaurantsService.findIdByCode(code);
 
@@ -115,8 +115,8 @@ export class CommandsService {
         $or: [
           {
             createdAt: {
-              $gt: new Date(fromDate),
-              $lte: new Date(toDate),
+              $gt: fromDate,
+              $lte: toDate,
             },
           },
           {

@@ -26,6 +26,8 @@ import { CommandEntity } from 'src/commands/serializers/command.serializer';
 import { CommandDocument } from 'src/commands/schemas/command.schema';
 import { AuthorizationGuard } from 'src/shared/guards/authorization.guard';
 import { Accesses } from 'src/shared/decorators/accesses.decorator';
+import { CommandDateRangeDto } from 'src/commands/dto/command-date-range.dto';
+import { CommandDateRangeLast24hoursDto } from 'src/commands/dto/command-date-range-last-24-hours.dto';
 
 @Controller('commands')
 export class CommandsController {
@@ -90,7 +92,7 @@ export class CommandsController {
   }
 
   @UseGuards(AuthorizationGuard)
-  @Accesses('commands', 'stats')
+  @Accesses('commands')
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],
@@ -98,8 +100,27 @@ export class CommandsController {
   @Get('by-code/:code')
   async getCommandsByCode(
     @Param('code') code: string,
-    @Query('fromDate') fromDate: string,
-    @Query('toDate') toDate: string,
+    @Query() { fromDate, toDate }: CommandDateRangeLast24hoursDto,
+  ): Promise<CommandEntity[]> {
+    const commands: CommandDocument[] = await this.commandsService.findByCode(
+      code,
+      fromDate,
+      toDate,
+    );
+
+    return commands.map((command) => new CommandEntity(command.toObject()));
+  }
+
+  @UseGuards(AuthorizationGuard)
+  @Accesses('stats')
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
+  @Get('by-code/:code/stats')
+  async getCommandsByCodeForStats(
+    @Param('code') code: string,
+    @Query() { fromDate, toDate }: CommandDateRangeDto,
   ): Promise<CommandEntity[]> {
     const commands: CommandDocument[] = await this.commandsService.findByCode(
       code,

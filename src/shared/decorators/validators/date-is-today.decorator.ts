@@ -4,21 +4,24 @@ import {
   ValidationOptions,
 } from 'class-validator';
 
-export function IsInFuture(validationOptions?: ValidationOptions) {
+export function IsToday(validationOptions?: ValidationOptions) {
   return function (object: unknown, propertyName: string) {
     registerDecorator({
-      name: 'IsInFuture',
+      name: 'IsToday',
       target: object.constructor,
       propertyName: propertyName,
       options: validationOptions,
       validator: {
         validate(value: Date) {
-          const now = new Date(new Date().getTime() - 15000);
-          // now - 15.seconds
-          return value ? value > now : true;
+          const today = new Date();
+          return (
+            value.getDate() === today.getDate() &&
+            value.getMonth() === today.getMonth() &&
+            value.getFullYear() === today.getFullYear()
+          );
         },
         defaultMessage: buildMessage(
-          (eachPrefix) => eachPrefix + '$property should be in the future',
+          (eachPrefix) => eachPrefix + '$property should be today',
           validationOptions,
         ),
       },
