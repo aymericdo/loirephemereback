@@ -43,7 +43,7 @@ export class AuthService {
     await this.cacheManager.set(
       this.confirmationEmailCacheKey(email.email),
       JSON.stringify([emailCode, code2]),
-      1000 * 60 * 10, // 10 minutes
+      1000 * 60 * 15, // 15 minutes
     );
 
     await this.mailService.sendUserConfirmation(email, emailCode);
@@ -58,7 +58,7 @@ export class AuthService {
     await this.cacheManager.set(
       this.confirmationEmailCacheKey(email.email),
       JSON.stringify([emailCode, code2]),
-      1000 * 60 * 10, // 10 minutes
+      1000 * 60 * 15, // 15 minutes
     );
 
     await this.mailService.sendUserRecoverConfirmation(email, emailCode);
