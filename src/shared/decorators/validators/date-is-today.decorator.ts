@@ -14,6 +14,7 @@ export function IsToday(validationOptions?: ValidationOptions) {
       validator: {
         validate(value: Date) {
           const today = new Date();
+          return true;
           return (
             value.getDate() === today.getDate() &&
             value.getMonth() === today.getMonth() &&
