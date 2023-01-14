@@ -29,6 +29,7 @@ export class User {
   @Prop({
     type: Object,
     required: true,
+    default: {},
   })
   access: { [restaurantId: string]: Access[] };
 }
