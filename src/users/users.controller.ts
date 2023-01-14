@@ -16,25 +16,25 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { UsersService, USER_ORESTO } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UserDocument } from 'src/users/schemas/user.schema';
-import { LocalAuthGuard } from 'src/auth/local-auth.guard';
 import { AuthService } from 'src/auth/auth.service';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { LocalAuthGuard } from 'src/auth/local-auth.guard';
 import {
   DEMO_RESTO,
   RestaurantsService,
 } from 'src/restaurants/restaurants.service';
+import { Accesses } from 'src/shared/decorators/accesses.decorator';
+import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
+import { AuthorizationGuard } from 'src/shared/guards/authorization.guard';
+import { CaptchaGuard } from 'src/shared/guards/captcha.guard';
+import { ChangePasswordUserDto } from 'src/users/dto/change-password-user.dto';
 import { EmailUserDto } from 'src/users/dto/email-user.dto';
 import { RecoverUserDto } from 'src/users/dto/recover-user.dto';
 import { UpdateUserDto } from 'src/users/dto/update-user.dto';
-import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
+import { UserDocument } from 'src/users/schemas/user.schema';
 import { UserEntity } from 'src/users/serializers/user.serializer';
-import { CaptchaGuard } from 'src/shared/guards/captcha.guard';
-import { AuthorizationGuard } from 'src/shared/guards/authorization.guard';
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { ChangePasswordUserDto } from 'src/users/dto/change-password-user.dto';
-import { Accesses } from 'src/shared/decorators/accesses.decorator';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UsersService, USER_ORESTO } from './users.service';
 
 @Controller('users')
 export class UsersController {
@@ -58,7 +58,7 @@ export class UsersController {
 
     if (user) {
       throw new NotFoundException({
-        message: 'email not found',
+        message: 'user already created',
       });
     }
 

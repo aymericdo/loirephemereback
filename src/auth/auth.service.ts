@@ -1,11 +1,11 @@
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
-import { Cache } from 'cache-manager';
 import { JwtService } from '@nestjs/jwt';
-import { UserDocument } from 'src/users/schemas/user.schema';
-import { UsersService } from 'src/users/users.service';
 import * as bcrypt from 'bcrypt';
+import { Cache } from 'cache-manager';
 import { MailService } from 'src/mail/mail.service';
 import { EmailUserDto } from 'src/users/dto/email-user.dto';
+import { UserDocument } from 'src/users/schemas/user.schema';
+import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class AuthService {
@@ -43,7 +43,7 @@ export class AuthService {
     await this.cacheManager.set(
       this.confirmationEmailCacheKey(email.email),
       JSON.stringify([emailCode, code2]),
-      1000 * 180,
+      1000 * 60 * 10, // 10 minutes
     );
 
     await this.mailService.sendUserConfirmation(email, emailCode);
@@ -58,7 +58,7 @@ export class AuthService {
     await this.cacheManager.set(
       this.confirmationEmailCacheKey(email.email),
       JSON.stringify([emailCode, code2]),
-      1000 * 180,
+      1000 * 60 * 10, // 10 minutes
     );
 
     await this.mailService.sendUserRecoverConfirmation(email, emailCode);
