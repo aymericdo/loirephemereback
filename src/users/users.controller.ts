@@ -27,6 +27,8 @@ import { Accesses } from 'src/shared/decorators/accesses.decorator';
 import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
 import { AuthorizationGuard } from 'src/shared/guards/authorization.guard';
 import { CaptchaGuard } from 'src/shared/guards/captcha.guard';
+import { SharedRestaurantsService } from 'src/shared/services/shared-restaurants.service';
+import { SharedUsersService } from 'src/shared/services/shared-users.service';
 import { ChangePasswordUserDto } from 'src/users/dto/change-password-user.dto';
 import { EmailUserDto } from 'src/users/dto/email-user.dto';
 import { RecoverUserDto } from 'src/users/dto/recover-user.dto';
@@ -40,7 +42,9 @@ import { UsersService, USER_ORESTO } from './users.service';
 export class UsersController {
   constructor(
     private readonly usersService: UsersService,
+    private readonly sharedUsersService: SharedUsersService,
     private readonly restaurantsService: RestaurantsService,
+    private readonly sharedRestaurantsService: SharedRestaurantsService,
     private readonly authService: AuthService,
   ) {}
 
@@ -54,7 +58,7 @@ export class UsersController {
   @UseGuards(CaptchaGuard)
   @Post('/confirm-email')
   async confirmUserWithEmail(@Body() body: EmailUserDto): Promise<string> {
-    const user = await this.usersService.findOneByEmail(body.email);
+    const user = await this.sharedUsersService.findOneByEmail(body.email);
 
     if (user) {
       throw new NotFoundException({
@@ -71,7 +75,7 @@ export class UsersController {
   async confirmUserWithRecoverEmail(
     @Body() body: EmailUserDto,
   ): Promise<string> {
-    const user = await this.usersService.findOneByEmail(body.email);
+    const user = await this.sharedUsersService.findOneByEmail(body.email);
 
     if (!user) {
       throw new NotFoundException({
@@ -85,7 +89,7 @@ export class UsersController {
   @Throttle(60, 10)
   @Post('/change-password')
   async changePassword(@Body() body: ChangePasswordUserDto): Promise<boolean> {
-    const user = await this.usersService.findOneByEmail(body.email);
+    const user = await this.sharedUsersService.findOneByEmail(body.email);
 
     const isValid = await this.authService.validateCodes(
       body.email,
@@ -215,7 +219,9 @@ export class UsersController {
     @Param('code') code: string,
     @Body('email') email: string,
   ): Promise<UserEntity> {
-    const user: UserDocument = await this.usersService.findOneByEmail(email);
+    const user: UserDocument = await this.sharedUsersService.findOneByEmail(
+      email,
+    );
 
     if (!user) {
       throw new NotFoundException({
@@ -249,7 +255,7 @@ export class UsersController {
     @Body('id') _id: string,
     @AuthUser() authUser: UserDocument,
   ): Promise<boolean> {
-    const user = await this.usersService.findOne(_id);
+    const user = await this.sharedUsersService.findOne(_id);
 
     if (user.email === USER_ORESTO && code === DEMO_RESTO) {
       throw new ForbiddenException({
@@ -285,9 +291,9 @@ export class UsersController {
       });
     }
 
-    const restaurantId = await this.restaurantsService.findIdByCode(code);
+    const restaurantId = await this.sharedRestaurantsService.findIdByCode(code);
 
-    const user = await this.usersService.updateAccess(
+    const user = await this.sharedUsersService.updateAccess(
       updateUserDto._id,
       updateUserDto.access,
       restaurantId,

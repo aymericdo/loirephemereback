@@ -1,6 +1,8 @@
-import { Connection, Model, ObjectId, Types } from 'mongoose';
 import { Injectable } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
+import { Connection, Model, ObjectId, Types } from 'mongoose';
+import { CreatePastryDto } from 'src/pastries/dto/create-pastry.dto';
+import { UpdatePastryDto } from 'src/pastries/dto/update-pastry.dto';
 import {
   Historical,
   Pastry,
@@ -8,26 +10,19 @@ import {
   statsAttributes,
 } from 'src/pastries/schemas/pastry.schema';
 import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
-import { CreatePastryDto } from 'src/pastries/dto/create-pastry.dto';
-import { UpdatePastryDto } from 'src/pastries/dto/update-pastry.dto';
-import { RestaurantsService } from 'src/restaurants/restaurants.service';
 import { SocketGateway } from 'src/shared/gateways/web-socket.gateway';
+import { SharedPastriesService } from 'src/shared/services/shared-pastries.service';
+import { SharedRestaurantsService } from 'src/shared/services/shared-restaurants.service';
 
 @Injectable()
 export class PastriesService {
   constructor(
     @InjectModel(Pastry.name) private pastryModel: Model<PastryDocument>,
     @InjectConnection() private readonly connection: Connection,
-    private readonly restaurantsService: RestaurantsService,
+    private readonly sharedPastriesService: SharedPastriesService,
+    private readonly sharedRestaurantsService: SharedRestaurantsService,
     private readonly socketGateway: SocketGateway,
   ) {}
-
-  async findOne(id: string): Promise<PastryDocument> {
-    return await this.pastryModel
-      .findOne({ _id: id })
-      .populate('restaurant')
-      .exec();
-  }
 
   async create(
     restaurant: RestaurantDocument,
@@ -67,12 +62,13 @@ export class PastriesService {
     historical: Historical[],
     isUpdatingStock = false,
   ): Promise<PastryDocument> {
-    const pastry = await this.findOne(updatePastryDto.id);
+    const pastry = await this.sharedPastriesService.findOne(updatePastryDto.id);
 
     if (isUpdatingStock && updatePastryDto.commonStock) {
-      const commonStockPastries = await this.findByCommonStock(
-        updatePastryDto.commonStock,
-      );
+      const commonStockPastries =
+        await this.sharedPastriesService.findByCommonStock(
+          updatePastryDto.commonStock,
+        );
 
       commonStockPastries.forEach(async (commonStockPastry: PastryDocument) => {
         const newCommonStockPastry = await this.pastryModel
@@ -111,7 +107,7 @@ export class PastriesService {
   }
 
   async removeCommonStock(code: string, commonStock: string): Promise<void> {
-    const restaurantId = await this.restaurantsService.findIdByCode(code);
+    const restaurantId = await this.sharedRestaurantsService.findIdByCode(code);
 
     await this.pastryModel
       .updateMany(
@@ -131,7 +127,7 @@ export class PastriesService {
     pastryIds: string[],
     commonStock: string,
   ): Promise<void> {
-    const restaurantId = await this.restaurantsService.findIdByCode(code);
+    const restaurantId = await this.sharedRestaurantsService.findIdByCode(code);
     await this.pastryModel
       .updateMany(
         {
@@ -335,10 +331,6 @@ export class PastriesService {
       .exec();
   }
 
-  async findByCommonStock(commonStock: string): Promise<PastryDocument[]> {
-    return await this.pastryModel.find({ commonStock: commonStock }).exec();
-  }
-
   async isNameNotExists(code: string, pastryName: string): Promise<boolean> {
     return (
       (
@@ -368,51 +360,6 @@ export class PastriesService {
           .collation({ locale: 'fr', strength: 1 })
           .exec()) as { totalCount: number }[]
       ).length === 0
-    );
-  }
-
-  async decrementStock(pastry: PastryDocument, count: number): Promise<void> {
-    if (pastry.commonStock) {
-      const commonStockPastries = await this.findByCommonStock(
-        pastry.commonStock,
-      );
-
-      commonStockPastries.forEach(async (commonStockPastry: PastryDocument) => {
-        await this.decrementStockPastry(commonStockPastry, count);
-      });
-    } else {
-      await this.decrementStockPastry(pastry, count);
-    }
-  }
-
-  async verifyAllPastriesRestaurant(
-    code: string,
-    pastryIds: string[],
-  ): Promise<boolean> {
-    return (
-      (
-        (await this.pastryModel
-          .aggregate([
-            {
-              $lookup: {
-                from: 'restaurants',
-                localField: 'restaurant',
-                foreignField: '_id',
-                as: 'restaurant',
-              },
-            },
-            {
-              $match: {
-                'restaurant.code': code,
-                _id: { $in: pastryIds.map((id) => new Types.ObjectId(id)) },
-              },
-            },
-            {
-              $count: 'totalCount',
-            },
-          ])
-          .exec()) as { totalCount: number }[]
-      ).length === pastryIds.length
     );
   }
 
@@ -472,27 +419,6 @@ export class PastriesService {
     });
 
     return historical;
-  }
-
-  private async decrementStockPastry(
-    pastry: PastryDocument,
-    count: number,
-  ): Promise<PastryDocument> {
-    const newPastry = await this.pastryModel
-      .findByIdAndUpdate(
-        pastry._id,
-        { stock: pastry.stock - count },
-        { new: true, useFindAndModify: false },
-      )
-      .populate('restaurant')
-      .exec();
-
-    this.socketGateway.stockChanged(newPastry.restaurant.code, {
-      pastryId: newPastry._id,
-      newStock: newPastry.stock,
-    });
-
-    return newPastry;
   }
 
   private async getDisplaySequence(

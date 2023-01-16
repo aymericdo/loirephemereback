@@ -13,28 +13,28 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { PastryDocument } from 'src/pastries/schemas/pastry.schema';
-import { CommandsService } from './commands.service';
-import { CreateCommandDto } from './dto/create-command.dto';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
-import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
-import { RestaurantsService } from 'src/restaurants/restaurants.service';
-import { PastriesService } from 'src/pastries/pastries.service';
-import { WebPushGateway } from 'src/shared/gateways/web-push.gateway';
-import { CommandEntity } from 'src/commands/serializers/command.serializer';
-import { CommandDocument } from 'src/commands/schemas/command.schema';
-import { AuthorizationGuard } from 'src/shared/guards/authorization.guard';
-import { Accesses } from 'src/shared/decorators/accesses.decorator';
-import { CommandDateRangeDto } from 'src/commands/dto/command-date-range.dto';
 import { CommandDateRangeLast24hoursDto } from 'src/commands/dto/command-date-range-last-24-hours.dto';
+import { CommandDateRangeDto } from 'src/commands/dto/command-date-range.dto';
+import { CommandDocument } from 'src/commands/schemas/command.schema';
+import { CommandEntity } from 'src/commands/serializers/command.serializer';
+import { PastryDocument } from 'src/pastries/schemas/pastry.schema';
+import { RestaurantsService } from 'src/restaurants/restaurants.service';
+import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
+import { Accesses } from 'src/shared/decorators/accesses.decorator';
+import { WebPushGateway } from 'src/shared/gateways/web-push.gateway';
+import { AuthorizationGuard } from 'src/shared/guards/authorization.guard';
+import { SharedPastriesService } from 'src/shared/services/shared-pastries.service';
+import { CommandsService } from './commands.service';
+import { CreateCommandDto } from './dto/create-command.dto';
 
 @Controller('commands')
 export class CommandsController {
   constructor(
     private readonly restaurantsService: RestaurantsService,
     private readonly commandsService: CommandsService,
-    private readonly pastriesService: PastriesService,
+    private readonly sharedPastriesService: SharedPastriesService,
     private readonly webPushGateway: WebPushGateway,
     @InjectConnection() private readonly connection: Connection,
   ) {}
@@ -49,7 +49,7 @@ export class CommandsController {
       this.commandsService.reduceCountByPastryId(body.pastries);
 
     if (
-      !(await this.pastriesService.verifyAllPastriesRestaurant(
+      !(await this.sharedPastriesService.verifyAllPastriesRestaurant(
         code,
         Object.keys(countByPastryId),
       ))

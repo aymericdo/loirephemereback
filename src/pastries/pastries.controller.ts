@@ -27,10 +27,11 @@ import { extname } from 'path';
 import * as fs from 'fs';
 import { randomBytes } from 'crypto';
 import { UpdatePastryDto } from 'src/pastries/dto/update-pastry.dto';
-import { CommandsService } from 'src/commands/commands.service';
 import { WebPushGateway } from 'src/shared/gateways/web-push.gateway';
 import { AuthorizationGuard } from 'src/shared/guards/authorization.guard';
 import { Accesses } from 'src/shared/decorators/accesses.decorator';
+import { SharedPastriesService } from 'src/shared/services/shared-pastries.service';
+import { SharedCommandsService } from 'src/shared/services/shared-commands.service';
 
 export const IMAGE_URL_PATH = './client/photos';
 
@@ -38,8 +39,9 @@ export const IMAGE_URL_PATH = './client/photos';
 export class PastriesController {
   constructor(
     private readonly pastriesService: PastriesService,
+    private readonly sharedPastriesService: SharedPastriesService,
     private readonly restaurantsService: RestaurantsService,
-    private readonly commandsService: CommandsService,
+    private readonly sharedCommandsService: SharedCommandsService,
     private readonly webPushGateway: WebPushGateway,
   ) {}
 
@@ -97,7 +99,7 @@ export class PastriesController {
     pastry: PastryEntity;
     displaySequenceById: { [id: string]: number };
   }> {
-    const currentPastry = await this.pastriesService.findOne(body._id);
+    const currentPastry = await this.sharedPastriesService.findOne(body._id);
 
     if (currentPastry.restaurant.code !== code) {
       throw new BadRequestException({
@@ -111,7 +113,7 @@ export class PastriesController {
 
     if (
       currentPastry.name !== body.name &&
-      (await this.commandsService.findByPastry(code, body._id.toString()))
+      (await this.sharedCommandsService.findByPastry(code, body._id.toString()))
         .length > 0
     ) {
       throw new BadRequestException({
@@ -214,7 +216,9 @@ export class PastriesController {
     @Param('code') code: string,
     @Param('pastryId') pastryId: string,
   ): Promise<boolean> {
-    return (await this.commandsService.findByPastry(code, pastryId)).length > 0;
+    return (
+      (await this.sharedCommandsService.findByPastry(code, pastryId)).length > 0
+    );
   }
 
   @UseGuards(AuthorizationGuard)

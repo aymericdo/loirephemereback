@@ -11,19 +11,19 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { RestaurantsService } from './restaurants.service';
-import { CreateRestaurantDto } from './dto/create-restaurant.dto';
-import { ACCESS_LIST, UserDocument } from 'src/users/schemas/user.schema';
-import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
-import { RestaurantEntity } from 'src/restaurants/serializer/restaurant.serializer';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { UsersService } from 'src/users/users.service';
+import { RestaurantEntity } from 'src/restaurants/serializer/restaurant.serializer';
+import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
+import { SharedUsersService } from 'src/shared/services/shared-users.service';
+import { ACCESS_LIST, UserDocument } from 'src/users/schemas/user.schema';
+import { CreateRestaurantDto } from './dto/create-restaurant.dto';
+import { RestaurantsService } from './restaurants.service';
 
 @Controller('restaurants')
 export class RestaurantsController {
   constructor(
     private readonly restaurantsService: RestaurantsService,
-    private readonly usersService: UsersService,
+    private readonly sharedUsersService: SharedUsersService,
   ) {}
 
   @UseInterceptors(ClassSerializerInterceptor)
@@ -84,7 +84,7 @@ export class RestaurantsController {
     const restaurant = await this.restaurantsService.create(body, authUser._id);
 
     // set initial access
-    await this.usersService.updateAccess(
+    await this.sharedUsersService.updateAccess(
       authUser._id,
       [...ACCESS_LIST],
       restaurant._id,

@@ -46,12 +46,6 @@ export class RestaurantsService {
     return await this.restaurantModel.findOne({ code: code }).exec();
   }
 
-  async findIdByCode(code: string): Promise<string> {
-    return (
-      await this.restaurantModel.findOne({ code: code }, { _id: 1 }).exec()
-    )?._id;
-  }
-
   async findUsersByCode(code: string): Promise<UserDocument[]> {
     return (
       await this.restaurantModel

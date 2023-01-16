@@ -1,20 +1,20 @@
 import {
-  Injectable,
   CanActivate,
   ExecutionContext,
   ForbiddenException,
+  Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RestaurantsService } from 'src/restaurants/restaurants.service';
+import { SharedUsersService } from 'src/shared/services/shared-users.service';
 import { Access } from 'src/users/schemas/user.schema';
-import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class AuthorizationGuard extends JwtAuthGuard implements CanActivate {
   constructor(
-    private readonly usersService: UsersService,
+    private readonly sharedUsersService: SharedUsersService,
     private readonly restaurantsService: RestaurantsService,
     protected readonly reflector: Reflector,
   ) {
@@ -41,7 +41,7 @@ export class AuthorizationGuard extends JwtAuthGuard implements CanActivate {
       this.reflector.get<Access[]>('accesses', context.getHandler()) || [];
 
     if (
-      !(await this.usersService.isAuthorized(
+      !(await this.sharedUsersService.isAuthorized(
         user.authUser,
         params.code,
         accesses,

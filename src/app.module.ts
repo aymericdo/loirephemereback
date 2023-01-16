@@ -4,24 +4,23 @@ import {
   MiddlewareConsumer,
   Module,
 } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { MongooseModule } from '@nestjs/mongoose';
+import { ScheduleModule } from '@nestjs/schedule';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { SentryInterceptor, SentryModule } from '@ntegral/nestjs-sentry';
+import { join } from 'path';
+import { ApiLoggerMiddleware } from 'src/shared/middlewares/api-logger.middleware';
+import { SharedModule } from 'src/shared/shared.module';
+import { UsersModule } from 'src/users/users.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { MongooseModule } from '@nestjs/mongoose';
-import { ConfigModule } from '@nestjs/config';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { PastriesModule } from './pastries/pastries.module';
-import { CommandsModule } from './commands/commands.module';
-import { ServeStaticModule } from '@nestjs/serve-static';
-import { join } from 'path';
-import { RestaurantsModule } from './restaurants/restaurants.module';
-import { UsersModule } from 'src/users/users.module';
 import { AuthModule } from './auth/auth.module';
+import { CommandsModule } from './commands/commands.module';
 import { MailModule } from './mail/mail.module';
-import { ApiLoggerMiddleware } from 'src/shared/middlewares/api-logger.middleware';
-import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
-import { ScheduleModule } from '@nestjs/schedule';
-import { SentryModule } from '@ntegral/nestjs-sentry';
-import { SentryInterceptor } from '@ntegral/nestjs-sentry';
+import { PastriesModule } from './pastries/pastries.module';
 
 @Module({
   imports: [
@@ -49,10 +48,10 @@ import { SentryInterceptor } from '@ntegral/nestjs-sentry';
     }),
     PastriesModule,
     CommandsModule,
-    RestaurantsModule,
     UsersModule,
     AuthModule,
     MailModule,
+    SharedModule,
     ScheduleModule.forRoot(),
   ],
   controllers: [AppController],

@@ -3,15 +3,15 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { Cache } from 'cache-manager';
 import { MailService } from 'src/mail/mail.service';
+import { SharedUsersService } from 'src/shared/services/shared-users.service';
 import { EmailUserDto } from 'src/users/dto/email-user.dto';
 import { UserDocument } from 'src/users/schemas/user.schema';
-import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
-    private readonly usersService: UsersService,
+    private readonly sharedUsersService: SharedUsersService,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
   ) {}
@@ -20,7 +20,7 @@ export class AuthService {
     email: string,
     pass: string,
   ): Promise<UserDocument | null> {
-    const user = await this.usersService.findOneByEmail(email);
+    const user = await this.sharedUsersService.findOneByEmail(email);
     if (user && (await bcrypt.compare(pass, user.password))) {
       const currentUser: UserDocument = user.toObject();
       delete currentUser.password;

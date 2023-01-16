@@ -1,23 +1,23 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { randomBytes } from 'crypto';
 import { Model, Types } from 'mongoose';
+import { CommandPastryDto } from 'src/pastries/dto/command-pastry.dto';
+import { PastryDocument } from 'src/pastries/schemas/pastry.schema';
+import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
+import { WebPushGateway } from 'src/shared/gateways/web-push.gateway';
+import { SocketGateway } from 'src/shared/gateways/web-socket.gateway';
+import { SharedPastriesService } from 'src/shared/services/shared-pastries.service';
+import { SharedRestaurantsService } from 'src/shared/services/shared-restaurants.service';
 import { CreateCommandDto } from './dto/create-command.dto';
 import { Command, CommandDocument } from './schemas/command.schema';
-import { randomBytes } from 'crypto';
-import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
-import { PastryDocument } from 'src/pastries/schemas/pastry.schema';
-import { PastriesService } from 'src/pastries/pastries.service';
-import { SocketGateway } from 'src/shared/gateways/web-socket.gateway';
-import { WebPushGateway } from 'src/shared/gateways/web-push.gateway';
-import { CommandPastryDto } from 'src/pastries/dto/command-pastry.dto';
-import { RestaurantsService } from 'src/restaurants/restaurants.service';
 
 @Injectable()
 export class CommandsService {
   constructor(
     @InjectModel(Command.name) private commandModel: Model<CommandDocument>,
-    private readonly restaurantsService: RestaurantsService,
-    private readonly pastriesService: PastriesService,
+    private readonly sharedRestaurantsService: SharedRestaurantsService,
+    private readonly sharedPastriesService: SharedPastriesService,
     private readonly webPushGateway: WebPushGateway,
     private readonly socketGateway: SocketGateway,
   ) {}
@@ -107,7 +107,7 @@ export class CommandsService {
     fromDate: Date,
     toDate: Date,
   ): Promise<CommandDocument[]> {
-    const restaurantId = await this.restaurantsService.findIdByCode(code);
+    const restaurantId = await this.sharedRestaurantsService.findIdByCode(code);
 
     return await this.commandModel
       .find({
@@ -137,7 +137,7 @@ export class CommandsService {
     code: string,
     pastryId: string,
   ): Promise<CommandDocument[]> {
-    const restaurantId = await this.restaurantsService.findIdByCode(code);
+    const restaurantId = await this.sharedRestaurantsService.findIdByCode(code);
 
     return await this.commandModel
       .find({
@@ -172,9 +172,8 @@ export class CommandsService {
   }): Promise<PastryDocument[]> {
     return await Object.keys(countByPastryId).reduce(
       async (previousValue, pastryId: string) => {
-        const oldPastry: PastryDocument = await this.pastriesService.findOne(
-          pastryId,
-        );
+        const oldPastry: PastryDocument =
+          await this.sharedPastriesService.findOne(pastryId);
 
         if (oldPastry.stock - countByPastryId[pastryId] < 0) {
           (await previousValue).push(oldPastry);
@@ -190,11 +189,10 @@ export class CommandsService {
     [pastryId: string]: number;
   }): Promise<void> {
     Object.keys(countByPastryId).forEach(async (pastryId) => {
-      const currentPastry: PastryDocument = await this.pastriesService.findOne(
-        pastryId,
-      );
+      const currentPastry: PastryDocument =
+        await this.sharedPastriesService.findOne(pastryId);
 
-      await this.pastriesService.decrementStock(
+      await this.sharedPastriesService.decrementStock(
         currentPastry as PastryDocument,
         countByPastryId[currentPastry._id],
       );

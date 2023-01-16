@@ -1,13 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import * as bcrypt from 'bcrypt';
 import { Model } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
-import { Access, User, UserDocument } from './schemas/user.schema';
-import * as bcrypt from 'bcrypt';
-import {
-  DEMO_RESTO,
-  RestaurantsService,
-} from 'src/restaurants/restaurants.service';
+import { User, UserDocument } from './schemas/user.schema';
 
 export const USER_ORESTO = 'user@oresto.app';
 
@@ -16,16 +12,7 @@ export class UsersService {
   constructor(
     @InjectModel(User.name)
     private userModel: Model<UserDocument>,
-    private readonly restaurantsService: RestaurantsService,
   ) {}
-
-  async findOne(id: string): Promise<UserDocument> {
-    return await this.userModel.findById(id).exec();
-  }
-
-  async findOneByEmail(email: string): Promise<UserDocument> {
-    return await this.userModel.findOne({ email: email.toLowerCase() }).exec();
-  }
 
   async isEmailExists(email: string): Promise<boolean> {
     return (
@@ -52,25 +39,6 @@ export class UsersService {
     return await createdUser.save();
   }
 
-  async updateAccess(
-    id: string,
-    access: Access[],
-    restaurantId: string,
-  ): Promise<UserDocument> {
-    return await this.userModel
-      .findByIdAndUpdate(
-        id,
-        {
-          access: {
-            ...(await this.findCurrentAccess(id)),
-            [restaurantId]: access,
-          },
-        },
-        { new: true },
-      )
-      .exec();
-  }
-
   async updatePassword(
     userId: string,
     password: string,
@@ -86,41 +54,6 @@ export class UsersService {
         { new: true },
       )
       .exec();
-  }
-
-  async hasAccess(
-    id: string,
-    code: string,
-    accesses: Access[],
-  ): Promise<boolean> {
-    const currentUserAccess = await this.findCurrentAccess(id);
-    const restaurantId = await this.restaurantsService.findIdByCode(code);
-    return accesses.some((access) =>
-      currentUserAccess[restaurantId].includes(access),
-    );
-  }
-
-  async isAuthorized(
-    user: UserDocument,
-    code: string,
-    accesses: Access[],
-  ): Promise<boolean> {
-    if (process.env.GOD_MODE.split('/').includes(user.email)) {
-      return true;
-    } else if (DEMO_RESTO === code) {
-      return true;
-    } else {
-      return (
-        (await this.restaurantsService.isUserInRestaurant(code, user._id)) &&
-        (await this.hasAccess(user._id, code, accesses))
-      );
-    }
-  }
-
-  private async findCurrentAccess(
-    id: string,
-  ): Promise<{ [restaurantId: string]: Access[] }> {
-    return (await this.userModel.findById(id, { access: 1 }).exec())?.access;
   }
 
   private async encryptPassword(password: string): Promise<string> {

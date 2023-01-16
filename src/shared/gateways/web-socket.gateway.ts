@@ -1,23 +1,23 @@
+import { Logger, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import {
-  WebSocketGateway,
-  WebSocketServer,
+  ConnectedSocket,
+  MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
   SubscribeMessage,
-  MessageBody,
-  ConnectedSocket,
+  WebSocketGateway,
+  WebSocketServer,
 } from '@nestjs/websockets';
-import { Logger, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
-import WebSocket, { Server } from 'ws';
-import { CommandDocument } from 'src/commands/schemas/command.schema';
-import { WsThrottlerGuard } from 'src/shared/guards/ws-throttler.guard';
-import { WsJwtAuthGuard } from 'src/auth/ws-jwt-auth.guard';
-import { Request } from 'express';
-import { WebPushGateway } from 'src/shared/gateways/web-push.gateway';
-import { UsersService } from 'src/users/users.service';
-import { CommandEntity } from 'src/commands/serializers/command.serializer';
-import { UpdateCommandDto } from 'src/commands/dto/update-command.dto';
 import { instanceToPlain } from 'class-transformer';
+import { Request } from 'express';
+import { WsJwtAuthGuard } from 'src/auth/ws-jwt-auth.guard';
+import { UpdateCommandDto } from 'src/commands/dto/update-command.dto';
+import { CommandDocument } from 'src/commands/schemas/command.schema';
+import { CommandEntity } from 'src/commands/serializers/command.serializer';
+import { WebPushGateway } from 'src/shared/gateways/web-push.gateway';
+import { WsThrottlerGuard } from 'src/shared/guards/ws-throttler.guard';
+import { SharedUsersService } from 'src/shared/services/shared-users.service';
+import WebSocket, { Server } from 'ws';
 
 interface Client extends WebSocket {
   request: Request;
@@ -33,7 +33,7 @@ interface Client extends WebSocket {
 @UseGuards(WsThrottlerGuard)
 export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
-    private readonly usersService: UsersService,
+    private readonly sharedUsersService: SharedUsersService,
     private readonly webPushGateway: WebPushGateway,
   ) {}
 
@@ -128,9 +128,11 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const code = this.getCodeFromQueryParam(client.request.url);
 
     const userId = (client.request.user as { userId: string }).userId;
-    const user = await this.usersService.findOne(userId);
+    const user = await this.sharedUsersService.findOne(userId);
 
-    if (!(await this.usersService.isAuthorized(user, code, ['commands']))) {
+    if (
+      !(await this.sharedUsersService.isAuthorized(user, code, ['commands']))
+    ) {
       return;
     }
 
