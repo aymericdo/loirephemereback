@@ -11,9 +11,9 @@ import { UsersService } from 'src/users/users.service';
 export class AuthService {
   constructor(
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
-    private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
+    private readonly usersService: UsersService,
   ) {}
 
   async validateUser(

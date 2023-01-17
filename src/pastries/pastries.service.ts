@@ -11,7 +11,7 @@ import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
 import { CreatePastryDto } from 'src/pastries/dto/create-pastry.dto';
 import { UpdatePastryDto } from 'src/pastries/dto/update-pastry.dto';
 import { RestaurantsService } from 'src/restaurants/restaurants.service';
-import { SocketGateway } from 'src/shared/gateways/web-socket.gateway';
+import { SocketGateway } from 'src/notifications/gateways/web-socket.gateway';
 
 @Injectable()
 export class PastriesService {

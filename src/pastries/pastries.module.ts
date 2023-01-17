@@ -1,20 +1,16 @@
-import { forwardRef, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { CommandsModule } from 'src/commands/commands.module';
 import { ImageCleanerService } from 'src/pastries/cron/image-cleaner.service';
 import { RestaurantsModule } from 'src/restaurants/restaurants.module';
-import { SharedModule } from 'src/shared/shared.module';
-import { UsersModule } from 'src/users/users.module';
+import { NotificationsModule } from 'src/notifications/notifications.module';
 import { PastriesController } from './pastries.controller';
 import { PastriesService } from './pastries.service';
 import { Pastry, PastrySchema } from './schemas/pastry.schema';
 
 @Module({
   imports: [
-    forwardRef(() => CommandsModule),
-    SharedModule,
+    NotificationsModule,
     RestaurantsModule,
-    UsersModule,
     MongooseModule.forFeature([{ name: Pastry.name, schema: PastrySchema }]),
   ],
   controllers: [PastriesController],

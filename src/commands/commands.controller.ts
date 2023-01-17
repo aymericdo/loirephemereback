@@ -21,7 +21,7 @@ import { Connection } from 'mongoose';
 import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
 import { RestaurantsService } from 'src/restaurants/restaurants.service';
 import { PastriesService } from 'src/pastries/pastries.service';
-import { WebPushGateway } from 'src/shared/gateways/web-push.gateway';
+import { WebPushGateway } from 'src/notifications/gateways/web-push.gateway';
 import { CommandEntity } from 'src/commands/serializers/command.serializer';
 import { CommandDocument } from 'src/commands/schemas/command.schema';
 import { AuthorizationGuard } from 'src/shared/guards/authorization.guard';

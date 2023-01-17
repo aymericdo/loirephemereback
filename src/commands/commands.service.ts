@@ -7,8 +7,8 @@ import { randomBytes } from 'crypto';
 import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
 import { PastryDocument } from 'src/pastries/schemas/pastry.schema';
 import { PastriesService } from 'src/pastries/pastries.service';
-import { SocketGateway } from 'src/shared/gateways/web-socket.gateway';
-import { WebPushGateway } from 'src/shared/gateways/web-push.gateway';
+import { SocketGateway } from 'src/notifications/gateways/web-socket.gateway';
+import { WebPushGateway } from 'src/notifications/gateways/web-push.gateway';
 import { CommandPastryDto } from 'src/pastries/dto/command-pastry.dto';
 import { RestaurantsService } from 'src/restaurants/restaurants.service';
 

@@ -13,11 +13,11 @@ import { CommandDocument } from 'src/commands/schemas/command.schema';
 import { WsThrottlerGuard } from 'src/shared/guards/ws-throttler.guard';
 import { WsJwtAuthGuard } from 'src/auth/ws-jwt-auth.guard';
 import { Request } from 'express';
-import { WebPushGateway } from 'src/shared/gateways/web-push.gateway';
-import { UsersService } from 'src/users/users.service';
+import { WebPushGateway } from 'src/notifications/gateways/web-push.gateway';
 import { CommandEntity } from 'src/commands/serializers/command.serializer';
 import { UpdateCommandDto } from 'src/commands/dto/update-command.dto';
 import { instanceToPlain } from 'class-transformer';
+import { UsersService } from 'src/users/users.service';
 
 interface Client extends WebSocket {
   request: Request;
@@ -130,7 +130,9 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const userId = (client.request.user as { userId: string }).userId;
     const user = await this.usersService.findOne(userId);
 
-    if (!(await this.usersService.isAuthorized(user, code, ['commands']))) {
+    if (
+      !(await this.usersService.isAuthorized(user, code, ['commands']))
+    ) {
       return;
     }
 

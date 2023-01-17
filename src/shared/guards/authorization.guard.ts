@@ -8,8 +8,8 @@ import {
 import { Reflector } from '@nestjs/core';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RestaurantsService } from 'src/restaurants/restaurants.service';
-import { Access } from 'src/users/schemas/user.schema';
 import { UsersService } from 'src/users/users.service';
+import { Access } from 'src/users/schemas/user.schema';
 
 @Injectable()
 export class AuthorizationGuard extends JwtAuthGuard implements CanActivate {

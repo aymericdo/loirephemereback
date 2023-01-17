@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { WebPushGateway } from 'src/shared/gateways/web-push.gateway';
-import { SocketGateway } from 'src/shared/gateways/web-socket.gateway';
+import { WebPushGateway } from 'src/notifications/gateways/web-push.gateway';
+import { SocketGateway } from 'src/notifications/gateways/web-socket.gateway';
 
 @Injectable()
 export class WsCleanerService {
