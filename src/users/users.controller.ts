@@ -19,7 +19,10 @@ import { Throttle } from '@nestjs/throttler';
 import { AuthService } from 'src/auth/auth.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { LocalAuthGuard } from 'src/auth/local-auth.guard';
-import { RestaurantsService } from 'src/restaurants/restaurants.service';
+import {
+  DEMO_RESTO,
+  RestaurantsService,
+} from 'src/restaurants/restaurants.service';
 import { Accesses } from 'src/shared/decorators/accesses.decorator';
 import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
 import { AuthorizationGuard } from 'src/shared/guards/authorization.guard';
@@ -28,7 +31,11 @@ import { ChangePasswordUserDto } from 'src/users/dto/change-password-user.dto';
 import { EmailUserDto } from 'src/users/dto/email-user.dto';
 import { RecoverUserDto } from 'src/users/dto/recover-user.dto';
 import { UpdateUserDto } from 'src/users/dto/update-user.dto';
-import { UserDocument } from 'src/users/schemas/user.schema';
+import {
+  Access,
+  ACCESS_LIST,
+  UserDocument,
+} from 'src/users/schemas/user.schema';
 import { UserEntity } from 'src/users/serializers/user.serializer';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UsersService } from './users.service';
@@ -212,15 +219,19 @@ export class UsersController {
     @Param('code') code: string,
     @Body('email') email: string,
   ): Promise<UserEntity> {
-    const user: UserDocument = await this.usersService.findOneByEmail(email);
+    const currentUser: UserDocument = await this.usersService.findOneByEmail(
+      email,
+    );
 
-    if (!user) {
+    if (!currentUser) {
       throw new NotFoundException({
         message: 'user not found',
       });
     }
 
-    if (await this.restaurantsService.isUserInRestaurant(code, user._id)) {
+    if (
+      await this.restaurantsService.isUserInRestaurant(code, currentUser._id)
+    ) {
       throw new ForbiddenException({
         message: 'user already in restaurant',
       });
@@ -228,7 +239,16 @@ export class UsersController {
 
     const restaurant = await this.restaurantsService.addUserToRestaurant(
       code,
-      user,
+      currentUser,
+    );
+
+    const access: Access[] =
+      restaurant.code === DEMO_RESTO ? [...ACCESS_LIST] : [];
+
+    const user = await this.usersService.updateAccess(
+      currentUser._id,
+      access,
+      restaurant._id,
     );
 
     return new UserEntity(user.toObject(), restaurant._id);

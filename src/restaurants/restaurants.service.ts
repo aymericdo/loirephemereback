@@ -158,8 +158,8 @@ export class RestaurantsService {
     const demoRestaurantId = (await this.findDemoResto())._id;
 
     return {
-      ...user.toObject().access,
       [demoRestaurantId]: [...ACCESS_LIST],
+      ...user.toObject().access,
     };
   }
 

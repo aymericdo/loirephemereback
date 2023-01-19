@@ -112,7 +112,11 @@ export class UsersService {
     if (process.env.GOD_MODE.split('/').includes(user.email)) {
       return true;
     } else if (DEMO_RESTO === code) {
-      return true;
+      if (!(await this.restaurantsService.isUserInRestaurant(code, user._id))) {
+        return true;
+      } else {
+        return await this.hasAccess(user._id, code, accesses);
+      }
     } else {
       return (
         (await this.restaurantsService.isUserInRestaurant(code, user._id)) &&
