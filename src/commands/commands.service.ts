@@ -48,7 +48,9 @@ export class CommandsService {
     } while (await this.isReferenceExists(reference));
 
     const createdCommand = new this.commandModel({
-      ...createCommandDto,
+      pastries: createCommandDto.pastries,
+      takeAway: createCommandDto.takeAway,
+      pickUpTime: createCommandDto.pickUpTime,
       name: createCommandDto.name.trim(),
       totalPrice: createCommandDto.pastries.reduce((prev, pastry) => {
         return prev + pastry.price;

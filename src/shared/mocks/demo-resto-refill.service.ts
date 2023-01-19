@@ -10,12 +10,16 @@ import { CommandPastryDto } from 'src/pastries/dto/command-pastry.dto';
 import { Injectable } from '@nestjs/common';
 import { SIZE } from 'src/shared/helpers/sizes';
 import { MOCK_PASTRIES } from 'src/shared/mocks/data';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Command, CommandDocument } from 'src/commands/schemas/command.schema';
 
 @Injectable()
 export class DemoRestoRefillService {
   private demoResto: RestaurantDocument;
 
   constructor(
+    @InjectModel(Command.name) private commandModel: Model<CommandDocument>,
     private readonly restaurantsService: RestaurantsService,
     private readonly pastriesService: PastriesService,
     private readonly commandsService: CommandsService,
@@ -56,7 +60,7 @@ export class DemoRestoRefillService {
   }
 
   private async createCommands(): Promise<void> {
-    for (let i = 0; i < 10; ++i) {
+    for (let i = 0; i < 500; ++i) {
       const pastries = await this.pastriesService.findRandomByCode(
         this.demoResto.code,
         faker.helpers.arrayElement([2, 3, 4]),
@@ -73,7 +77,41 @@ export class DemoRestoRefillService {
         ),
         takeAway: faker.datatype.boolean(),
       };
-      await this.commandsService.create(this.demoResto, command);
+      const newCommand = await this.commandsService.create(
+        this.demoResto,
+        command,
+      );
+
+      if (i > 10) {
+        await this.moveCommandInThePast(
+          newCommand,
+          new Date(faker.date.past()),
+        );
+      }
     }
+  }
+
+  private async moveCommandInThePast(
+    command: CommandDocument,
+    date: Date,
+  ): Promise<void> {
+    await this.commandModel
+      .updateOne(
+        { _id: command._id },
+        {
+          $set: {
+            createdAt: date,
+            updatedAt: date,
+            isDone: true,
+            isPayed: true,
+          },
+        },
+        {
+          new: true,
+          timestamps: false,
+          strict: false,
+        },
+      )
+      .exec();
   }
 }

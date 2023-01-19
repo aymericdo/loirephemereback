@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-// import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { DemoRestoCleanupService } from 'src/shared/mocks/demo-resto-cleanup.service';
 import { DemoRestoRefillService } from 'src/shared/mocks/demo-resto-refill.service';
 
@@ -12,11 +12,12 @@ export class DemoRestoDataGenerationService {
     private readonly demoRestoRefillService: DemoRestoRefillService,
   ) {}
 
-  // @Cron(CronExpression.EVERY_MINUTE)
-  handleCron() {
+  @Cron(CronExpression.EVERY_DAY_AT_2AM)
+  async handleCron() {
     this.logger.log(`Running...`);
-    this.demoRestoCleanupService.call();
-    this.demoRestoRefillService.call();
+    await this.demoRestoCleanupService.call();
+    this.logger.log('Cleanup done');
+    await this.demoRestoRefillService.call();
     this.logger.log(`Done`);
   }
 }
