@@ -5,11 +5,11 @@ import { RestaurantsService } from 'src/restaurants/restaurants.service';
 import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
 import { UsersService } from 'src/users/users.service';
 import { faker } from '@faker-js/faker/locale/fr';
-import { PASTRY_TYPES } from 'src/pastries/schemas/pastry.schema';
 import { CreateCommandDto } from 'src/commands/dto/create-command.dto';
 import { CommandPastryDto } from 'src/pastries/dto/command-pastry.dto';
 import { Injectable } from '@nestjs/common';
 import { SIZE } from 'src/shared/helpers/sizes';
+import { MOCK_PASTRIES } from 'src/shared/mocks/data';
 
 @Injectable()
 export class DemoRestoRefillService {
@@ -39,20 +39,17 @@ export class DemoRestoRefillService {
   }
 
   private async createPastries(): Promise<void> {
-    for (let i = 0; i < 10; ++i) {
+    const pastries = MOCK_PASTRIES;
+    for (let i = 0; i < pastries.length; ++i) {
       const pastry: CreatePastryDto = {
-        name: (faker.commerce.product() + i).slice(0, SIZE.SMALL),
-        description: faker.commerce.productDescription().slice(0, SIZE.LARGE),
-        price: +faker.commerce.price(1, 20),
-        imageUrl: null,
-        ingredients: [
-          faker.commerce.productMaterial(),
-          faker.commerce.productMaterial(),
-          faker.commerce.productMaterial(),
-        ],
+        name: pastries[i].name,
+        description: faker.lorem.paragraph().slice(0, SIZE.LARGE),
+        price: +faker.commerce.price(1, 8),
+        imageUrl: pastries[i].imageUrl,
+        ingredients: pastries[i].ingredients,
         hidden: false,
         stock: 10,
-        type: faker.helpers.arrayElement([...PASTRY_TYPES]),
+        type: pastries[i].type,
       };
       await this.pastriesService.create(this.demoResto, pastry);
     }

@@ -9,7 +9,7 @@ import { SIZE } from 'src/shared/helpers/sizes';
 export type PastryDocument = Pastry & Document;
 
 export const PASTRY_TYPES = ['pastry', 'drink', 'tip', 'other'] as const;
-type PastryType = typeof PASTRY_TYPES[number];
+export type PastryType = typeof PASTRY_TYPES[number];
 
 export const statsAttributes = ['price', 'type'];
 export interface Historical {

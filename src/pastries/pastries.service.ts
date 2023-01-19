@@ -42,7 +42,7 @@ export class PastriesService {
       ...createPastryDto,
       name: createPastryDto.name.trim(),
       description: createPastryDto.description.trim(),
-      ingredients: createPastryDto.ingredients.map((i) => i.trim()),
+      ingredients: createPastryDto.ingredients?.map((i) => i.trim()),
       displaySequence,
       restaurant,
     });
