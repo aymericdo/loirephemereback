@@ -83,10 +83,7 @@ export class DemoRestoRefillService {
       );
 
       if (i > 10) {
-        await this.moveCommandInThePast(
-          newCommand,
-          new Date(faker.date.past()),
-        );
+        await this.moveCommandInThePast(newCommand, faker.date.past());
       }
     }
   }
