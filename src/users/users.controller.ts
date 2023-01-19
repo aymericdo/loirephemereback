@@ -19,10 +19,7 @@ import { Throttle } from '@nestjs/throttler';
 import { AuthService } from 'src/auth/auth.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { LocalAuthGuard } from 'src/auth/local-auth.guard';
-import {
-  DEMO_RESTO,
-  RestaurantsService,
-} from 'src/restaurants/restaurants.service';
+import { RestaurantsService } from 'src/restaurants/restaurants.service';
 import { Accesses } from 'src/shared/decorators/accesses.decorator';
 import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
 import { AuthorizationGuard } from 'src/shared/guards/authorization.guard';
@@ -34,7 +31,7 @@ import { UpdateUserDto } from 'src/users/dto/update-user.dto';
 import { UserDocument } from 'src/users/schemas/user.schema';
 import { UserEntity } from 'src/users/serializers/user.serializer';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UsersService, USER_ORESTO } from './users.service';
+import { UsersService } from './users.service';
 
 @Controller('users')
 export class UsersController {
@@ -250,12 +247,6 @@ export class UsersController {
     @AuthUser() authUser: UserDocument,
   ): Promise<boolean> {
     const user = await this.usersService.findOne(_id);
-
-    if (user.email === USER_ORESTO && code === DEMO_RESTO) {
-      throw new ForbiddenException({
-        message: 'user not deletable',
-      });
-    }
 
     if (authUser._id === _id) {
       throw new ForbiddenException({

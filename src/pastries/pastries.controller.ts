@@ -170,7 +170,7 @@ export class PastriesController {
       });
     }
 
-    await this.pastriesService.removeCommonStock(code, commonStock);
+    await this.pastriesService.deleteCommonStock(code, commonStock);
     await this.pastriesService.addCommonStock(code, pastryIds, commonStock);
 
     const newPastries = await this.pastriesService.findAllByCode(code);

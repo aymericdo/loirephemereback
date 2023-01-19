@@ -12,6 +12,7 @@
     "esModuleInterop": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
+    "moduleResolution": "Node",
     "target": "es2022",
     "typeRoots": [
       "node_modules/@types",

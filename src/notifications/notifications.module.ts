@@ -6,6 +6,6 @@ import { SocketGateway } from 'src/notifications/gateways/web-socket.gateway';
 @Module({
   imports: [],
   providers: [SocketGateway, WebPushGateway, WsCleanerService],
-  exports: [SocketGateway, WebPushGateway, WsCleanerService],
+  exports: [SocketGateway, WebPushGateway],
 })
 export class NotificationsModule {}

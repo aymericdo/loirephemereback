@@ -27,6 +27,10 @@ export class UsersService {
     return await this.userModel.findOne({ email: email.toLowerCase() }).exec();
   }
 
+  async findDemoRestoUser(): Promise<UserDocument> {
+    return await this.findOneByEmail(USER_ORESTO);
+  }
+
   async isEmailExists(email: string): Promise<boolean> {
     return (
       (await this.userModel

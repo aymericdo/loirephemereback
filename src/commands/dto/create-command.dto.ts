@@ -35,5 +35,5 @@ export class CreateCommandDto {
   @IsInFuture()
   @Type(() => Date)
   @IsDate()
-  readonly pickUpTime: Date;
+  readonly pickUpTime?: Date;
 }

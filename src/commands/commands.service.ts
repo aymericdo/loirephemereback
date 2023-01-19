@@ -150,6 +150,14 @@ export class CommandsService {
       .exec();
   }
 
+  async deleteAllByCode(code: string): Promise<void> {
+    const restaurantId = await this.restaurantsService.findIdByCode(code);
+
+    await this.commandModel
+      .deleteMany({ restaurant: new Types.ObjectId(restaurantId) })
+      .exec();
+  }
+
   reduceCountByPastryId(pastries: CommandPastryDto[]): {
     [pastryId: string]: number;
   } {

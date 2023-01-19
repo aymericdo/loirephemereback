@@ -35,7 +35,7 @@ export class CreatePastryDto {
   @IsString()
   @IsOptional()
   @MinLength(SIZE.MIN)
-  readonly imageUrl: string;
+  readonly imageUrl?: string;
 
   @IsArray()
   @IsString({ each: true })
@@ -50,7 +50,7 @@ export class CreatePastryDto {
   @IsNumber()
   @IsOptional()
   @Min(0)
-  readonly stock: number;
+  readonly stock?: number;
 
   @IsString()
   @IsEnum(PASTRY_TYPES)
@@ -61,5 +61,5 @@ export class CreatePastryDto {
   @IsOptional()
   @MinLength(SIZE.MIN)
   @MaxLength(SIZE.MEDIUM)
-  readonly commonStock: string;
+  readonly commonStock?: string;
 }

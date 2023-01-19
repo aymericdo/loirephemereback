@@ -61,10 +61,16 @@ export class RestaurantsService {
     ).users as UserDocument[];
   }
 
-  async findUsersByCodeCount(code: string): Promise<number> {
+  async findUsersCountByCode(code: string): Promise<number> {
     return (
       await this.restaurantModel.findOne({ code: code }, { users: 1 }).exec()
     ).users.length;
+  }
+
+  async deleteAllUserByCode(code: string): Promise<Restaurant> {
+    return await this.restaurantModel
+      .findOneAndUpdate({ code: code }, { $set: { users: [] } }, { new: true })
+      .exec();
   }
 
   async isUserInRestaurant(code: string, userId: string): Promise<boolean> {

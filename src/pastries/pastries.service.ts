@@ -110,7 +110,7 @@ export class PastriesService {
       .exec();
   }
 
-  async removeCommonStock(code: string, commonStock: string): Promise<void> {
+  async deleteCommonStock(code: string, commonStock: string): Promise<void> {
     const restaurantId = await this.restaurantsService.findIdByCode(code);
 
     await this.pastryModel
@@ -291,7 +291,7 @@ export class PastriesService {
     }, {} as { [id: string]: number });
   }
 
-  async findDisplayableByCode(code: string): Promise<Pastry[]> {
+  async findDisplayableByCode(code: string): Promise<PastryDocument[]> {
     return await this.pastryModel
       .aggregate([
         {
@@ -312,7 +312,7 @@ export class PastriesService {
       .exec();
   }
 
-  async findAllByCode(code: string): Promise<Pastry[]> {
+  async findAllByCode(code: string): Promise<PastryDocument[]> {
     return await this.pastryModel
       .aggregate([
         {
@@ -332,6 +332,39 @@ export class PastriesService {
           },
         },
       ])
+      .exec();
+  }
+
+  async findRandomByCode(code: string, n: number): Promise<PastryDocument[]> {
+    return await this.pastryModel
+      .aggregate([
+        {
+          $lookup: {
+            from: 'restaurants',
+            localField: 'restaurant',
+            foreignField: '_id',
+            as: 'restaurant',
+          },
+        },
+        {
+          $match: {
+            'restaurant.code': code,
+          },
+        },
+        {
+          $sample: {
+            size: n,
+          },
+        },
+      ])
+      .exec();
+  }
+
+  async deleteAllByCode(code: string): Promise<void> {
+    const restaurantId = await this.restaurantsService.findIdByCode(code);
+
+    await this.pastryModel
+      .deleteMany({ restaurant: new Types.ObjectId(restaurantId) })
       .exec();
   }
 
