@@ -102,11 +102,12 @@ export class CommandsController {
     @Param('code') code: string,
     @Query() { fromDate, toDate }: CommandDateRangeLast24hoursDto,
   ): Promise<CommandEntity[]> {
-    const commands: CommandDocument[] = await this.commandsService.findByCode(
-      code,
-      fromDate,
-      toDate,
-    );
+    const commands: CommandDocument[] =
+      await this.commandsService.findByCodeForCommandsPage(
+        code,
+        fromDate,
+        toDate,
+      );
 
     return commands.map((command) => new CommandEntity(command.toObject()));
   }

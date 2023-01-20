@@ -104,7 +104,7 @@ export class CommandsService {
     return command;
   }
 
-  async findByCode(
+  async findByCodeForCommandsPage(
     code: string,
     fromDate: Date,
     toDate: Date,
@@ -126,6 +126,31 @@ export class CommandsService {
           },
           {
             isPayed: false,
+          },
+        ],
+      })
+      .populate('pastries')
+      .populate('restaurant')
+      .sort({ createdAt: 1 })
+      .exec();
+  }
+
+  async findByCode(
+    code: string,
+    fromDate: Date,
+    toDate: Date,
+  ): Promise<CommandDocument[]> {
+    const restaurantId = await this.restaurantsService.findIdByCode(code);
+
+    return await this.commandModel
+      .find({
+        restaurant: new Types.ObjectId(restaurantId),
+        $or: [
+          {
+            createdAt: {
+              $gt: fromDate,
+              $lte: toDate,
+            },
           },
         ],
       })
