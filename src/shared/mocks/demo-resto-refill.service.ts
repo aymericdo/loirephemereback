@@ -13,6 +13,7 @@ import { MOCK_PASTRIES } from 'src/shared/mocks/data';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Command, CommandDocument } from 'src/commands/schemas/command.schema';
+import { getRandomInt } from 'src/shared/helpers/randomInt';
 
 @Injectable()
 export class DemoRestoRefillService {
@@ -66,6 +67,9 @@ export class DemoRestoRefillService {
         faker.helpers.arrayElement([2, 3, 4]),
       );
 
+      const endOfToday = new Date();
+      endOfToday.setUTCHours(23, 59, 59, 999);
+
       const command: CreateCommandDto = {
         name: faker.name.firstName().slice(0, SIZE.SMALL),
         pastries: pastries.map(
@@ -76,13 +80,17 @@ export class DemoRestoRefillService {
             } as CommandPastryDto),
         ),
         takeAway: faker.datatype.boolean(),
+        pickUpTime:
+          getRandomInt(0, 5) === 0
+            ? faker.date.between(Date(), endOfToday)
+            : null,
       };
       const newCommand = await this.commandsService.create(
         this.demoResto,
         command,
       );
 
-      if (i > 3) {
+      if (i > 5) {
         await this.moveCommandInThePast(newCommand, faker.date.past());
       }
     }
