@@ -145,14 +145,10 @@ export class CommandsService {
     return await this.commandModel
       .find({
         restaurant: new Types.ObjectId(restaurantId),
-        $or: [
-          {
-            createdAt: {
-              $gt: fromDate,
-              $lte: toDate,
-            },
-          },
-        ],
+        createdAt: {
+          $gt: fromDate,
+          $lte: toDate,
+        },
       })
       .populate('pastries')
       .populate('restaurant')
