@@ -13,19 +13,12 @@ export function IsToday(validationOptions?: ValidationOptions) {
       options: validationOptions,
       validator: {
         validate(value: Date) {
-          const start = new Date();
-          start.setUTCHours(0, 0, 0, 0);
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
 
-          const end = new Date();
-          end.setUTCHours(23, 59, 59, 999);
-
-          // safe fallback
-          // const yesterday = new Date();
-          // yesterday.setDate(yesterday.getDate() - 1);
-          // const tomorrow = new Date();
-          // tomorrow.setDate(tomorrow.getDate() + 1);
-
-          return value <= end && value >= start;
+          return value <= tomorrow && value >= yesterday;
         },
         defaultMessage: buildMessage(
           (eachPrefix) => eachPrefix + '$property should be today',
