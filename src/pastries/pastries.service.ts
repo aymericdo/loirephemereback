@@ -436,7 +436,7 @@ export class PastriesService {
             },
             {
               $match: {
-                'restaurant.code': code + 3,
+                'restaurant.code': code,
                 _id: { $in: pastryIds.map((id) => new Types.ObjectId(id)) },
               },
             },
