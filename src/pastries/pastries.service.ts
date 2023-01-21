@@ -400,7 +400,7 @@ export class PastriesService {
           ])
           .collation({ locale: 'fr', strength: 1 })
           .exec()) as { totalCount: number }[]
-      ).length === 0
+      )[0]?.totalCount === 0
     );
   }
 
@@ -436,7 +436,7 @@ export class PastriesService {
             },
             {
               $match: {
-                'restaurant.code': code,
+                'restaurant.code': code + 3,
                 _id: { $in: pastryIds.map((id) => new Types.ObjectId(id)) },
               },
             },
@@ -445,7 +445,7 @@ export class PastriesService {
             },
           ])
           .exec()) as { totalCount: number }[]
-      ).length === pastryIds.length
+      )[0]?.totalCount === pastryIds.length
     );
   }
 
@@ -477,7 +477,7 @@ export class PastriesService {
           ])
           .collation({ locale: 'fr', strength: 1 })
           .exec()) as { totalCount: number }[]
-      ).length !== 0
+      )[0]?.totalCount !== 0
     );
   }
 

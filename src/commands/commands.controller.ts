@@ -49,10 +49,9 @@ export class CommandsController {
       this.commandsService.reduceCountByPastryId(body.pastries);
 
     if (
-      !(await this.pastriesService.verifyAllPastriesRestaurant(
-        code,
-        Object.keys(countByPastryId),
-      ))
+      !(await this.pastriesService.verifyAllPastriesRestaurant(code, [
+        ...new Set(Object.keys(countByPastryId)),
+      ]))
     ) {
       throw new BadRequestException({
         message: 'mismatch between pastries and restaurant',
