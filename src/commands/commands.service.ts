@@ -41,6 +41,7 @@ export class CommandsService {
   async create(
     restaurant: RestaurantDocument,
     createCommandDto: CreateCommandDto,
+    notify = true,
   ): Promise<CommandDocument> {
     let reference: string;
     do {
@@ -67,8 +68,10 @@ export class CommandsService {
       .populate('pastries')
       .exec();
 
-    this.socketGateway.alertNewCommand(restaurant.code, newCommand);
-    this.webPushGateway.alertNewCommand(restaurant.code);
+    if (notify) {
+      this.socketGateway.alertNewCommand(restaurant.code, newCommand);
+      this.webPushGateway.alertNewCommand(restaurant.code);
+    }
 
     return newCommand;
   }
