@@ -20,6 +20,9 @@ export class RestaurantEntity {
   @Expose({ groups: ['admin'] })
   updatedAt: Date;
 
+  @Expose({ groups: ['admin'] })
+  openingTime: Date;
+
   // never
   @Exclude()
   _id: number;

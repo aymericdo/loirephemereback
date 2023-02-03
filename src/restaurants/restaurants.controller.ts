@@ -5,6 +5,7 @@ import {
   Get,
   NotFoundException,
   Param,
+  Patch,
   Post,
   Query,
   SerializeOptions,
@@ -33,6 +34,9 @@ export class RestaurantsController {
   }
 
   @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
   @Get('by-code/:code')
   async getRestaurant(@Param('code') code: string): Promise<RestaurantEntity> {
     const restaurant = await this.restaurantsService.findByCode(code);
@@ -44,6 +48,26 @@ export class RestaurantsController {
         message: 'resto not found',
       });
     }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
+  @Patch('by-code/:code/opening-time')
+  async patchOpeningTime(
+    @Param('code') code: string,
+    @Body('openingTime')
+    openingTime: {
+      [weekDay: number]: { openingTime: string; closingTime: string };
+    },
+  ): Promise<RestaurantEntity> {
+    const restaurant = await this.restaurantsService.setOpeningTime(
+      code,
+      openingTime,
+    );
+    return new RestaurantEntity(restaurant.toObject());
   }
 
   @UseInterceptors(ClassSerializerInterceptor)

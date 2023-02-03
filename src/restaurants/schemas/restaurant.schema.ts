@@ -31,6 +31,16 @@ export class Restaurant {
     validate: [(val: string) => val.length > 0, '{PATH} is less than 1'],
   })
   users: UserDocument[];
+
+  @Prop({
+    type: Object,
+    required: true,
+    default: {},
+  })
+  // with 0 as a monday (I'm not a savage)
+  openingTime: {
+    [weekDay: number]: { openingTime: string; closingTime: string };
+  };
 }
 
 export const RestaurantSchema = SchemaFactory.createForClass(Restaurant);
