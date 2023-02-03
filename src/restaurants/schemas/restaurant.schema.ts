@@ -39,7 +39,17 @@ export class Restaurant {
   })
   // with 0 as a monday (I'm not a savage)
   openingTime: {
-    [weekDay: number]: { openingTime: string; closingTime: string };
+    [weekDay: number]: { startTime: string; endTime: string };
+  };
+
+  @Prop({
+    type: Object,
+    required: true,
+    default: {},
+  })
+  // with 0 as a monday (I'm not a savage)
+  openingPickupTime: {
+    [weekDay: number]: { startTime: string; endTime: string };
   };
 }
 

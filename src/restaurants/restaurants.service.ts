@@ -76,13 +76,28 @@ export class RestaurantsService {
   async setOpeningTime(
     code: string,
     openingTime: {
-      [weekDay: number]: { openingTime: string; closingTime: string };
+      [weekDay: number]: { startTime: string; endTime: string };
     },
   ): Promise<RestaurantDocument> {
     return await this.restaurantModel
       .findOneAndUpdate(
         { code: code },
         { $set: { openingTime: openingTime } },
+        { new: true },
+      )
+      .exec();
+  }
+
+  async setOpeningPickupTime(
+    code: string,
+    openingTime: {
+      [weekDay: number]: { startTime: string; endTime: string };
+    },
+  ): Promise<RestaurantDocument> {
+    return await this.restaurantModel
+      .findOneAndUpdate(
+        { code: code },
+        { $set: { openingPickupTime: openingTime } },
         { new: true },
       )
       .exec();

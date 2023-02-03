@@ -60,10 +60,30 @@ export class RestaurantsController {
     @Param('code') code: string,
     @Body('openingTime')
     openingTime: {
-      [weekDay: number]: { openingTime: string; closingTime: string };
+      [weekDay: number]: { startTime: string; endTime: string };
     },
   ): Promise<RestaurantEntity> {
     const restaurant = await this.restaurantsService.setOpeningTime(
+      code,
+      openingTime,
+    );
+    return new RestaurantEntity(restaurant.toObject());
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
+  @Patch('by-code/:code/opening-pickup-time')
+  async patchOpeningPickupTime(
+    @Param('code') code: string,
+    @Body('openingTime')
+    openingTime: {
+      [weekDay: number]: { startTime: string; endTime: string };
+    },
+  ): Promise<RestaurantEntity> {
+    const restaurant = await this.restaurantsService.setOpeningPickupTime(
       code,
       openingTime,
     );
