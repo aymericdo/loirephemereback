@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   ClassSerializerInterceptor,
   Controller,
@@ -63,6 +64,21 @@ export class RestaurantsController {
       [weekDay: number]: { startTime: string; endTime: string };
     },
   ): Promise<RestaurantEntity> {
+    if (
+      Object.keys(openingTime).some((wd) => {
+        const weekDayOpeningTime = openingTime[wd];
+
+        return (
+          (!weekDayOpeningTime.startTime && weekDayOpeningTime.endTime) ||
+          (weekDayOpeningTime.startTime && !weekDayOpeningTime.endTime)
+        );
+      })
+    ) {
+      throw new BadRequestException({
+        message: 'payload invalid',
+      });
+    }
+
     const restaurant = await this.restaurantsService.setOpeningTime(
       code,
       openingTime,
@@ -83,6 +99,21 @@ export class RestaurantsController {
       [weekDay: number]: { startTime: string; endTime: string };
     },
   ): Promise<RestaurantEntity> {
+    if (
+      Object.keys(openingTime).some((wd) => {
+        const weekDayOpeningTime = openingTime[wd];
+
+        return (
+          (!weekDayOpeningTime.startTime && weekDayOpeningTime.endTime) ||
+          (weekDayOpeningTime.startTime && !weekDayOpeningTime.endTime)
+        );
+      })
+    ) {
+      throw new BadRequestException({
+        message: 'payload invalid',
+      });
+    }
+
     const restaurant = await this.restaurantsService.setOpeningPickupTime(
       code,
       openingTime,
