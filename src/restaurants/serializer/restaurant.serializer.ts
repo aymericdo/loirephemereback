@@ -14,14 +14,17 @@ export class RestaurantEntity {
   @Expose()
   code: string;
 
+  @Expose()
+  openingTime: Date;
+
+  @Expose()
+  openingPickTime: Date;
+
   @Expose({ groups: ['admin'] })
   createdAt: Date;
 
   @Expose({ groups: ['admin'] })
   updatedAt: Date;
-
-  @Expose({ groups: ['admin'] })
-  openingTime: Date;
 
   // never
   @Exclude()
