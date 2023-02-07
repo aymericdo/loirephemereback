@@ -51,6 +51,13 @@ export class Restaurant {
   openingPickupTime: {
     [weekDay: number]: { startTime: string };
   };
+
+  @Prop({
+    type: Boolean,
+    required: true,
+    default: true,
+  })
+  displayStock: boolean;
 }
 
 export const RestaurantSchema = SchemaFactory.createForClass(Restaurant);

@@ -48,6 +48,11 @@ export class CommandsController {
     const countByPastryId: { [pastryId: string]: number } =
       this.commandsService.reduceCountByPastryId(body.pastries);
 
+    console.log(Object.keys(countByPastryId).length);
+    console.log(
+      await this.pastriesService.test(code, Object.keys(countByPastryId)),
+    );
+
     if (
       !(await this.pastriesService.verifyAllPastriesRestaurant(
         code,

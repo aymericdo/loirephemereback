@@ -18,7 +18,13 @@ export class PastryEntity {
   @Expose()
   price: number;
 
-  @Expose()
+  @Transform(({ obj, options }) => {
+    if (options.groups?.includes('admin') || obj.displayStock) {
+      return obj.stock;
+    } else {
+      return null;
+    }
+  })
   stock: number;
 
   @Expose()
@@ -28,10 +34,10 @@ export class PastryEntity {
   ingredients: string[];
 
   @Expose()
-  hidden: boolean;
-
-  @Expose()
   displaySequence: number;
+
+  @Expose({ groups: ['admin'] })
+  hidden: boolean;
 
   @Expose({ groups: ['admin'] })
   commonStock: string;
@@ -59,7 +65,12 @@ export class PastryEntity {
   @Exclude()
   __v: number;
 
-  constructor(partial: Partial<PastryEntity>) {
+  @Exclude()
+  displayStock = null;
+
+  constructor(partial: Partial<PastryEntity>, displayStock = false) {
     Object.assign(this, partial);
+
+    this.displayStock = displayStock;
   }
 }

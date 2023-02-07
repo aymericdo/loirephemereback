@@ -26,6 +26,9 @@ export class RestaurantEntity {
   @Expose({ groups: ['admin'] })
   updatedAt: Date;
 
+  @Expose({ groups: ['admin'] })
+  displayStock: boolean;
+
   // never
   @Exclude()
   _id: number;

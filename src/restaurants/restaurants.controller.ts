@@ -146,6 +146,24 @@ export class RestaurantsController {
     return new RestaurantEntity(updatedRestaurant.toObject());
   }
 
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
+  @Patch('by-code/:code/display-stock')
+  async patchDisplayStock(
+    @Param('code') code: string,
+    @Body('displayStock') displayStock: boolean,
+  ): Promise<RestaurantEntity> {
+    const restaurant = await this.restaurantsService.setDisplayStock(
+      code,
+      displayStock,
+    );
+
+    return new RestaurantEntity(restaurant.toObject());
+  }
+
   @UseInterceptors(ClassSerializerInterceptor)
   @Get('demo-resto')
   async getDemoResto(): Promise<RestaurantEntity> {

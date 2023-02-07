@@ -188,10 +188,6 @@ export class CommandsService {
     [pastryId: string]: number;
   } {
     return pastries.reduce((prev, pastry: CommandPastryDto) => {
-      if (pastry.stock === undefined || pastry.stock === null) {
-        return prev;
-      }
-
       if (!prev.hasOwnProperty(pastry._id)) {
         prev[pastry._id.toString()] = 1;
       } else {

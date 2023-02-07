@@ -133,6 +133,25 @@ export class RestaurantsService {
       .exec();
   }
 
+  async setDisplayStock(
+    code: string,
+    displayStock: boolean,
+  ): Promise<RestaurantDocument> {
+    return await this.restaurantModel
+      .findOneAndUpdate(
+        { code: code },
+        { $set: { displayStock } },
+        { new: true },
+      )
+      .exec();
+  }
+
+  async isStockDisplayable(code: string): Promise<boolean> {
+    return await (
+      await this.findByCode(code)
+    ).displayStock;
+  }
+
   async isUserInRestaurant(code: string, userId: string): Promise<boolean> {
     return (
       (await this.restaurantModel

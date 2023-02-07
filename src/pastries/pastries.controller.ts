@@ -49,7 +49,9 @@ export class PastriesController {
     @Param('code') code: string,
   ): Promise<PastryEntity[]> {
     const pastries = await this.pastriesService.findDisplayableByCode(code);
-    return pastries.map((p) => new PastryEntity(p));
+    const displayStock = await this.restaurantsService.isStockDisplayable(code);
+
+    return pastries.map((p) => new PastryEntity(p, displayStock));
   }
 
   @Post('notification')
@@ -80,7 +82,7 @@ export class PastriesController {
       await this.restaurantsService.findByCode(code);
     const pastry = await this.pastriesService.create(restaurant, body);
 
-    return new PastryEntity(pastry.toObject());
+    return new PastryEntity(pastry.toObject(), restaurant.displayStock);
   }
 
   @UseGuards(AuthorizationGuard)
@@ -97,6 +99,7 @@ export class PastriesController {
     pastry: PastryEntity;
     displaySequenceById: { [id: string]: number };
   }> {
+    const displayStock = await this.restaurantsService.isStockDisplayable(code);
     const currentPastry = await this.pastriesService.findOne(body._id);
 
     if (currentPastry.restaurant.code !== code) {
@@ -147,7 +150,7 @@ export class PastriesController {
     );
 
     return {
-      pastry: new PastryEntity(pastry.toObject()),
+      pastry: new PastryEntity(pastry.toObject(), displayStock),
       displaySequenceById,
     };
   }
@@ -173,8 +176,10 @@ export class PastriesController {
     await this.pastriesService.deleteCommonStock(code, commonStock);
     await this.pastriesService.addCommonStock(code, pastryIds, commonStock);
 
+    const displayStock = await this.restaurantsService.isStockDisplayable(code);
+
     const newPastries = await this.pastriesService.findAllByCode(code);
-    return newPastries.map((p) => new PastryEntity(p));
+    return newPastries.map((p) => new PastryEntity(p, displayStock));
   }
 
   @UseGuards(AuthorizationGuard)
@@ -186,7 +191,9 @@ export class PastriesController {
   @Get('by-code/:code/all')
   async getAll(@Param('code') code: string): Promise<PastryEntity[]> {
     const pastries = await this.pastriesService.findAllByCode(code);
-    return pastries.map((p) => new PastryEntity(p));
+    const displayStock = await this.restaurantsService.isStockDisplayable(code);
+
+    return pastries.map((p) => new PastryEntity(p, displayStock));
   }
 
   @UseGuards(AuthorizationGuard)
