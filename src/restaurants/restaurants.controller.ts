@@ -95,18 +95,36 @@ export class RestaurantsController {
   async patchOpeningPickupTime(
     @Param('code') code: string,
     @Body('openingTime')
-    openingTime: {
-      [weekDay: number]: { startTime: string; endTime: string };
+    openingPickupTime: {
+      [weekDay: number]: { startTime: string };
     },
   ): Promise<RestaurantEntity> {
-    if (
-      Object.keys(openingTime).some((wd) => {
-        const weekDayOpeningTime = openingTime[wd];
+    const restaurant = await this.restaurantsService.findByCode(code);
 
-        return (
-          (!weekDayOpeningTime.startTime && weekDayOpeningTime.endTime) ||
-          (weekDayOpeningTime.startTime && !weekDayOpeningTime.endTime)
-        );
+    if (
+      Object.keys(openingPickupTime).some((wd) => {
+        const weekDayOpeningPickupTime = openingPickupTime[wd].startTime;
+
+        if (weekDayOpeningPickupTime) {
+          const openingPickupHoursMinutes = weekDayOpeningPickupTime.split(':');
+          const openingPickupStartTime = new Date();
+          openingPickupStartTime.setHours(
+            +openingPickupHoursMinutes[0],
+            +openingPickupHoursMinutes[1],
+          );
+
+          const openingHoursMinutes =
+            restaurant.openingTime[wd]?.startTime.split(':');
+          const openingStartTime = new Date();
+          openingStartTime.setHours(
+            +openingHoursMinutes[0],
+            +openingHoursMinutes[1],
+          );
+
+          return openingPickupStartTime > openingStartTime;
+        } else {
+          return false;
+        }
       })
     ) {
       throw new BadRequestException({
@@ -114,11 +132,12 @@ export class RestaurantsController {
       });
     }
 
-    const restaurant = await this.restaurantsService.setOpeningPickupTime(
-      code,
-      openingTime,
-    );
-    return new RestaurantEntity(restaurant.toObject());
+    const updatedRestaurant =
+      await this.restaurantsService.setOpeningPickupTime(
+        code,
+        openingPickupTime,
+      );
+    return new RestaurantEntity(updatedRestaurant.toObject());
   }
 
   @UseInterceptors(ClassSerializerInterceptor)

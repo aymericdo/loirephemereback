@@ -49,7 +49,7 @@ export class Restaurant {
   })
   // with 0 as a monday (I'm not a savage)
   openingPickupTime: {
-    [weekDay: number]: { startTime: string; endTime: string };
+    [weekDay: number]: { startTime: string };
   };
 }
 

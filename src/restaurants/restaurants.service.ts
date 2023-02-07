@@ -91,7 +91,7 @@ export class RestaurantsService {
   async setOpeningPickupTime(
     code: string,
     openingTime: {
-      [weekDay: number]: { startTime: string; endTime: string };
+      [weekDay: number]: { startTime: string };
     },
   ): Promise<RestaurantDocument> {
     return await this.restaurantModel
