@@ -79,10 +79,12 @@ export class RestaurantsController {
       });
     }
 
-    const restaurant = await this.restaurantsService.setOpeningTime(
+    await this.restaurantsService.setOpeningTime(code, openingTime);
+
+    const restaurant = await this.restaurantsService.cleanUpOpeningPickupTime(
       code,
-      openingTime,
     );
+
     return new RestaurantEntity(restaurant.toObject());
   }
 
@@ -111,6 +113,8 @@ export class RestaurantsController {
           openingPickupStartTime.setHours(
             +openingPickupHoursMinutes[0],
             +openingPickupHoursMinutes[1],
+            0,
+            0,
           );
 
           const openingHoursMinutes =
@@ -119,6 +123,8 @@ export class RestaurantsController {
           openingStartTime.setHours(
             +openingHoursMinutes[0],
             +openingHoursMinutes[1],
+            0,
+            0,
           );
 
           return openingPickupStartTime > openingStartTime;

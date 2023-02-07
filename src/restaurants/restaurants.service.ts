@@ -88,6 +88,36 @@ export class RestaurantsService {
       .exec();
   }
 
+  async cleanUpOpeningPickupTime(code: string): Promise<RestaurantDocument> {
+    const restaurant = await this.restaurantModel
+      .findOne({ code: code })
+      .exec();
+
+    const fixedOpeningPickupTime = Object.keys(
+      restaurant.openingPickupTime,
+    ).reduce((prev, weekDay) => {
+      if (
+        restaurant.openingPickupTime[weekDay].startTime >
+        restaurant.openingTime[weekDay].startTime
+      ) {
+        prev[weekDay] = {
+          startTime: restaurant.openingTime[weekDay].startTime,
+        };
+      } else {
+        prev[weekDay] = restaurant.openingPickupTime[weekDay];
+      }
+      return prev;
+    }, {});
+
+    return await this.restaurantModel
+      .findOneAndUpdate(
+        { code: code },
+        { $set: { openingPickupTime: fixedOpeningPickupTime } },
+        { new: true },
+      )
+      .exec();
+  }
+
   async setOpeningPickupTime(
     code: string,
     openingTime: {
