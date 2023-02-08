@@ -86,13 +86,41 @@ export class PastriesService {
           .populate('restaurant')
           .exec();
 
-        this.socketGateway.stockChanged(newCommonStockPastry.restaurant.code, {
-          pastryId: commonStockPastry._id,
-          newStock: newCommonStockPastry.stock,
-        });
+        const displayStock = await this.restaurantsService.isStockDisplayable(
+          newCommonStockPastry.restaurant.code,
+        );
+
+        if (displayStock) {
+          this.socketGateway.stockChanged(
+            newCommonStockPastry.restaurant.code,
+            {
+              pastryId: commonStockPastry._id,
+              newStock: newCommonStockPastry.stock,
+            },
+          );
+        }
+
+        this.socketGateway.stockChangedAdmin(
+          newCommonStockPastry.restaurant.code,
+          {
+            pastryId: commonStockPastry._id,
+            newStock: newCommonStockPastry.stock,
+          },
+        );
       });
     } else if (isUpdatingStock) {
-      this.socketGateway.stockChanged(pastry.restaurant.code, {
+      const displayStock = await this.restaurantsService.isStockDisplayable(
+        pastry.restaurant.code,
+      );
+
+      if (displayStock) {
+        this.socketGateway.stockChanged(pastry.restaurant.code, {
+          pastryId: updatePastryDto._id,
+          newStock: updatePastryDto.stock,
+        });
+      }
+
+      this.socketGateway.stockChangedAdmin(pastry.restaurant.code, {
         pastryId: updatePastryDto._id,
         newStock: updatePastryDto.stock,
       });
@@ -546,7 +574,18 @@ export class PastriesService {
       .populate('restaurant')
       .exec();
 
-    this.socketGateway.stockChanged(newPastry.restaurant.code, {
+    const displayStock = await this.restaurantsService.isStockDisplayable(
+      newPastry.restaurant.code,
+    );
+
+    if (displayStock) {
+      this.socketGateway.stockChanged(newPastry.restaurant.code, {
+        pastryId: newPastry._id,
+        newStock: newPastry.stock,
+      });
+    }
+
+    this.socketGateway.stockChangedAdmin(newPastry.restaurant.code, {
       pastryId: newPastry._id,
       newStock: newPastry.stock,
     });

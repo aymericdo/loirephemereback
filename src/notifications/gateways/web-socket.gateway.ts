@@ -39,7 +39,8 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @WebSocketServer() server: Server;
   clients: { [code: string]: Client[] } = {};
-  admins: { [code: string]: Client[] } = {};
+  commandsAdmins: { [code: string]: Client[] } = {};
+  menuAdmins: { [code: string]: Client[] } = {};
 
   clientWaitingQueue: { [commandId: string]: Client } = {};
 
@@ -48,7 +49,10 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   handleDisconnect(client: Client) {
     const code = this.getCodeFromQueryParam(client.request.url);
     this.clients[code] = this.clients[code]?.filter((c) => c !== client) || [];
-    this.admins[code] = this.admins[code]?.filter((c) => c !== client) || [];
+    this.commandsAdmins[code] =
+      this.commandsAdmins[code]?.filter((c) => c !== client) || [];
+    this.menuAdmins[code] =
+      this.menuAdmins[code]?.filter((c) => c !== client) || [];
 
     this.logger.log(`Client disconnected`);
     client.send(JSON.stringify({ bye: 'au revoir' }));
@@ -71,7 +75,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const serializeCommand = instanceToPlain(
       new CommandEntity(command.toObject()),
     );
-    this.admins[code]?.forEach((client: Client) =>
+    this.commandsAdmins[code]?.forEach((client: Client) =>
       client.send(JSON.stringify({ addCommand: serializeCommand })),
     );
   }
@@ -80,7 +84,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const serializeCommand = instanceToPlain(
       new CommandEntity(command.toObject()),
     );
-    this.admins[code]?.forEach((client: Client) =>
+    this.commandsAdmins[code]?.forEach((client: Client) =>
       client.send(JSON.stringify({ closeCommand: serializeCommand })),
     );
   }
@@ -89,7 +93,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const serializeCommand = instanceToPlain(
       new CommandEntity(command.toObject()),
     );
-    this.admins[code]?.forEach((client: Client) =>
+    this.commandsAdmins[code]?.forEach((client: Client) =>
       client.send(JSON.stringify({ payedCommand: serializeCommand })),
     );
 
@@ -99,6 +103,15 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   stockChanged(code: string, newStock: { pastryId: string; newStock: number }) {
     this.clients[code]?.forEach((client: Client) =>
+      client.send(JSON.stringify({ stockChanged: newStock })),
+    );
+  }
+
+  stockChangedAdmin(
+    code: string,
+    newStock: { pastryId: string; newStock: number },
+  ) {
+    this.menuAdmins[code]?.forEach((client: Client) =>
       client.send(JSON.stringify({ stockChanged: newStock })),
     );
   }
@@ -123,8 +136,10 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @UseGuards(WsJwtAuthGuard)
-  @SubscribeMessage('authorization')
-  async onAuthorization(@ConnectedSocket() client: Client): Promise<void> {
+  @SubscribeMessage('commandsAuthorization')
+  async onCommandsAuthorization(
+    @ConnectedSocket() client: Client,
+  ): Promise<void> {
     const code = this.getCodeFromQueryParam(client.request.url);
 
     const userId = (client.request.user as { userId: string }).userId;
@@ -134,17 +149,39 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    if (this.admins.hasOwnProperty(code)) {
-      this.admins[code].push(client);
+    if (this.commandsAdmins.hasOwnProperty(code)) {
+      this.commandsAdmins[code].push(client);
     } else {
-      this.admins[code] = [client];
+      this.commandsAdmins[code] = [client];
     }
 
-    this.logger.log('Admin connected');
+    this.logger.log('Admin Commands connected');
+  }
+
+  @UseGuards(WsJwtAuthGuard)
+  @SubscribeMessage('menuAuthorization')
+  async onMenuAuthorization(@ConnectedSocket() client: Client): Promise<void> {
+    const code = this.getCodeFromQueryParam(client.request.url);
+
+    const userId = (client.request.user as { userId: string }).userId;
+    const user = await this.usersService.findOne(userId);
+
+    if (!(await this.usersService.isAuthorized(user, code, ['menu']))) {
+      return;
+    }
+
+    if (this.menuAdmins.hasOwnProperty(code)) {
+      this.menuAdmins[code].push(client);
+    } else {
+      this.menuAdmins[code] = [client];
+    }
+
+    this.logger.log('Admin Menu connected');
   }
 
   cleanup() {
-    this.admins = {};
+    this.commandsAdmins = {};
+    this.menuAdmins = {};
     this.clients = {};
     this.clientWaitingQueue = {};
   }
