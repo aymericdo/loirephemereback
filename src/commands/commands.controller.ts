@@ -3,6 +3,7 @@ import {
   Body,
   ClassSerializerInterceptor,
   Controller,
+  ForbiddenException,
   Get,
   Param,
   Patch,
@@ -45,13 +46,22 @@ export class CommandsController {
     @Body() body: CreateCommandDto,
     @Param('code') code: string,
   ): Promise<CommandEntity> {
+    const restaurant: RestaurantDocument =
+      await this.restaurantsService.findByCode(code);
+
+    if (
+      !(await this.commandsService.isRestaurantOpened(
+        restaurant,
+        body.pickUpTime,
+      ))
+    ) {
+      throw new ForbiddenException({
+        message: 'restaurant is closed',
+      });
+    }
+
     const countByPastryId: { [pastryId: string]: number } =
       this.commandsService.reduceCountByPastryId(body.pastries);
-
-    console.log(Object.keys(countByPastryId).length);
-    console.log(
-      await this.pastriesService.test(code, Object.keys(countByPastryId)),
-    );
 
     if (
       !(await this.pastriesService.verifyAllPastriesRestaurant(
@@ -68,9 +78,6 @@ export class CommandsController {
 
     try {
       transactionSession.startTransaction();
-
-      const restaurant: RestaurantDocument =
-        await this.restaurantsService.findByCode(code);
 
       const pastriesToZero: PastryDocument[] =
         await this.commandsService.pastriesReached0(countByPastryId);

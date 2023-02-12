@@ -230,4 +230,69 @@ export class CommandsService {
       );
     });
   }
+
+  async isRestaurantOpened(
+    restaurant: RestaurantDocument,
+    pickupTime: Date = null,
+  ): Promise<boolean> {
+    const today = new Date();
+    const currentDay = today.getDay();
+    const cwday = (currentDay - 1 + 7) % 7;
+
+    if (
+      !!(
+        restaurant.openingTime &&
+        restaurant.openingTime[cwday] &&
+        restaurant.openingTime[cwday].startTime
+      )
+    ) {
+      const openingHoursMinutes =
+        restaurant.openingTime[cwday].startTime.split(':');
+      const startTime = new Date();
+      startTime.setHours(
+        +openingHoursMinutes[0],
+        +openingHoursMinutes[1],
+        0,
+        0,
+      );
+
+      const closingHoursMinutes =
+        restaurant.openingTime[cwday].endTime.split(':');
+      const endTime = new Date();
+      endTime.setHours(+closingHoursMinutes[0], +closingHoursMinutes[1], 0, 0);
+
+      if (startTime >= endTime) {
+        endTime.setDate(endTime.getDate() + 1);
+      }
+
+      if (startTime < today && today < endTime) {
+        return true;
+      } else if (pickupTime && today < startTime) {
+        let startOpeningPickupTime = startTime;
+        if (
+          restaurant.openingPickupTime &&
+          restaurant.openingPickupTime[cwday] &&
+          restaurant.openingPickupTime[cwday].startTime
+        ) {
+          const openingPickupHoursMinutes =
+            restaurant.openingPickupTime[cwday].startTime.split(':');
+          const startTime = new Date();
+          startTime.setHours(
+            +openingPickupHoursMinutes[0],
+            +openingPickupHoursMinutes[1],
+            0,
+            0,
+          );
+
+          startOpeningPickupTime = startTime;
+        }
+
+        return startOpeningPickupTime <= today;
+      } else {
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
 }
