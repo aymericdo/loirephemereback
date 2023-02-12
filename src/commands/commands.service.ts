@@ -11,6 +11,7 @@ import { SocketGateway } from 'src/notifications/gateways/web-socket.gateway';
 import { WebPushGateway } from 'src/notifications/gateways/web-push.gateway';
 import { CommandPastryDto } from 'src/pastries/dto/command-pastry.dto';
 import { RestaurantsService } from 'src/restaurants/restaurants.service';
+import { hourMinuteToDate } from 'src/shared/helpers/date';
 
 @Injectable()
 export class CommandsService {
@@ -248,18 +249,17 @@ export class CommandsService {
     ) {
       const openingHoursMinutes =
         restaurant.openingTime[cwday].startTime.split(':');
-      const startTime = new Date();
-      startTime.setHours(
-        +openingHoursMinutes[0],
-        +openingHoursMinutes[1],
-        0,
-        0,
+      const startTime = hourMinuteToDate(
+        openingHoursMinutes[0],
+        openingHoursMinutes[1],
       );
 
       const closingHoursMinutes =
         restaurant.openingTime[cwday].endTime.split(':');
-      const endTime = new Date();
-      endTime.setHours(+closingHoursMinutes[0], +closingHoursMinutes[1], 0, 0);
+      const endTime = hourMinuteToDate(
+        closingHoursMinutes[0],
+        closingHoursMinutes[1],
+      );
 
       if (startTime >= endTime) {
         endTime.setDate(endTime.getDate() + 1);
@@ -276,12 +276,9 @@ export class CommandsService {
         ) {
           const openingPickupHoursMinutes =
             restaurant.openingPickupTime[cwday].startTime.split(':');
-          const startTime = new Date();
-          startTime.setHours(
-            +openingPickupHoursMinutes[0],
-            +openingPickupHoursMinutes[1],
-            0,
-            0,
+          const startTime = hourMinuteToDate(
+            openingPickupHoursMinutes[0],
+            openingPickupHoursMinutes[1],
           );
 
           startOpeningPickupTime = startTime;

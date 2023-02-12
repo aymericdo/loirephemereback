@@ -20,6 +20,7 @@ import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
 import { RestaurantEntity } from 'src/restaurants/serializer/restaurant.serializer';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { UsersService } from 'src/users/users.service';
+import { hourMinuteToDate } from 'src/shared/helpers/date';
 
 @Controller('restaurants')
 export class RestaurantsController {
@@ -109,22 +110,16 @@ export class RestaurantsController {
 
         if (weekDayOpeningPickupTime) {
           const openingPickupHoursMinutes = weekDayOpeningPickupTime.split(':');
-          const openingPickupStartTime = new Date();
-          openingPickupStartTime.setHours(
-            +openingPickupHoursMinutes[0],
-            +openingPickupHoursMinutes[1],
-            0,
-            0,
+          const openingPickupStartTime = hourMinuteToDate(
+            openingPickupHoursMinutes[0],
+            openingPickupHoursMinutes[1],
           );
 
           const openingHoursMinutes =
             restaurant.openingTime[wd]?.startTime.split(':');
-          const openingStartTime = new Date();
-          openingStartTime.setHours(
-            +openingHoursMinutes[0],
-            +openingHoursMinutes[1],
-            0,
-            0,
+          const openingStartTime = hourMinuteToDate(
+            openingHoursMinutes[0],
+            openingHoursMinutes[1],
           );
 
           return openingPickupStartTime > openingStartTime;
