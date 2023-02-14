@@ -475,32 +475,6 @@ export class PastriesService {
     );
   }
 
-  async test(code: string, pastryIds: string[]): Promise<any> {
-    return (
-      (await this.pastryModel
-        .aggregate([
-          {
-            $lookup: {
-              from: 'restaurants',
-              localField: 'restaurant',
-              foreignField: '_id',
-              as: 'restaurant',
-            },
-          },
-          {
-            $match: {
-              'restaurant.code': code,
-              _id: { $in: pastryIds.map((id) => new Types.ObjectId(id)) },
-            },
-          },
-          {
-            $count: 'totalCount',
-          },
-        ])
-        .exec()) as { totalCount: number }[]
-    )[0]?.totalCount;
-  }
-
   async isImageUrlExists(code: string, imageUrl: string): Promise<boolean> {
     return (
       (
