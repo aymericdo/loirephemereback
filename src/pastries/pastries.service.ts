@@ -401,35 +401,33 @@ export class PastriesService {
   }
 
   async isNameNotExists(code: string, pastryName: string): Promise<boolean> {
-    return (
-      (
-        (await this.pastryModel
-          .aggregate([
-            {
-              $lookup: {
-                from: 'restaurants',
-                localField: 'restaurant',
-                foreignField: '_id',
-                as: 'restaurant',
-              },
-            },
-            {
-              $match: {
-                'restaurant.code': code,
-                name: pastryName,
-              },
-            },
-            {
-              $limit: 1,
-            },
-            {
-              $count: 'totalCount',
-            },
-          ])
-          .collation({ locale: 'fr', strength: 1 })
-          .exec()) as { totalCount: number }[]
-      )[0]?.totalCount === 0
-    );
+    const totalCountList = (await this.pastryModel
+      .aggregate([
+        {
+          $lookup: {
+            from: 'restaurants',
+            localField: 'restaurant',
+            foreignField: '_id',
+            as: 'restaurant',
+          },
+        },
+        {
+          $match: {
+            'restaurant.code': code,
+            name: pastryName,
+          },
+        },
+        {
+          $limit: 1,
+        },
+        {
+          $count: 'totalCount',
+        },
+      ])
+      .collation({ locale: 'fr', strength: 1 })
+      .exec()) as { totalCount: number }[];
+
+    return !totalCountList.length || totalCountList[0]?.totalCount === 0;
   }
 
   async decrementStock(pastry: PastryDocument, count: number): Promise<void> {
