@@ -207,8 +207,10 @@ export class CommandsService {
           pastryId,
         );
 
-        if (oldPastry.stock - countByPastryId[pastryId] < 0) {
-          (await previousValue).push(oldPastry);
+        if (oldPastry.stock !== null) {
+          if (oldPastry.stock - countByPastryId[pastryId] < 0) {
+            (await previousValue).push(oldPastry);
+          }
         }
 
         return previousValue;
