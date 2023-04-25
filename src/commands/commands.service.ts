@@ -207,6 +207,7 @@ export class CommandsService {
           pastryId,
         );
 
+        // null = infinity
         if (oldPastry.stock !== null) {
           if (oldPastry.stock - countByPastryId[pastryId] < 0) {
             (await previousValue).push(oldPastry);
