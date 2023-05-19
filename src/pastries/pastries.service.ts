@@ -537,7 +537,7 @@ export class PastriesService {
     pastry: PastryDocument,
     count: number,
   ): Promise<PastryDocument> {
-    if (this.isInfiniteStock(pastry)) return;
+    if (await this.isInfiniteStock(pastry)) return;
 
     const newPastry = await this.pastryModel
       .findByIdAndUpdate(
