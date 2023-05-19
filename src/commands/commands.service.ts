@@ -261,6 +261,9 @@ export class CommandsService {
     const today = new Date();
     const currentDay = today.getDay();
     const cwday = (currentDay - 1 + 7) % 7;
+    const yesterday = (cwday - 1 + 7) % 7;
+
+    let isOpen = false;
 
     if (
       !!(
@@ -283,12 +286,8 @@ export class CommandsService {
         closingHoursMinutes[1],
       );
 
-      if (startTime >= endTime) {
-        endTime.setDate(endTime.getDate() + 1);
-      }
-
       if (startTime < today && today < endTime) {
-        return true;
+        isOpen = true;
       } else if (pickupTime && today < startTime) {
         let startOpeningPickupTime = startTime;
         if (
@@ -306,12 +305,39 @@ export class CommandsService {
           startOpeningPickupTime = startTime;
         }
 
-        return startOpeningPickupTime <= today;
-      } else {
-        return false;
+        isOpen = startOpeningPickupTime <= today;
       }
-    } else {
-      return false;
     }
+
+    if (
+      !isOpen &&
+      restaurant.openingTime &&
+      restaurant.openingTime[yesterday] &&
+      restaurant.openingTime[yesterday].startTime
+    ) {
+      const openingHoursMinutes =
+        restaurant.openingTime[yesterday].startTime.split(':');
+      const closingHoursMinutes =
+        restaurant.openingTime[yesterday].endTime.split(':');
+
+      const startTime = hourMinuteToDate(
+        openingHoursMinutes[0],
+        openingHoursMinutes[1],
+      );
+      const endTime = hourMinuteToDate(
+        closingHoursMinutes[0],
+        closingHoursMinutes[1],
+      );
+
+      startTime.setDate(startTime.getDate() - 1);
+      endTime.setDate(endTime.getDate() - 1);
+
+      if (startTime >= endTime) {
+        endTime.setDate(endTime.getDate() + 1);
+        isOpen = startTime < today && today < endTime;
+      }
+    }
+
+    return isOpen;
   }
 }
