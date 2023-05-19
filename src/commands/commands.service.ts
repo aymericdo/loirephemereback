@@ -198,6 +198,25 @@ export class CommandsService {
     }, {});
   }
 
+  async pastriesDeactivated(countByPastryId: {
+    [pastryId: string]: number;
+  }): Promise<PastryDocument[]> {
+    return await Object.keys(countByPastryId).reduce(
+      async (previousValue, pastryId: string) => {
+        const pastry: PastryDocument = await this.pastriesService.findOne(
+          pastryId,
+        );
+
+        if (pastry.hidden) {
+          (await previousValue).push(pastry);
+        }
+
+        return previousValue;
+      },
+      Promise.resolve([] as PastryDocument[]),
+    );
+  }
+
   async pastriesReached0(countByPastryId: {
     [pastryId: string]: number;
   }): Promise<PastryDocument[]> {

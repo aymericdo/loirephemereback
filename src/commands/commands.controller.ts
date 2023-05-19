@@ -79,6 +79,16 @@ export class CommandsController {
     try {
       transactionSession.startTransaction();
 
+      const deactivatedPastries: PastryDocument[] =
+        await this.commandsService.pastriesDeactivated(countByPastryId);
+
+      if (deactivatedPastries.length) {
+        throw new UnprocessableEntityException({
+          message: 'pastry deactivated',
+          deactivated: deactivatedPastries,
+        });
+      }
+
       const pastriesToZero: PastryDocument[] =
         await this.commandsService.pastriesReached0(countByPastryId);
 
