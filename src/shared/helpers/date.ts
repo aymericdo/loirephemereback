@@ -10,14 +10,11 @@ export const formatYYYYMMDD = (date: Date, separator = '/'): string => {
   return `${year}${separator}${month}${separator}${day}`;
 };
 
-export const hourMinuteToDate = (
-  hour: string,
-  minute: string,
-  timezone = '+01:00',
-): Date => {
-  const YYYYMMDD = formatYYYYMMDD(new Date(), '-');
-
-  return new Date(`${YYYYMMDD}T${hour}:${minute}:00${timezone}`);
+export const hourMinuteToDate = (hour: string, minute: string): Date => {
+  const date = new Date();
+  date.setHours(+hour);
+  date.setMinutes(+minute);
+  return date;
 };
 
 export const getCwday = (): number => {
