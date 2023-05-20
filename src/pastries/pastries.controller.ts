@@ -206,8 +206,9 @@ export class PastriesController {
   async validatePastryName(
     @Param('code') code: string,
     @Query('name') name: string,
+    @Query('id') id: string,
   ): Promise<boolean> {
-    return await this.pastriesService.isNameNotExists(code, name);
+    return await this.pastriesService.isNameNotExists(code, name, id);
   }
 
   @UseGuards(AuthorizationGuard)

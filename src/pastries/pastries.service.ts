@@ -400,7 +400,11 @@ export class PastriesService {
     return await this.pastryModel.find({ commonStock: commonStock }).exec();
   }
 
-  async isNameNotExists(code: string, pastryName: string): Promise<boolean> {
+  async isNameNotExists(
+    code: string,
+    pastryName: string,
+    pastryId?: string,
+  ): Promise<boolean> {
     const totalCountList = (await this.pastryModel
       .aggregate([
         {
@@ -412,10 +416,16 @@ export class PastriesService {
           },
         },
         {
-          $match: {
-            'restaurant.code': code,
-            name: pastryName,
-          },
+          $match: pastryId
+            ? {
+                'restaurant.code': code,
+                name: pastryName,
+                _id: { $ne: new Types.ObjectId(pastryId) },
+              }
+            : {
+                'restaurant.code': code,
+                name: pastryName,
+              },
         },
         {
           $limit: 1,
