@@ -37,7 +37,7 @@ import { RestaurantsModule } from './restaurants/restaurants.module';
     }),
     ThrottlerModule.forRoot({
       ttl: 60,
-      limit: 30,
+      limit: 500,
     }),
     SentryModule.forRoot({
       dsn: process.env.SENTRY_DNS,
