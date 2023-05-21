@@ -267,6 +267,7 @@ export class UsersController {
     @AuthUser() authUser: UserDocument,
   ): Promise<boolean> {
     const user = await this.usersService.findOne(_id);
+    const restaurant = await this.restaurantsService.findByCode(code);
 
     if (authUser._id === _id) {
       throw new ForbiddenException({
@@ -275,6 +276,10 @@ export class UsersController {
     }
 
     await this.restaurantsService.deleteUserToRestaurant(code, user);
+    await this.usersService.removeAccessFromRestaurant(
+      user._id,
+      restaurant._id,
+    );
     return true;
   }
 

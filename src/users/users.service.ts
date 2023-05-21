@@ -75,6 +75,26 @@ export class UsersService {
       .exec();
   }
 
+  async removeAccessFromRestaurant(
+    id: string,
+    restaurantId: string,
+  ): Promise<UserDocument> {
+    const currentAccess = await this.findCurrentAccess(id);
+    delete currentAccess[restaurantId];
+
+    return await this.userModel
+      .findByIdAndUpdate(
+        id,
+        {
+          access: {
+            ...currentAccess,
+          },
+        },
+        { new: true },
+      )
+      .exec();
+  }
+
   async updatePassword(
     userId: string,
     password: string,
