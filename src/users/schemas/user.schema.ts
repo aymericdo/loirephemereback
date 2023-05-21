@@ -32,6 +32,13 @@ export class User {
     default: {},
   })
   access: { [restaurantId: string]: Access[] };
+
+  @Prop({
+    type: Boolean,
+    required: true,
+    default: true,
+  })
+  displayDemoResto: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

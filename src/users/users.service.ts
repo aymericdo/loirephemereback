@@ -112,6 +112,23 @@ export class UsersService {
       .exec();
   }
 
+  async setDisplayDemoResto(
+    userId: string,
+    displayDemoResto: boolean,
+  ): Promise<UserDocument> {
+    return await this.userModel
+      .findByIdAndUpdate(
+        userId,
+        {
+          $set: {
+            displayDemoResto,
+          },
+        },
+        { new: true },
+      )
+      .exec();
+  }
+
   async hasAccess(
     id: string,
     code: string,

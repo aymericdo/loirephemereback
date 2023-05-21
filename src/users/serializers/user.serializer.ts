@@ -10,6 +10,9 @@ export class UserEntity {
   @Expose()
   email: string;
 
+  @Expose()
+  displayDemoResto: boolean;
+
   @Expose({ groups: ['admin'] })
   createdAt: Date;
 

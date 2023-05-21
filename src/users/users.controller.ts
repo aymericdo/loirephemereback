@@ -338,4 +338,19 @@ export class UsersController {
     await this.usersService.updatePassword(authUser._id, password);
     return true;
   }
+
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
+  @Patch('display-demo-resto')
+  async patchDisplayDemoResto(
+    @AuthUser() authUser: UserDocument,
+    @Body('displayDemoResto') displayDemoResto: boolean,
+  ): Promise<boolean> {
+    await this.usersService.setDisplayDemoResto(authUser._id, displayDemoResto);
+
+    return displayDemoResto;
+  }
 }
