@@ -6,6 +6,7 @@ import {
   FileTypeValidator,
   Get,
   MaxFileSizeValidator,
+  NotFoundException,
   Param,
   ParseFilePipe,
   Post,
@@ -48,6 +49,15 @@ export class PastriesController {
   async getPastriesByCode(
     @Param('code') code: string,
   ): Promise<PastryEntity[]> {
+    const restaurant: RestaurantDocument =
+      await this.restaurantsService.findByCode(code);
+
+    if (!restaurant) {
+      throw new NotFoundException({
+        message: 'resto not found',
+      });
+    }
+
     const pastries = await this.pastriesService.findDisplayableByCode(code);
     const displayStock = await this.restaurantsService.isStockDisplayable(code);
 

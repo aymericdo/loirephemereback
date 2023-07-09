@@ -147,9 +147,7 @@ export class RestaurantsService {
   }
 
   async isStockDisplayable(code: string): Promise<boolean> {
-    return await (
-      await this.findByCode(code)
-    ).displayStock;
+    return (await this.findByCode(code))?.displayStock;
   }
 
   async isUserInRestaurant(code: string, userId: string): Promise<boolean> {

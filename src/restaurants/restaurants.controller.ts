@@ -43,13 +43,13 @@ export class RestaurantsController {
   async getRestaurant(@Param('code') code: string): Promise<RestaurantEntity> {
     const restaurant = await this.restaurantsService.findByCode(code);
 
-    if (restaurant) {
-      return new RestaurantEntity(restaurant.toObject());
-    } else {
+    if (!restaurant) {
       throw new NotFoundException({
         message: 'resto not found',
       });
     }
+
+    return new RestaurantEntity(restaurant.toObject());
   }
 
   @UseGuards(JwtAuthGuard)
