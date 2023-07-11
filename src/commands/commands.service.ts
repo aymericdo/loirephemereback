@@ -12,6 +12,7 @@ import { WebPushGateway } from 'src/notifications/gateways/web-push.gateway';
 import { CommandPastryDto } from 'src/pastries/dto/command-pastry.dto';
 import { RestaurantsService } from 'src/restaurants/restaurants.service';
 import { hourMinuteToDate } from 'src/shared/helpers/date';
+import { PaymentDto } from 'src/commands/dto/command-payment.dto';
 
 @Injectable()
 export class CommandsService {
@@ -93,11 +94,14 @@ export class CommandsService {
     return command;
   }
 
-  async payedCommand(id: string): Promise<CommandDocument> {
+  async payedCommand(
+    id: string,
+    payment: PaymentDto[],
+  ): Promise<CommandDocument> {
     const command = await this.commandModel
       .findByIdAndUpdate(
         id,
-        { isPayed: true },
+        { isPayed: true, payment },
         { new: true, useFindAndModify: false },
       )
       .populate('pastries')

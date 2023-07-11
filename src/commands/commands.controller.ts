@@ -29,6 +29,7 @@ import { AuthorizationGuard } from 'src/shared/guards/authorization.guard';
 import { Accesses } from 'src/shared/decorators/accesses.decorator';
 import { CommandDateRangeDto } from 'src/commands/dto/command-date-range.dto';
 import { CommandDateRangeLast24hoursDto } from 'src/commands/dto/command-date-range-last-24-hours.dto';
+import { CommandPaymentDto } from 'src/commands/dto/command-payment.dto';
 
 @Controller('commands')
 export class CommandsController {
@@ -188,7 +189,9 @@ export class CommandsController {
   async patchCommand2(
     @Param('id') id: string,
     @Param('code') code: string,
+    @Body() body: CommandPaymentDto,
   ): Promise<CommandEntity> {
+    console.log(body.payments);
     const commandRestaurantCode = (await this.commandsService.findOne(id))
       .restaurant.code;
 
@@ -198,7 +201,7 @@ export class CommandsController {
       });
     }
 
-    const command = await this.commandsService.payedCommand(id);
+    const command = await this.commandsService.payedCommand(id, body.payments);
     return new CommandEntity(command.toObject());
   }
 

@@ -9,6 +9,14 @@ import { SIZE } from 'src/shared/helpers/sizes';
 
 export type CommandDocument = Command & Document;
 
+export const PAYMENT_TYPES = ['creditCart', 'cash', 'bankCheque'] as const;
+export type PaymentType = typeof PAYMENT_TYPES[number];
+
+export interface PaymentPossibility {
+  key: PaymentType;
+  value: number;
+}
+
 @Schema({ timestamps: true })
 export class Command {
   @Prop({
@@ -67,6 +75,12 @@ export class Command {
 
   @Prop({ type: Date, default: null, min: new Date() })
   pickUpTime: Date;
+
+  @Prop({
+    type: [{ type: Object }],
+    default: [],
+  })
+  payment: PaymentPossibility[];
 }
 
 export const CommandSchema = SchemaFactory.createForClass(Command);
