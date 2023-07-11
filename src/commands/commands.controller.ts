@@ -191,7 +191,6 @@ export class CommandsController {
     @Param('code') code: string,
     @Body() body: CommandPaymentDto,
   ): Promise<CommandEntity> {
-    console.log(body.payments);
     const commandRestaurantCode = (await this.commandsService.findOne(id))
       .restaurant.code;
 
