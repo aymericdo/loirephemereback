@@ -1,3 +1,5 @@
+import { DateTime } from 'luxon';
+
 export const formatYYYYMMDD = (date: Date, separator = '/'): string => {
   const year = date.getFullYear();
 
@@ -11,9 +13,13 @@ export const formatYYYYMMDD = (date: Date, separator = '/'): string => {
 };
 
 export const hourMinuteToDate = (hour: string, minute: string): Date => {
-  const date = new Date();
+  const zone = 'Europe/Paris';
+  const dateTime = DateTime.now().setZone(zone);
+  const date = new Date(dateTime.toISO());
+
   date.setHours(+hour);
   date.setMinutes(+minute);
+
   return date;
 };
 
