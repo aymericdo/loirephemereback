@@ -11,7 +11,7 @@ import { SocketGateway } from 'src/notifications/gateways/web-socket.gateway';
 import { WebPushGateway } from 'src/notifications/gateways/web-push.gateway';
 import { CommandPastryDto } from 'src/pastries/dto/command-pastry.dto';
 import { RestaurantsService } from 'src/restaurants/restaurants.service';
-import { hourMinuteToDate } from 'src/shared/helpers/date';
+import { hourMinuteToDate, nowInTimezone } from 'src/shared/helpers/date';
 import { PaymentDto } from 'src/commands/dto/command-payment.dto';
 
 @Injectable()
@@ -262,7 +262,7 @@ export class CommandsService {
     restaurant: RestaurantDocument,
     pickupTime: Date = null,
   ): Promise<boolean> {
-    const today = new Date();
+    const today = nowInTimezone();
     const currentDay = today.getDay();
     const cwday = (currentDay - 1 + 7) % 7;
     const yesterday = (cwday - 1 + 7) % 7;

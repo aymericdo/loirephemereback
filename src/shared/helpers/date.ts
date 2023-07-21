@@ -1,5 +1,7 @@
 import { DateTime } from 'luxon';
 
+const TIMEZONE = 'America/New_York';
+
 export const formatYYYYMMDD = (date: Date, separator = '/'): string => {
   const year = date.getFullYear();
 
@@ -12,13 +14,18 @@ export const formatYYYYMMDD = (date: Date, separator = '/'): string => {
   return `${year}${separator}${month}${separator}${day}`;
 };
 
-export const hourMinuteToDate = (hour: string, minute: string): Date => {
-  const zone = 'Europe/Paris';
-  const dateTime = DateTime.now().setZone(zone);
-  const date = new Date(dateTime.toISO());
+export const nowInTimezone = (): Date => {
+  const dateTime = DateTime.now().setZone(TIMEZONE);
+  return new Date(dateTime.toISO());
+};
 
-  date.setHours(+hour);
-  date.setMinutes(+minute);
+export const hourMinuteToDate = (hour: string, minute: string): Date => {
+  const dateTime = DateTime.fromObject(
+    { hour: +hour, minute: +minute },
+    { zone: TIMEZONE },
+  ).setZone(TIMEZONE);
+
+  const date = new Date(dateTime.toISO());
 
   return date;
 };
