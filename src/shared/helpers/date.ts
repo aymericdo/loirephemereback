@@ -25,6 +25,8 @@ export const hourMinuteToDate = (hour: string, minute: string): Date => {
     { zone: TIMEZONE },
   );
 
+  console.log(dateTime);
+
   return new Date(dateTime.toISO());
 };
 
