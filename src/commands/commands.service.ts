@@ -290,6 +290,16 @@ export class CommandsService {
         closingHoursMinutes[1],
       );
 
+      console.log(today);
+      console.log(openingHoursMinutes);
+      console.log(startTime);
+      console.log(closingHoursMinutes);
+      console.log(endTime);
+
+      console.log(startTime < today);
+      console.log(today < endTime);
+      return true;
+
       if (startTime < today && today < endTime) {
         isOpen = true;
       } else if (pickupTime && today < startTime) {
