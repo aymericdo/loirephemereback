@@ -26,8 +26,10 @@ export const hourMinuteToDate = (hour: string, minute: string): Date => {
   );
 
   console.log(dateTime);
+  console.log(dateTime.toISO());
+  console.log(dateTime.toString());
 
-  return new Date(dateTime.toISO());
+  return new Date(dateTime.toString());
 };
 
 export const getCwday = (): number => {
