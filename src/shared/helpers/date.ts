@@ -16,7 +16,7 @@ export const formatYYYYMMDD = (date: Date, separator = '/'): string => {
 
 export const nowInTimezone = (): Date => {
   const dateTime = DateTime.now();
-  return new Date(dateTime.toISO());
+  return new Date(dateTime.toString());
 };
 
 export const hourMinuteToDate = (hour: string, minute: string): Date => {
@@ -24,10 +24,6 @@ export const hourMinuteToDate = (hour: string, minute: string): Date => {
     { hour: +hour, minute: +minute },
     { zone: TIMEZONE },
   );
-
-  console.log(dateTime);
-  console.log(dateTime.toISO());
-  console.log(dateTime.toString());
 
   return new Date(dateTime.toString());
 };
