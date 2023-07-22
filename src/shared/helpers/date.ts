@@ -1,6 +1,6 @@
 import { DateTime } from 'luxon';
 
-const TIMEZONE = 'America/New_York';
+const TIMEZONE = 'Europe/Paris';
 
 export const formatYYYYMMDD = (date: Date, separator = '/'): string => {
   const year = date.getFullYear();
@@ -15,7 +15,7 @@ export const formatYYYYMMDD = (date: Date, separator = '/'): string => {
 };
 
 export const nowInTimezone = (): Date => {
-  const dateTime = DateTime.now().setZone(TIMEZONE);
+  const dateTime = DateTime.now();
   return new Date(dateTime.toISO());
 };
 
@@ -23,11 +23,9 @@ export const hourMinuteToDate = (hour: string, minute: string): Date => {
   const dateTime = DateTime.fromObject(
     { hour: +hour, minute: +minute },
     { zone: TIMEZONE },
-  ).setZone(TIMEZONE);
+  );
 
-  const date = new Date(dateTime.toISO());
-
-  return date;
+  return new Date(dateTime.toISO());
 };
 
 export const getCwday = (): number => {
