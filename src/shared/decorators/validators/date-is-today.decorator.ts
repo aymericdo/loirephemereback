@@ -3,7 +3,6 @@ import {
   registerDecorator,
   ValidationOptions,
 } from 'class-validator';
-import { nowInTimezone } from 'src/shared/helpers/date';
 
 export function IsToday(validationOptions?: ValidationOptions) {
   return function (object: unknown, propertyName: string) {
@@ -14,9 +13,9 @@ export function IsToday(validationOptions?: ValidationOptions) {
       options: validationOptions,
       validator: {
         validate(value: Date) {
-          const yesterday = nowInTimezone();
+          const yesterday = new Date();
           yesterday.setDate(yesterday.getDate() - 1);
-          const tomorrow = nowInTimezone();
+          const tomorrow = new Date();
           tomorrow.setDate(tomorrow.getDate() + 1);
 
           return value <= tomorrow && value >= yesterday;

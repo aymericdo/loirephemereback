@@ -14,11 +14,6 @@ export const formatYYYYMMDD = (date: Date, separator = '/'): string => {
   return `${year}${separator}${month}${separator}${day}`;
 };
 
-export const nowInTimezone = (): Date => {
-  const dateTime = DateTime.now();
-  return new Date(dateTime.toString());
-};
-
 export const hourMinuteToDate = (hour: string, minute: string): Date => {
   const dateTime = DateTime.fromObject(
     { hour: +hour, minute: +minute },
