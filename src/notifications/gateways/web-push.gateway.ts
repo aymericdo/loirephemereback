@@ -64,13 +64,10 @@ export class WebPushGateway {
   private sendPushNotif(sub: PushSubscription, body: string) {
     const payload = JSON.stringify({
       notification: {
-        title: 'Petite notif gentille',
+        title: 'Oresto.app',
         body,
         icon: 'assets/icons/icon-128x128.png',
-        vibrate: [
-          500, 110, 500, 110, 450, 110, 200, 110, 170, 40, 450, 110, 200, 110,
-          170, 40, 500,
-        ],
+        vibrate: [500, 110, 500, 110, 450],
         data: {
           dateOfArrival: Date.now(),
           primaryKey: 1,
