@@ -1,4 +1,5 @@
 export const SIZE = {
+  EXTRA_MIN: 2,
   MIN: 3,
   MIN_PASSWORD: 8,
   SMALL: 35,

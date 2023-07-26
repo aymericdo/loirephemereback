@@ -46,7 +46,7 @@ export class Command {
     type: String,
     required: true,
     trim: true,
-    minlength: SIZE.MIN,
+    minlength: SIZE.EXTRA_MIN,
     maxlength: SIZE.SMALL,
   })
   name: string;
