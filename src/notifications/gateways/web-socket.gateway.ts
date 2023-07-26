@@ -74,6 +74,9 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   alertNewCommand(code: string, command: CommandDocument) {
     const serializeCommand = instanceToPlain(
       new CommandEntity(command.toObject()),
+      {
+        groups: ['admin'],
+      },
     );
     this.commandsAdmins[code]?.forEach((client: Client) =>
       client.send(JSON.stringify({ addCommand: serializeCommand })),
@@ -83,6 +86,9 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   alertCloseCommand(code: string, command: CommandDocument) {
     const serializeCommand = instanceToPlain(
       new CommandEntity(command.toObject()),
+      {
+        groups: ['admin'],
+      },
     );
     this.commandsAdmins[code]?.forEach((client: Client) =>
       client.send(JSON.stringify({ closeCommand: serializeCommand })),
@@ -92,6 +98,9 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   alertPayedCommand(code: string, command: CommandDocument) {
     const serializeCommand = instanceToPlain(
       new CommandEntity(command.toObject()),
+      {
+        groups: ['admin'],
+      },
     );
     this.commandsAdmins[code]?.forEach((client: Client) =>
       client.send(JSON.stringify({ payedCommand: serializeCommand })),
