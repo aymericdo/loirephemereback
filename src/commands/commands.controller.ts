@@ -200,7 +200,7 @@ export class CommandsController {
       });
     }
 
-    if (oldCommand.isCancellable()) {
+    if (oldCommand.isCancellable) {
       throw new BadRequestException({
         message: 'command is not cancellable anymore',
       });

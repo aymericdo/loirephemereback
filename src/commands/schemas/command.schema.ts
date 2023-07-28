@@ -85,7 +85,7 @@ export class Command {
   })
   payment: PaymentPossibility[];
 
-  isCancellable(): boolean {
+  get isCancellable(): boolean {
     return !this.isDone && !this.isPayed;
   }
 }
