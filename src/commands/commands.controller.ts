@@ -162,7 +162,7 @@ export class CommandsController {
     groups: ['admin'],
   })
   @Patch('by-code/:code/close/:id')
-  async patchCommand(
+  async closeCommand(
     @Param('id') id: string,
     @Param('code') code: string,
   ): Promise<CommandEntity> {
@@ -176,6 +176,37 @@ export class CommandsController {
     }
 
     const command = await this.commandsService.closeCommand(id);
+    return new CommandEntity(command.toObject());
+  }
+
+  @UseGuards(AuthorizationGuard)
+  @Accesses('commands')
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
+  @Patch('by-code/:code/cancel/:id')
+  async cancelCommand(
+    @Param('id') id: string,
+    @Param('code') code: string,
+  ): Promise<CommandEntity> {
+    const oldCommand = await this.commandsService.findOne(id);
+
+    const commandRestaurantCode = oldCommand.restaurant.code;
+
+    if (commandRestaurantCode !== code) {
+      throw new BadRequestException({
+        message: 'mismatch between command and restaurant',
+      });
+    }
+
+    if (oldCommand.isCancellable()) {
+      throw new BadRequestException({
+        message: 'command is not cancellable anymore',
+      });
+    }
+
+    const command = await this.commandsService.cancelCommand(id);
     return new CommandEntity(command.toObject());
   }
 

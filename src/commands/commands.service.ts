@@ -94,6 +94,22 @@ export class CommandsService {
     return command;
   }
 
+  async cancelCommand(id: string): Promise<CommandDocument> {
+    const command = await this.commandModel
+      .findByIdAndUpdate(
+        id,
+        { isCancelled: true },
+        { new: true, useFindAndModify: false },
+      )
+      .populate('pastries')
+      .populate('restaurant')
+      .exec();
+
+    this.socketGateway.alertCloseCommand(command.restaurant.code, command);
+
+    return command;
+  }
+
   async payedCommand(
     id: string,
     payment: PaymentDto[],

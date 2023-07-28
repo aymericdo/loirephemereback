@@ -70,6 +70,9 @@ export class Command {
   @Prop({ type: Boolean, required: true, default: false })
   isPayed: boolean;
 
+  @Prop({ type: Boolean, required: true, default: false })
+  isCancelled: boolean;
+
   @Prop({ type: Number, required: true, min: 0 })
   totalPrice: number;
 
@@ -81,6 +84,10 @@ export class Command {
     default: [],
   })
   payment: PaymentPossibility[];
+
+  isCancellable(): boolean {
+    return !this.isDone && !this.isPayed;
+  }
 }
 
 export const CommandSchema = SchemaFactory.createForClass(Command);

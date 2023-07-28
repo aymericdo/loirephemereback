@@ -33,6 +33,9 @@ export class CommandEntity {
   isPayed: boolean;
 
   @Expose()
+  isCancelled: boolean;
+
+  @Expose()
   totalPrice: number;
 
   @Expose()
