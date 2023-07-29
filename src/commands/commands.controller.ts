@@ -152,7 +152,9 @@ export class CommandsController {
       toDate,
     );
 
-    return commands.map((command) => new CommandEntity(command.toObject()));
+    return commands
+      .filter((command) => !command.isCancelled)
+      .map((command) => new CommandEntity(command.toObject()));
   }
 
   @UseGuards(AuthorizationGuard)
