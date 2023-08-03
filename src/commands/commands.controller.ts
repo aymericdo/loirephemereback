@@ -224,8 +224,8 @@ export class CommandsController {
     @Param('code') code: string,
     @Body() body: CommandPaymentDto,
   ): Promise<CommandEntity> {
-    const commandRestaurantCode = (await this.commandsService.findOne(id))
-      .restaurant.code;
+    const oldCommand = await this.commandsService.findOne(id);
+    const commandRestaurantCode = oldCommand.restaurant.code;
 
     if (commandRestaurantCode !== code) {
       throw new BadRequestException({
@@ -233,7 +233,22 @@ export class CommandsController {
       });
     }
 
-    const command = await this.commandsService.payedCommand(id, body.payments);
+    const totalPayed = body.payments.reduce((prev, p) => p.value + prev, 0);
+    const toPayed = body.discount
+      ? body.discount.newPrice
+      : oldCommand.totalPrice;
+
+    if (totalPayed < toPayed) {
+      throw new BadRequestException({
+        message: 'mismatch between the total price and the payment',
+      });
+    }
+
+    const command = await this.commandsService.payedCommand(
+      id,
+      body.payments,
+      body.discount,
+    );
     return new CommandEntity(command.toObject());
   }
 

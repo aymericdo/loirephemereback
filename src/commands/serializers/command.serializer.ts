@@ -1,6 +1,6 @@
 import { Exclude, Expose, Transform } from 'class-transformer';
 import { ObjectId } from 'mongoose';
-import { PaymentPossibility } from 'src/commands/schemas/command.schema';
+import { Discount, PaymentPossibility } from 'src/commands/schemas/command.schema';
 import { Pastry, PastryDocument } from 'src/pastries/schemas/pastry.schema';
 import { PastryEntity } from 'src/pastries/serializers/pastry.serializer';
 import { Restaurant } from 'src/restaurants/schemas/restaurant.schema';
@@ -43,6 +43,9 @@ export class CommandEntity {
 
   @Expose({ groups: ['admin'] })
   payment: PaymentPossibility[];
+
+  @Expose({ groups: ['admin'] })
+  discount: Discount | null;
 
   @Expose()
   createdAt: Date;

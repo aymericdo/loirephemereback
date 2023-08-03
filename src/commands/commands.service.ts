@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { CreateCommandDto } from './dto/create-command.dto';
-import { Command, CommandDocument } from './schemas/command.schema';
+import { Command, CommandDocument, Discount } from './schemas/command.schema';
 import { randomBytes } from 'crypto';
 import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
 import { PastryDocument } from 'src/pastries/schemas/pastry.schema';
@@ -113,11 +113,12 @@ export class CommandsService {
   async payedCommand(
     id: string,
     payment: PaymentDto[],
+    discount: Discount,
   ): Promise<CommandDocument> {
     const command = await this.commandModel
       .findByIdAndUpdate(
         id,
-        { isPayed: true, payment },
+        { isPayed: true, payment, discount },
         { new: true, useFindAndModify: false },
       )
       .populate('pastries')

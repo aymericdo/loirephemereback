@@ -4,11 +4,12 @@ import {
   IsEnum,
   IsNotEmpty,
   IsNumber,
+  IsObject,
   IsString,
   Min,
   ValidateNested,
 } from 'class-validator';
-import { PAYMENT_TYPES } from 'src/commands/schemas/command.schema';
+import { Discount, PAYMENT_TYPES } from 'src/commands/schemas/command.schema';
 
 export class PaymentDto {
   @IsString()
@@ -22,10 +23,30 @@ export class PaymentDto {
   readonly value: number;
 }
 
+export class DiscountDto {
+  @IsArray()
+  @Type(() => String)
+  @ValidateNested({ each: true })
+  readonly gifts: string[];
+
+  @IsNumber()
+  @Min(1)
+  readonly percentage: number;
+
+  @IsNumber()
+  @IsNotEmpty()
+  @Min(0)
+  readonly newPrice: number;
+}
+
 export class CommandPaymentDto {
   @IsArray()
   @IsNotEmpty()
   @Type(() => PaymentDto)
   @ValidateNested({ each: true })
   readonly payments: PaymentDto[];
+
+  @IsObject()
+  @Type(() => DiscountDto)
+  readonly discount: Discount | null;
 }

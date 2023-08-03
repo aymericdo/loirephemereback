@@ -17,6 +17,12 @@ export interface PaymentPossibility {
   value: number;
 }
 
+export interface Discount {
+  gifts: string[];
+  percentage: number;
+  newPrice: number;
+}
+
 @Schema({ timestamps: true })
 export class Command {
   @Prop({
@@ -81,9 +87,16 @@ export class Command {
 
   @Prop({
     type: [{ type: Object }],
+    required: true,
     default: [],
   })
   payment: PaymentPossibility[];
+
+  @Prop({
+    type: Object,
+    required: false,
+  })
+  discount: Discount;
 
   get isCancellable(): boolean {
     return !this.isDone && !this.isPayed;
