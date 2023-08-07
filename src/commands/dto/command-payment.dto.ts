@@ -5,6 +5,7 @@ import {
   IsNotEmpty,
   IsNumber,
   IsObject,
+  IsOptional,
   IsString,
   Min,
   ValidateNested,
@@ -47,6 +48,7 @@ export class CommandPaymentDto {
   readonly payments: PaymentDto[];
 
   @IsObject()
+  @IsOptional()
   @Type(() => DiscountDto)
   readonly discount: Discount | null;
 }
