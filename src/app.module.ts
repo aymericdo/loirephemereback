@@ -1,9 +1,5 @@
-import {
-  CacheModule,
-  HttpException,
-  MiddlewareConsumer,
-  Module,
-} from '@nestjs/common';
+import { HttpException, MiddlewareConsumer, Module } from '@nestjs/common';
+import { CacheModule } from '@nestjs/cache-manager';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { MongooseModule } from '@nestjs/mongoose';

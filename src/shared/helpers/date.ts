@@ -1,3 +1,7 @@
+import { DateTime } from 'luxon';
+
+const TIMEZONE = 'Europe/Paris';
+
 export const formatYYYYMMDD = (date: Date, separator = '/'): string => {
   const year = date.getFullYear();
 
@@ -11,10 +15,12 @@ export const formatYYYYMMDD = (date: Date, separator = '/'): string => {
 };
 
 export const hourMinuteToDate = (hour: string, minute: string): Date => {
-  const date = new Date();
-  date.setHours(+hour);
-  date.setMinutes(+minute);
-  return date;
+  const dateTime = DateTime.fromObject(
+    { hour: +hour, minute: +minute },
+    { zone: TIMEZONE },
+  );
+
+  return new Date(dateTime.toString());
 };
 
 export const getCwday = (): number => {

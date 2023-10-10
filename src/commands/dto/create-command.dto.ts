@@ -22,7 +22,7 @@ export class CreateCommandDto {
   readonly pastries: CommandPastryDto[];
 
   @IsString()
-  @MinLength(SIZE.MIN)
+  @MinLength(SIZE.EXTRA_MIN)
   @MaxLength(SIZE.SMALL)
   @IsNotEmpty()
   readonly name: string;

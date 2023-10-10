@@ -17,6 +17,12 @@ export interface PaymentPossibility {
   value: number;
 }
 
+export interface Discount {
+  gifts: string[];
+  percentage: number;
+  newPrice: number;
+}
+
 @Schema({ timestamps: true })
 export class Command {
   @Prop({
@@ -46,7 +52,7 @@ export class Command {
     type: String,
     required: true,
     trim: true,
-    minlength: SIZE.MIN,
+    minlength: SIZE.EXTRA_MIN,
     maxlength: SIZE.SMALL,
   })
   name: string;
@@ -70,6 +76,9 @@ export class Command {
   @Prop({ type: Boolean, required: true, default: false })
   isPayed: boolean;
 
+  @Prop({ type: Boolean, required: true, default: false })
+  isCancelled: boolean;
+
   @Prop({ type: Number, required: true, min: 0 })
   totalPrice: number;
 
@@ -78,9 +87,20 @@ export class Command {
 
   @Prop({
     type: [{ type: Object }],
+    required: true,
     default: [],
   })
   payment: PaymentPossibility[];
+
+  @Prop({
+    type: Object,
+    required: false,
+  })
+  discount: Discount;
+
+  get isCancellable(): boolean {
+    return !this.isDone && !this.isPayed;
+  }
 }
 
 export const CommandSchema = SchemaFactory.createForClass(Command);
