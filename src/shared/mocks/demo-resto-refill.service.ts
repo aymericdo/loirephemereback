@@ -48,8 +48,8 @@ export class DemoRestoRefillService {
     for (let i = 0; i < pastries.length; ++i) {
       const pastry: CreatePastryDto = {
         name: pastries[i].name,
-        description: faker.lorem.paragraph().slice(0, SIZE.LARGE),
-        price: +faker.commerce.price(1, 8),
+        description: pastries[i].description,
+        price: pastries[i].price,
         imageUrl: pastries[i].imageUrl,
         ingredients: pastries[i].ingredients,
         hidden: false,
