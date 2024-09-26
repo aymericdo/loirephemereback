@@ -3,7 +3,7 @@ import { Document } from 'mongoose';
 import { SIZE } from 'src/shared/helpers/sizes';
 
 export const ACCESS_LIST = ['menu', 'commands', 'stats', 'users'] as const;
-export type Access = typeof ACCESS_LIST[number];
+export type Access = (typeof ACCESS_LIST)[number];
 
 export type UserDocument = User & Document;
 

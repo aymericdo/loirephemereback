@@ -153,7 +153,7 @@ export class PastriesController {
       {
         ...body,
         _id: body._id,
-        displaySequence: displaySequenceById[currentPastry._id],
+        displaySequence: displaySequenceById[currentPastry._id.toString()],
       },
       historical,
       isUpdatingStock,

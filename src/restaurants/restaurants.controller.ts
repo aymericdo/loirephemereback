@@ -177,7 +177,10 @@ export class RestaurantsController {
   ): Promise<RestaurantEntity[]> {
     const restaurants = process.env.GOD_MODE.split('/').includes(authUser.email)
       ? await this.restaurantsService.findAll()
-      : await this.restaurantsService.findAllByUserId(authUser._id, true);
+      : await this.restaurantsService.findAllByUserId(
+          authUser._id.toString(),
+          true,
+        );
 
     return restaurants.map(
       (restaurant) => new RestaurantEntity(restaurant.toObject()),
@@ -194,13 +197,16 @@ export class RestaurantsController {
     @Body() body: CreateRestaurantDto,
     @AuthUser() authUser: UserDocument,
   ): Promise<RestaurantEntity> {
-    const restaurant = await this.restaurantsService.create(body, authUser._id);
+    const restaurant = await this.restaurantsService.create(
+      body,
+      authUser._id.toString(),
+    );
 
     // set initial access
     await this.usersService.updateAccess(
-      authUser._id,
+      authUser._id.toString(),
       [...ACCESS_LIST],
-      restaurant._id,
+      restaurant._id.toString(),
     );
 
     return new RestaurantEntity(restaurant.toObject());

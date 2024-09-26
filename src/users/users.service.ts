@@ -149,15 +149,22 @@ export class UsersService {
     if (process.env.GOD_MODE.split('/').includes(user.email)) {
       return true;
     } else if (DEMO_RESTO === code) {
-      if (!(await this.restaurantsService.isUserInRestaurant(code, user._id))) {
+      if (
+        !(await this.restaurantsService.isUserInRestaurant(
+          code,
+          user._id.toString(),
+        ))
+      ) {
         return true;
       } else {
-        return await this.hasAccess(user._id, code, accesses);
+        return await this.hasAccess(user._id.toString(), code, accesses);
       }
     } else {
       return (
-        (await this.restaurantsService.isUserInRestaurant(code, user._id)) &&
-        (await this.hasAccess(user._id, code, accesses))
+        (await this.restaurantsService.isUserInRestaurant(
+          code,
+          user._id.toString(),
+        )) && (await this.hasAccess(user._id.toString(), code, accesses))
       );
     }
   }

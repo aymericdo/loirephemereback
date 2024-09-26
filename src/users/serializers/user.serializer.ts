@@ -1,6 +1,6 @@
 import { Exclude, Expose, Transform } from 'class-transformer';
 import { ObjectId } from 'mongoose';
-import { Access } from 'src/users/schemas/user.schema';
+import { Access, UserDocument } from 'src/users/schemas/user.schema';
 
 export class UserEntity {
   @Expose()
@@ -46,7 +46,7 @@ export class UserEntity {
   @Exclude()
   forRestaurantId = null;
 
-  constructor(partial: Partial<UserEntity>, forRestaurantId = null) {
+  constructor(partial: UserDocument, forRestaurantId = null) {
     Object.assign(this, partial);
 
     this.forRestaurantId = forRestaurantId;

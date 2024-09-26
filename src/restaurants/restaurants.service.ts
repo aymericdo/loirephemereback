@@ -49,7 +49,7 @@ export class RestaurantsService {
   async findIdByCode(code: string): Promise<string> {
     return (
       await this.restaurantModel.findOne({ code: code }, { _id: 1 }).exec()
-    )?._id;
+    )?._id.toString();
   }
 
   async findUsersByCode(code: string): Promise<UserDocument[]> {
@@ -197,7 +197,7 @@ export class RestaurantsService {
     return await this.restaurantModel
       .findOneAndUpdate(
         { code: code },
-        { $addToSet: { users: user._id.toString() } },
+        { $addToSet: { users: user._id.toString().toString() } },
         { new: true },
       )
       .exec();
@@ -210,7 +210,7 @@ export class RestaurantsService {
     return await this.restaurantModel
       .findOneAndUpdate(
         { code: code },
-        { $pull: { users: user._id.toString() } },
+        { $pull: { users: user._id.toString().toString() } },
         { new: true },
       )
       .exec();
@@ -219,20 +219,25 @@ export class RestaurantsService {
   async fullAccessForAllRestaurants(): Promise<{
     [restaurantId: string]: Access[];
   }> {
-    const allRestaurantIds = (await this.findAll()).map(
-      (restaurant) => restaurant._id,
+    const allRestaurantIds: string[] = (await this.findAll()).map(
+      (restaurant) => restaurant._id.toString(),
     );
 
-    return allRestaurantIds.reduce((prev, id) => {
-      prev[id] = [...ACCESS_LIST];
-      return prev;
-    }, {});
+    return allRestaurantIds.reduce(
+      (prev, id: string) => {
+        prev[id] = [...ACCESS_LIST];
+        return prev;
+      },
+      {} as {
+        [restaurantId: string]: Access[];
+      },
+    );
   }
 
   async fullAccessForDemoResto(user: UserDocument): Promise<{
     [restaurantId: string]: Access[];
   }> {
-    const demoRestaurantId = (await this.findDemoResto())._id;
+    const demoRestaurantId = (await this.findDemoResto())._id.toString();
 
     return {
       [demoRestaurantId]: [...ACCESS_LIST],

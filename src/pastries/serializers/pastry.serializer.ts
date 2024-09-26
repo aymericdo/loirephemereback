@@ -1,6 +1,6 @@
 import { Exclude, Expose, Transform } from 'class-transformer';
 import { ObjectId } from 'mongoose';
-import { Historical } from 'src/pastries/schemas/pastry.schema';
+import { Historical, PastryDocument } from 'src/pastries/schemas/pastry.schema';
 import { Restaurant } from 'src/restaurants/schemas/restaurant.schema';
 import { RestaurantEntity } from 'src/restaurants/serializer/restaurant.serializer';
 
@@ -68,7 +68,7 @@ export class PastryEntity {
   @Exclude()
   displayStock = null;
 
-  constructor(partial: Partial<PastryEntity>, displayStock = false) {
+  constructor(partial: PastryDocument, displayStock = false) {
     Object.assign(this, partial);
 
     this.displayStock = displayStock;

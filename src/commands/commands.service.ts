@@ -65,7 +65,7 @@ export class CommandsService {
     const savedCommand = await createdCommand.save();
 
     const newCommand = await this.commandModel
-      .findById(new Types.ObjectId(savedCommand._id))
+      .findById(new Types.ObjectId(savedCommand._id.toString()))
       .populate('restaurant')
       .populate('pastries')
       .exec();
@@ -270,7 +270,7 @@ export class CommandsService {
 
       await this.pastriesService.decrementStock(
         currentPastry as PastryDocument,
-        countByPastryId[currentPastry._id],
+        countByPastryId[currentPastry._id.toString()],
       );
     });
   }

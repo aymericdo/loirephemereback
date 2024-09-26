@@ -11,13 +11,13 @@ export class WsThrottlerGuard extends ThrottlerGuard {
     const client = context.switchToWs().getClient();
     const ip = client._socket.remoteAddress;
     const key = this.generateKey(context, ip);
-    const ttls = await this.storageService.getRecord(key);
 
-    if (ttls.length >= limit) {
+    const { totalHits } = await this.storageService.increment(key, ttl);
+
+    if (totalHits > limit) {
       throw new ThrottlerException();
     }
 
-    await this.storageService.addRecord(key, ttl);
     return true;
   }
 }

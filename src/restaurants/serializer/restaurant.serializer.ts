@@ -1,5 +1,6 @@
 import { Exclude, Expose, Transform } from 'class-transformer';
 import { ObjectId } from 'mongoose';
+import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
 import { User, UserDocument } from 'src/users/schemas/user.schema';
 import { UserEntity } from 'src/users/serializers/user.serializer';
 
@@ -42,7 +43,7 @@ export class RestaurantEntity {
   @Exclude()
   __v: number;
 
-  constructor(partial: Partial<RestaurantEntity>) {
+  constructor(partial: RestaurantDocument) {
     Object.assign(this, partial);
   }
 }

@@ -55,7 +55,7 @@ export class PastriesService {
   ): Promise<PastryDocument> {
     return await this.pastryModel
       .findByIdAndUpdate(
-        updatePastryDto._id,
+        updatePastryDto._id.toString(),
         { $push: { historical: changes } },
         { new: true },
       )
@@ -77,7 +77,7 @@ export class PastriesService {
       commonStockPastries.forEach(async (commonStockPastry: PastryDocument) => {
         const newCommonStockPastry = await this.pastryModel
           .findByIdAndUpdate(
-            commonStockPastry._id,
+            commonStockPastry._id.toString(),
             {
               $set: { stock: updatePastryDto.stock },
             },
@@ -94,7 +94,7 @@ export class PastriesService {
           this.socketGateway.stockChanged(
             newCommonStockPastry.restaurant.code,
             {
-              pastryId: commonStockPastry._id,
+              pastryId: commonStockPastry._id.toString(),
               newStock: newCommonStockPastry.stock,
             },
           );
@@ -103,7 +103,7 @@ export class PastriesService {
         this.socketGateway.stockChangedAdmin(
           newCommonStockPastry.restaurant.code,
           {
-            pastryId: commonStockPastry._id,
+            pastryId: commonStockPastry._id.toString(),
             newStock: newCommonStockPastry.stock,
           },
         );
@@ -115,20 +115,20 @@ export class PastriesService {
 
       if (displayStock) {
         this.socketGateway.stockChanged(pastry.restaurant.code, {
-          pastryId: updatePastryDto._id,
+          pastryId: updatePastryDto._id.toString(),
           newStock: updatePastryDto.stock,
         });
       }
 
       this.socketGateway.stockChangedAdmin(pastry.restaurant.code, {
-        pastryId: updatePastryDto._id,
+        pastryId: updatePastryDto._id.toString(),
         newStock: updatePastryDto.stock,
       });
     }
 
     return await this.pastryModel
       .findByIdAndUpdate(
-        updatePastryDto._id,
+        updatePastryDto._id.toString(),
         {
           ...updatePastryDto,
           historical,
@@ -551,7 +551,7 @@ export class PastriesService {
 
     const newPastry = await this.pastryModel
       .findByIdAndUpdate(
-        pastry._id,
+        pastry._id.toString(),
         { stock: pastry.stock - count },
         { new: true, useFindAndModify: false },
       )
@@ -564,13 +564,13 @@ export class PastriesService {
 
     if (displayStock) {
       this.socketGateway.stockChanged(newPastry.restaurant.code, {
-        pastryId: newPastry._id,
+        pastryId: newPastry._id.toString(),
         newStock: newPastry.stock,
       });
     }
 
     this.socketGateway.stockChangedAdmin(newPastry.restaurant.code, {
-      pastryId: newPastry._id,
+      pastryId: newPastry._id.toString(),
       newStock: newPastry.stock,
     });
 

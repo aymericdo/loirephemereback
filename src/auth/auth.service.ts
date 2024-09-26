@@ -1,4 +1,5 @@
-import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { Cache } from 'cache-manager';
@@ -30,7 +31,7 @@ export class AuthService {
   }
 
   async login(user: UserDocument) {
-    const payload = { username: user.email, sub: user._id };
+    const payload = { username: user.email, sub: user._id.toString() };
     return {
       access_token: this.jwtService.sign(payload),
     };
