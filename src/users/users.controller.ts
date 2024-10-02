@@ -104,7 +104,10 @@ export class UsersController {
     }
 
     await this.authService.deleteCodes(body.email);
-    await this.usersService.updatePassword(user._id.toString().toString(), body.password);
+    await this.usersService.updatePassword(
+      user._id.toString().toString(),
+      body.password,
+    );
 
     return true;
   }
@@ -204,7 +207,9 @@ export class UsersController {
   async getAll(@Param('code') code: string): Promise<UserEntity[]> {
     const users = await this.restaurantsService.findUsersByCode(code);
     const restaurant = await this.restaurantsService.findByCode(code);
-    return users.map((user) => new UserEntity(user.toObject(), restaurant._id.toString()));
+    return users.map(
+      (user) => new UserEntity(user.toObject(), restaurant._id.toString()),
+    );
   }
 
   @Throttle(60, 5)
@@ -230,7 +235,10 @@ export class UsersController {
     }
 
     if (
-      await this.restaurantsService.isUserInRestaurant(code, currentUser._id.toString())
+      await this.restaurantsService.isUserInRestaurant(
+        code,
+        currentUser._id.toString(),
+      )
     ) {
       throw new ForbiddenException({
         message: 'user already in restaurant',

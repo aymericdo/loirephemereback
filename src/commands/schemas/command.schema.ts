@@ -10,7 +10,7 @@ import { SIZE } from 'src/shared/helpers/sizes';
 export type CommandDocument = Command & Document;
 
 export const PAYMENT_TYPES = ['creditCart', 'cash', 'bankCheque'] as const;
-export type PaymentType = typeof PAYMENT_TYPES[number];
+export type PaymentType = (typeof PAYMENT_TYPES)[number];
 
 export interface PaymentPossibility {
   key: PaymentType;
