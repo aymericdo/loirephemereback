@@ -307,6 +307,10 @@ export class CommandsService {
         closingHoursMinutes[1],
       );
 
+      if (startTime >= endTime) {
+        endTime.setDate(endTime.getDate() + 1);
+      }
+
       if (startTime < today && today < endTime) {
         isOpen = true;
       } else if (pickupTime && today < startTime) {
