@@ -6,11 +6,11 @@ FROM node:22 as development
 
 WORKDIR /usr/src/app
 
-COPY --chown=node:node package*.json ./
+COPY package*.json ./
 
 RUN npm ci
 
-COPY --chown=node:node . .
+COPY . .
 
 USER node
 
@@ -22,9 +22,9 @@ FROM node:22 as build
 
 WORKDIR /usr/src/app
 
-COPY --chown=node:node package*.json ./
-COPY --chown=node:node --from=development /usr/src/app/node_modules ./node_modules
-COPY --chown=node:node . .
+COPY package*.json ./
+COPY --from=development /usr/src/app/node_modules ./node_modules
+COPY . .
 
 RUN npm run build
 
@@ -40,7 +40,7 @@ USER node
 
 FROM node:18-alpine as production
 
-COPY --chown=node:node --from=build /usr/src/app/node_modules ./node_modules
-COPY --chown=node:node --from=build /usr/src/app/dist ./dist
+COPY --from=build /usr/src/app/node_modules ./node_modules
+COPY --from=build /usr/src/app/dist ./dist
 
 CMD ["node", "dist/main"]
