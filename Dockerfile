@@ -23,7 +23,7 @@ COPY package*.json ./
 
 # RUN npm run build
 
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci --omit=dev && npm cache clean --force
 
 COPY . .
 
