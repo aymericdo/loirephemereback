@@ -21,7 +21,9 @@ WORKDIR /usr/src/app
 
 COPY package*.json ./
 
-RUN npm install --only=production
+RUN npm run build
+
+RUN npm ci --omit=dev && npm cache clean --force
 
 COPY . .
 
