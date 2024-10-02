@@ -302,6 +302,7 @@ export class CommandsService {
 
       const closingHoursMinutes =
         restaurant.openingTime[cwday].endTime.split(':');
+
       const endTime = hourMinuteToDate(
         closingHoursMinutes[0],
         closingHoursMinutes[1],
