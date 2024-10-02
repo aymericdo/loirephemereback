@@ -1,46 +1,32 @@
-###################
-# BUILD FOR LOCAL DEVELOPMENT
-###################
-
-FROM node:22 as development
+FROM node:22 AS development
 
 WORKDIR /usr/src/app
 
 COPY package*.json ./
 
-RUN npm ci
+RUN npm install glob rimraf
 
-COPY . .
+RUN npm install
 
-USER node
-
-###################
-# BUILD FOR PRODUCTION
-###################
-
-FROM node:22 as build
-
-WORKDIR /usr/src/app
-
-COPY package*.json ./
-COPY --from=development /usr/src/app/node_modules ./node_modules
 COPY . .
 
 RUN npm run build
 
-ENV NODE_ENV production
+FROM node:22 as production
+
+ARG NODE_ENV=production
+ENV NODE_ENV=${NODE_ENV}
+
+WORKDIR /usr/src/app
+
+COPY package*.json ./
+
+RUN npm run build
 
 RUN npm ci --only=production && npm cache clean --force
 
-USER node
+COPY . .
 
-###################
-# PRODUCTION
-###################
-
-FROM node:18-alpine as production
-
-COPY --from=build /usr/src/app/node_modules ./node_modules
-COPY --from=build /usr/src/app/dist ./dist
+COPY --from=development /usr/src/app/dist ./dist
 
 CMD ["node", "dist/main"]
