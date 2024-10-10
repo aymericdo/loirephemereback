@@ -11,8 +11,8 @@ import { SocketGateway } from 'src/notifications/gateways/web-socket.gateway';
 import { WebPushGateway } from 'src/notifications/gateways/web-push.gateway';
 import { CommandPastryDto } from 'src/pastries/dto/command-pastry.dto';
 import { RestaurantsService } from 'src/restaurants/restaurants.service';
-import { hourMinuteToDate } from 'src/shared/helpers/date';
 import { PaymentDto } from 'src/commands/dto/command-payment.dto';
+import { isOpen, isPickupOpen } from 'src/shared/helpers/is-open';
 
 @Injectable()
 export class CommandsService {
@@ -279,91 +279,12 @@ export class CommandsService {
     restaurant: RestaurantDocument,
     pickupTime: Date = null,
   ): Promise<boolean> {
-    const today = new Date();
-    const currentDay = today.getDay();
-    const cwday = (currentDay - 1 + 7) % 7;
-    const yesterday = (cwday - 1 + 7) % 7;
-
-    let isOpen = false;
-
-    if (
-      !!(
-        restaurant.openingTime &&
-        restaurant.openingTime[cwday] &&
-        restaurant.openingTime[cwday].startTime
-      )
-    ) {
-      const openingHoursMinutes =
-        restaurant.openingTime[cwday].startTime.split(':');
-      const startTime = hourMinuteToDate(
-        openingHoursMinutes[0],
-        openingHoursMinutes[1],
-      );
-
-      const closingHoursMinutes =
-        restaurant.openingTime[cwday].endTime.split(':');
-
-      const endTime = hourMinuteToDate(
-        closingHoursMinutes[0],
-        closingHoursMinutes[1],
-      );
-
-      if (startTime >= endTime) {
-        endTime.setDate(endTime.getDate() + 1);
-      }
-
-      if (startTime < today && today < endTime) {
-        isOpen = true;
-      } else if (pickupTime && today < startTime) {
-        let startOpeningPickupTime = startTime;
-        if (
-          restaurant.openingPickupTime &&
-          restaurant.openingPickupTime[cwday] &&
-          restaurant.openingPickupTime[cwday].startTime
-        ) {
-          const openingPickupHoursMinutes =
-            restaurant.openingPickupTime[cwday].startTime.split(':');
-          const startTime = hourMinuteToDate(
-            openingPickupHoursMinutes[0],
-            openingPickupHoursMinutes[1],
-          );
-
-          startOpeningPickupTime = startTime;
-        }
-
-        isOpen = startOpeningPickupTime <= today;
-      }
+    if (isOpen(restaurant)) {
+      return true;
+    } else if (isPickupOpen(restaurant)) {
+      return isOpen(restaurant, pickupTime);
     }
 
-    if (
-      !isOpen &&
-      restaurant.openingTime &&
-      restaurant.openingTime[yesterday] &&
-      restaurant.openingTime[yesterday].startTime
-    ) {
-      const openingHoursMinutes =
-        restaurant.openingTime[yesterday].startTime.split(':');
-      const closingHoursMinutes =
-        restaurant.openingTime[yesterday].endTime.split(':');
-
-      const startTime = hourMinuteToDate(
-        openingHoursMinutes[0],
-        openingHoursMinutes[1],
-      );
-      const endTime = hourMinuteToDate(
-        closingHoursMinutes[0],
-        closingHoursMinutes[1],
-      );
-
-      startTime.setDate(startTime.getDate() - 1);
-      endTime.setDate(endTime.getDate() - 1);
-
-      if (startTime >= endTime) {
-        endTime.setDate(endTime.getDate() + 1);
-        isOpen = startTime < today && today < endTime;
-      }
-    }
-
-    return isOpen;
+    return false;
   }
 }

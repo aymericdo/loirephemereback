@@ -100,9 +100,7 @@ export class RestaurantsService {
         restaurant.openingPickupTime[weekDay].startTime >
         restaurant.openingTime[weekDay].startTime
       ) {
-        prev[weekDay] = {
-          startTime: restaurant.openingTime[weekDay].startTime,
-        };
+        prev[weekDay] = { startTime: null };
       } else {
         prev[weekDay] = restaurant.openingPickupTime[weekDay];
       }
@@ -141,6 +139,18 @@ export class RestaurantsService {
       .findOneAndUpdate(
         { code: code },
         { $set: { displayStock } },
+        { new: true },
+      )
+      .exec();
+  }
+  async setAlwaysOpen(
+    code: string,
+    alwaysOpen: boolean,
+  ): Promise<RestaurantDocument> {
+    return await this.restaurantModel
+      .findOneAndUpdate(
+        { code: code },
+        { $set: { alwaysOpen } },
         { new: true },
       )
       .exec();

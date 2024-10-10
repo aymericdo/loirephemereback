@@ -9,13 +9,6 @@ export const MOCK_PASTRIES: {
   description: string;
 }[] = [
   {
-    name: 'Pourboire',
-    type: 'tip',
-    imageUrl: 'demo-resto/tip.jpg',
-    price: 1,
-    description: "À vot' bon cœur m'sieurs dames !.",
-  },
-  {
     name: 'Gaufre',
     ingredients: ['sucre', 'farine', 'oeufs', 'lait', 'chocolat'],
     type: 'pastry',
@@ -116,5 +109,12 @@ export const MOCK_PASTRIES: {
     imageUrl: 'demo-resto/the-glace.jpg',
     price: 3,
     description: 'Thé glacé bien frais.',
+  },
+  {
+    name: 'Pourboire',
+    type: 'tip',
+    imageUrl: 'demo-resto/tip.jpg',
+    price: 1,
+    description: "À vot' bon cœur m'sieurs dames !.",
   },
 ];

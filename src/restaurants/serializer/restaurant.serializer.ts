@@ -30,6 +30,9 @@ export class RestaurantEntity {
   @Expose({ groups: ['admin'] })
   displayStock: boolean;
 
+  @Expose({ groups: ['admin'] })
+  alwaysOpen: boolean;
+
   // never
   @Exclude()
   _id: number;

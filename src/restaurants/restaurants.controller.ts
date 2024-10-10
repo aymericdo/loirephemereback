@@ -159,6 +159,24 @@ export class RestaurantsController {
     return new RestaurantEntity(restaurant.toObject());
   }
 
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
+  @Patch('by-code/:code/always-open')
+  async patchAlwayOpen(
+    @Param('code') code: string,
+    @Body('alwaysOpen') alwaysOpen: boolean,
+  ): Promise<RestaurantEntity> {
+    const restaurant = await this.restaurantsService.setAlwaysOpen(
+      code,
+      alwaysOpen,
+    );
+
+    return new RestaurantEntity(restaurant.toObject());
+  }
+
   @UseInterceptors(ClassSerializerInterceptor)
   @Get('demo-resto')
   async getDemoResto(): Promise<RestaurantEntity> {

@@ -58,6 +58,13 @@ export class Restaurant {
     default: true,
   })
   displayStock: boolean;
+
+  @Prop({
+    type: Boolean,
+    required: true,
+    default: false,
+  })
+  alwaysOpen: boolean;
 }
 
 export const RestaurantSchema = SchemaFactory.createForClass(Restaurant);
