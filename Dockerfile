@@ -21,10 +21,6 @@ WORKDIR /usr/src/app
 
 COPY package*.json ./
 
-RUN npm install glob rimraf
-
-RUN npm run build
-
 RUN npm ci --omit=dev && npm cache clean --force
 
 COPY . .
