@@ -195,6 +195,7 @@ export class RestaurantsService {
       name: createRestaurantDto.name.trim(),
       code: this.generateCode(createRestaurantDto.name),
       users: [userId],
+      isAlwaysOpen: true,
     });
 
     return await createdRestaurant.save();
