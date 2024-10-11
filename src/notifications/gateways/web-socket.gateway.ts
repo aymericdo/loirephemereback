@@ -71,14 +71,14 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  alertNewCommand(code: string, command: CommandDocument) {
+  alertNewCommand(restaurantCode: string, command: CommandDocument) {
     const serializeCommand = instanceToPlain(
       new CommandEntity(command.toObject()),
       {
         groups: ['admin'],
       },
     );
-    this.commandsAdmins[code]?.forEach((client: Client) =>
+    this.commandsAdmins[restaurantCode]?.forEach((client: Client) =>
       client.send(JSON.stringify({ addCommand: serializeCommand })),
     );
   }

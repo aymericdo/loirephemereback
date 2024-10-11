@@ -9,9 +9,9 @@ export class WebPushGateway {
 
   private logger: Logger = new Logger(WebPushGateway.name);
 
-  alertNewCommand(code: string) {
-    this.adminsWaitingSubNotification[code]?.forEach((adminSub) => {
-      this.sendPushNotif(adminSub, 'Une nouvelle commande est arrivée !', 'https://coucou.fr/');
+  alertNewCommand(restaurantCode: string) {
+    this.adminsWaitingSubNotification[restaurantCode]?.forEach((adminSub) => {
+      this.sendPushNotif(adminSub, 'Une nouvelle commande est arrivée !', restaurantCode);
     });
   }
 
@@ -61,7 +61,7 @@ export class WebPushGateway {
     this.clientWaitingQueueSubNotification = {};
   }
 
-  private sendPushNotif(sub: PushSubscription, body: string, url: string) {
+  private sendPushNotif(sub: PushSubscription, body: string, restaurantCode: string) {
     const payload = JSON.stringify({
       notification: {
         title: 'Oresto.app',
@@ -81,7 +81,7 @@ export class WebPushGateway {
         data: {
           dateOfArrival: Date.now(),
           primaryKey: 1,
-          url,
+          restaurantCode,
         },
       },
     });
