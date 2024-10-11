@@ -14,6 +14,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { PushSubscription } from 'web-push';
 import { PastryDocument } from 'src/pastries/schemas/pastry.schema';
 import { CommandsService } from './commands.service';
 import { CreateCommandDto } from './dto/create-command.dto';

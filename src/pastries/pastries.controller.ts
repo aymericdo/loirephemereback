@@ -17,6 +17,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { PushSubscription } from 'web-push';
 import { diskStorage } from 'multer';
 import { PastriesService } from './pastries.service';
 import { CreatePastryDto } from 'src/pastries/dto/create-pastry.dto';
