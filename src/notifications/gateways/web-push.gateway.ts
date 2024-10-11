@@ -82,6 +82,10 @@ export class WebPushGateway {
           dateOfArrival: Date.now(),
           primaryKey: 1,
           restaurantCode,
+          onActionClick: {
+            default: { operation: 'openWindow' },
+            explore: { operation: 'openWindow', url: `https://oresto.app/${restaurantCode}` },
+          }
         },
       },
     });
