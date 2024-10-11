@@ -2,8 +2,8 @@ import { NestFactory } from '@nestjs/core';
 import { WsAdapter } from '@nestjs/platform-ws';
 import { AppModule } from './app.module';
 import helmet from 'helmet';
-import webpush = require('web-push');
 import { ValidationPipe } from '@nestjs/common';
+import { setVapidDetails } from 'web-push';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -25,7 +25,7 @@ async function bootstrap() {
   const publicVapidKey = process.env.PUBLIC_VAPID_KEY;
   const privateVapidKey = process.env.PRIVATE_VAPID_KEY;
 
-  webpush.setVapidDetails(
+  setVapidDetails(
     'https://oresto.app/',
     publicVapidKey,
     privateVapidKey,
