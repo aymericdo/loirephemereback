@@ -4,7 +4,6 @@ import { PastriesService } from 'src/pastries/pastries.service';
 import { RestaurantsService } from 'src/restaurants/restaurants.service';
 import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
 import { UsersService } from 'src/users/users.service';
-import { faker } from '@faker-js/faker/locale/fr';
 import { CreateCommandDto } from 'src/commands/dto/create-command.dto';
 import { CommandPastryDto } from 'src/pastries/dto/command-pastry.dto';
 import { Injectable } from '@nestjs/common';
@@ -14,6 +13,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Command, CommandDocument } from 'src/commands/schemas/command.schema';
 import { getRandomInt } from 'src/shared/helpers/randomInt';
+import { faker } from '@faker-js/faker';
 
 @Injectable()
 export class DemoRestoRefillService {

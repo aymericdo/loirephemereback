@@ -31,10 +31,10 @@ import { RestaurantsModule } from './restaurants/restaurants.module';
     CacheModule.register({
       isGlobal: true,
     }),
-    ThrottlerModule.forRoot({
-      ttl: 60,
-      limit: 500,
-    }),
+    ThrottlerModule.forRoot([{
+      ttl: 60000,
+      limit: 10,
+    }]),
     SentryModule.forRoot({
       dsn: process.env.SENTRY_DNS,
       debug: false,

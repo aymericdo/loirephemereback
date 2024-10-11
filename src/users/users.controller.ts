@@ -48,13 +48,13 @@ export class UsersController {
     private readonly authService: AuthService,
   ) {}
 
-  @Throttle(60, 10)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Get('not-exists')
   async notExistsUserEmail(@Query('email') email: string): Promise<boolean> {
     return await this.usersService.isEmailNotExists(email);
   }
 
-  @Throttle(60, 10)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @UseGuards(CaptchaGuard)
   @Post('/confirm-email')
   async confirmUserWithEmail(@Body() body: EmailUserDto): Promise<string> {
@@ -69,7 +69,7 @@ export class UsersController {
     return await this.authService.confirmEmail(body);
   }
 
-  @Throttle(60, 10)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @UseGuards(CaptchaGuard)
   @Post('/confirm-recover-email')
   async confirmUserWithRecoverEmail(
@@ -86,7 +86,7 @@ export class UsersController {
     return await this.authService.confirmRecoverEmail(body);
   }
 
-  @Throttle(60, 10)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('/change-password')
   async changePassword(@Body() body: ChangePasswordUserDto): Promise<boolean> {
     const user = await this.usersService.findOneByEmail(body.email);
@@ -112,7 +112,7 @@ export class UsersController {
     return true;
   }
 
-  @Throttle(60, 10)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('/validate-recover-email-code')
   async validateRecoverEmailCode(
     @Body() body: RecoverUserDto,
@@ -132,7 +132,7 @@ export class UsersController {
     }
   }
 
-  @Throttle(60, 5)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],
@@ -157,7 +157,7 @@ export class UsersController {
     return new UserEntity(newUser.toObject());
   }
 
-  @Throttle(60, 10)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
@@ -168,7 +168,7 @@ export class UsersController {
     return await this.usersService.isEmailExists(email);
   }
 
-  @Throttle(60, 10)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @UseGuards(LocalAuthGuard)
   @Post('/auth/login')
   async login(@Req() req: { user: UserDocument }): Promise<{
@@ -212,7 +212,7 @@ export class UsersController {
     );
   }
 
-  @Throttle(60, 5)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @UseGuards(AuthorizationGuard)
   @Accesses('users')
   @UseInterceptors(ClassSerializerInterceptor)
