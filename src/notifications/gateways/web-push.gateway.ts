@@ -11,7 +11,7 @@ export class WebPushGateway {
 
   alertNewCommand(restaurantCode: string) {
     this.adminsWaitingSubNotification[restaurantCode]?.forEach((adminSub) => {
-      this.sendPushNotif(adminSub, 'Une nouvelle commande est arrivée !', restaurantCode);
+      this.sendPushNotif(adminSub, 'Une nouvelle commande est arrivée !', `https://oresto.app/${restaurantCode}/admin/commands?tab=ongoing`);
     });
   }
 
@@ -49,7 +49,7 @@ export class WebPushGateway {
     const subNotification = this.clientWaitingQueueSubNotification[data._id];
 
     if (subNotification) {
-      this.sendPushNotif(subNotification, 'Votre commande est prête !', 'https://coucou.fr/');
+      this.sendPushNotif(subNotification, 'Votre commande est prête !', `https://oresto.app/${data._id}`);
     }
 
     // remove old waiting info
@@ -61,7 +61,7 @@ export class WebPushGateway {
     this.clientWaitingQueueSubNotification = {};
   }
 
-  private sendPushNotif(sub: PushSubscription, body: string, restaurantCode: string) {
+  private sendPushNotif(sub: PushSubscription, body: string, exploreUrl: string) {
     const payload = JSON.stringify({
       notification: {
         title: 'Oresto.app',
@@ -81,10 +81,9 @@ export class WebPushGateway {
         data: {
           dateOfArrival: Date.now(),
           primaryKey: 1,
-          restaurantCode,
           onActionClick: {
             default: { operation: 'openWindow' },
-            explore: { operation: 'openWindow', url: `https://oresto.app/${restaurantCode}` },
+            explore: { operation: 'openWindow', url: exploreUrl },
           }
         },
       },
