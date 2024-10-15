@@ -117,7 +117,7 @@ export class CommandsController {
   }
 
   @UseInterceptors(ClassSerializerInterceptor)
-  @Get('by-code/:code/:id')
+  @Get('by-code/:code/personal-command/:id')
   async getPersonalCommand(
     @Param('id') id: string,
     @Param('code') code: string,
