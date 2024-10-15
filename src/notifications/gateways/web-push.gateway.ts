@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { CommandEntity } from 'src/commands/serializers/command.serializer';
+import { UpdateCommandDto } from 'src/commands/dto/update-command.dto';
 import { sendNotification, PushSubscription } from 'web-push';
 
 export class WebPushGateway {
@@ -45,11 +45,11 @@ export class WebPushGateway {
     }
   }
 
-  sendCommandReady(data: CommandEntity): void {
+  sendCommandReady(data: UpdateCommandDto): void {
     const subNotification = this.clientWaitingQueueSubNotification[data._id];
 
     if (subNotification) {
-      this.sendPushNotif(subNotification, 'Votre commande est prête !', `https://oresto.app/${data.restaurant}?command=${data._id}`);
+      this.sendPushNotif(subNotification, 'Votre commande est prête !', `https://oresto.app/${(data as any).restaurant}?command=${data._id}`);
     }
 
     // remove old waiting info

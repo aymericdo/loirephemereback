@@ -126,7 +126,8 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('wizzer')
-  onWizzer(@MessageBody() command: CommandEntity): void {
+  onWizzer(@MessageBody() command: UpdateCommandDto): void {
+    console.log(command);
     this.webPushGateway.sendCommandReady({ ...command, _id: command._id });
 
     const ws = this.clientWaitingQueue[command._id];
