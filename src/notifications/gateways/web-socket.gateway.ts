@@ -126,9 +126,19 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     );
   }
 
+  @UseGuards(WsJwtAuthGuard)
   @SubscribeMessage('wizzer')
-  async onWizzer(@MessageBody() commandId: string): Promise<void> {
+  async onWizzer(
+    @MessageBody() commandId: string,
+    @ConnectedSocket() client: Client,
+  ): Promise<void> {
     const command: CommandDocument = await this.sharedCommandsService.findOne(commandId)
+    const currentUserId = (client.request.user as { userId: string }).userId;
+
+    if (!this.commandsAdmins[command.restaurant.code].some((admin) => (admin.request.user as { userId: string }).userId === currentUserId)) {
+      return;
+    }
+
     this.webPushGateway.sendCommandReady(command);
 
     const ws = this.clientWaitingQueue[command.id];
