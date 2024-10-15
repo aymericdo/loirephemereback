@@ -49,7 +49,7 @@ export class WebPushGateway {
     const subNotification = this.clientWaitingQueueSubNotification[command.id];
 
     if (subNotification) {
-      this.sendPushNotif(subNotification, 'Votre commande est prête !', `https://oresto.app/${command.restaurant.code}?command=${command.id}`);
+      this.sendPushNotif(subNotification, 'Votre commande est prête !', `https://oresto.app/${command.restaurant.code}?commandId=${command.id}`);
     }
 
     // remove old waiting info

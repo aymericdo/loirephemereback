@@ -5,6 +5,7 @@ import {
   Controller,
   ForbiddenException,
   Get,
+  NotFoundException,
   Param,
   Patch,
   Post,
@@ -112,6 +113,25 @@ export class CommandsController {
       throw err;
     } finally {
       transactionSession.endSession();
+    }
+  }
+
+  @UseInterceptors(ClassSerializerInterceptor)
+  @Get('by-code/:code/:id')
+  async getCommand(
+    @Param('id') id: string,
+    @Param('code') code: string,
+  ): Promise<CommandEntity> {
+    try {
+      const command = (await this.commandsService.findOne(id));
+      console.log(id);
+      console.log(code);
+
+      return new CommandEntity(command.toObject());
+    } catch (error) {
+      throw new NotFoundException({
+        message: 'command not found',
+      });
     }
   }
 

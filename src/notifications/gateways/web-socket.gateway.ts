@@ -126,6 +126,15 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     );
   }
 
+  @SubscribeMessage('addWaitingQueue')
+  async onAddWaitingQueue(
+    @MessageBody() commandId: string,
+    @ConnectedSocket() client: Client,
+  ): Promise<void> {
+    const command: CommandDocument = await this.sharedCommandsService.findOne(commandId)
+    this.clientWaitingQueue[command.id] = client;
+  }
+
   @UseGuards(WsJwtAuthGuard)
   @SubscribeMessage('wizzer')
   async onWizzer(
@@ -146,15 +155,6 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (ws) {
       ws.send(JSON.stringify({ wizz: { commandId: command.id } }));
     }
-  }
-
-  @SubscribeMessage('addWaitingQueue')
-  async onAddWaitingQueue(
-    @MessageBody() commandId: string,
-    @ConnectedSocket() client: Client,
-  ): Promise<void> {
-    const command: CommandDocument = await this.sharedCommandsService.findOne(commandId)
-    this.clientWaitingQueue[command.id] = client;
   }
 
   @UseGuards(WsJwtAuthGuard)
