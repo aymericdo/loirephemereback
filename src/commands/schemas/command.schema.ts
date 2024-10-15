@@ -101,6 +101,9 @@ export class Command {
   get isCancellable(): boolean {
     return !this.isDone && !this.isPayed;
   }
+
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export const CommandSchema = SchemaFactory.createForClass(Command);

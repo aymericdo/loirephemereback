@@ -118,14 +118,27 @@ export class CommandsController {
 
   @UseInterceptors(ClassSerializerInterceptor)
   @Get('by-code/:code/:id')
-  async getCommand(
+  async getPersonalCommand(
     @Param('id') id: string,
     @Param('code') code: string,
   ): Promise<CommandEntity> {
     try {
-      const command = (await this.commandsService.findOne(id));
-      console.log(id);
-      console.log(code);
+      const command: CommandDocument = (await this.commandsService.findOne(id));
+      if (command.restaurant.code !== code) {
+        throw new BadRequestException({
+          message: 'mismatch between command and restaurant',
+        });
+      }
+
+      const now = new Date();
+      // 3 hours ago in the past
+      now.setHours(now.getHours() - 3);
+
+      if (now > command.createdAt) {
+        throw new BadRequestException({
+          message: 'command is too old to be returned',
+        });
+      }
 
       return new CommandEntity(command.toObject());
     } catch (error) {
