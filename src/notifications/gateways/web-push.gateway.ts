@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { UpdateCommandDto } from 'src/commands/dto/update-command.dto';
+import { CommandDocument } from 'src/commands/schemas/command.schema';
 import { sendNotification, PushSubscription } from 'web-push';
 
 export class WebPushGateway {
@@ -45,15 +45,15 @@ export class WebPushGateway {
     }
   }
 
-  sendCommandReady(data: UpdateCommandDto): void {
-    const subNotification = this.clientWaitingQueueSubNotification[data._id];
+  sendCommandReady(command: CommandDocument): void {
+    const subNotification = this.clientWaitingQueueSubNotification[command.id];
 
     if (subNotification) {
-      this.sendPushNotif(subNotification, 'Votre commande est prête !', `https://oresto.app/${data.restaurant}?command=${data._id}`);
+      this.sendPushNotif(subNotification, 'Votre commande est prête !', `https://oresto.app/${command.restaurant.code}?command=${command.id}`);
     }
 
     // remove old waiting info
-    delete this.clientWaitingQueueSubNotification[data._id];
+    delete this.clientWaitingQueueSubNotification[command.id];
   }
 
   cleanup() {

@@ -13,23 +13,18 @@ import { CommandPastryDto } from 'src/pastries/dto/command-pastry.dto';
 import { RestaurantsService } from 'src/restaurants/restaurants.service';
 import { PaymentDto } from 'src/commands/dto/command-payment.dto';
 import { isOpen, isPickupOpen } from 'src/shared/helpers/is-open';
+import { SharedCommandsService } from 'src/shared/services/shared-commands.service';
 
 @Injectable()
-export class CommandsService {
+export class CommandsService extends SharedCommandsService {
   constructor(
-    @InjectModel(Command.name) private commandModel: Model<CommandDocument>,
-    private readonly restaurantsService: RestaurantsService,
+    @InjectModel(Command.name) protected commandModel: Model<CommandDocument>,
+    protected readonly restaurantsService: RestaurantsService,
     private readonly pastriesService: PastriesService,
     private readonly webPushGateway: WebPushGateway,
     private readonly socketGateway: SocketGateway,
-  ) {}
-
-  async findOne(id: string): Promise<CommandDocument> {
-    return await this.commandModel
-      .findOne({ _id: id })
-      .populate('pastries')
-      .populate('restaurant')
-      .exec();
+  ) {
+    super(commandModel, restaurantsService);
   }
 
   async isReferenceExists(reference: string): Promise<boolean> {

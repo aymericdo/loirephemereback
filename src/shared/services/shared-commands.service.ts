@@ -7,9 +7,17 @@ import { RestaurantsService } from 'src/restaurants/restaurants.service';
 @Injectable()
 export class SharedCommandsService {
   constructor(
-    @InjectModel(Command.name) private commandModel: Model<CommandDocument>,
-    private readonly restaurantsService: RestaurantsService,
+    @InjectModel(Command.name) protected commandModel: Model<CommandDocument>,
+    protected readonly restaurantsService: RestaurantsService,
   ) {}
+
+  async findOne(id: string): Promise<CommandDocument> {
+    return await this.commandModel
+      .findOne({ _id: id })
+      .populate('pastries')
+      .populate('restaurant')
+      .exec();
+  }
 
   async findByPastry(
     code: string,

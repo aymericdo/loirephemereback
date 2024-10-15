@@ -11,11 +11,11 @@ import {
 import { instanceToPlain } from 'class-transformer';
 import { Request } from 'express';
 import { WsJwtAuthGuard } from 'src/auth/ws-jwt-auth.guard';
-import { UpdateCommandDto } from 'src/commands/dto/update-command.dto';
 import { CommandDocument } from 'src/commands/schemas/command.schema';
 import { CommandEntity } from 'src/commands/serializers/command.serializer';
 import { WebPushGateway } from 'src/notifications/gateways/web-push.gateway';
 import { WsThrottlerGuard } from 'src/shared/guards/ws-throttler.guard';
+import { SharedCommandsService } from 'src/shared/services/shared-commands.service';
 import { UsersService } from 'src/users/users.service';
 import WebSocket, { Server } from 'ws';
 
@@ -34,6 +34,7 @@ interface Client extends WebSocket {
 export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private readonly usersService: UsersService,
+    private readonly sharedCommandsService: SharedCommandsService,
     private readonly webPushGateway: WebPushGateway,
   ) {}
 
@@ -126,22 +127,24 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('wizzer')
-  onWizzer(@MessageBody() command: UpdateCommandDto): void {
-    this.webPushGateway.sendCommandReady({ ...command, _id: command._id });
+  async onWizzer(@MessageBody() commandId: string): Promise<void> {
+    const command: CommandDocument = await this.sharedCommandsService.findOne(commandId)
+    this.webPushGateway.sendCommandReady(command);
 
-    const ws = this.clientWaitingQueue[command._id];
+    const ws = this.clientWaitingQueue[command.id];
 
     if (ws) {
-      ws.send(JSON.stringify({ wizz: { commandId: command._id } }));
+      ws.send(JSON.stringify({ wizz: { commandId: command.id } }));
     }
   }
 
   @SubscribeMessage('addWaitingQueue')
-  onAddWaitingQueue(
-    @MessageBody() command: UpdateCommandDto,
+  async onAddWaitingQueue(
+    @MessageBody() commandId: string,
     @ConnectedSocket() client: Client,
-  ): void {
-    this.clientWaitingQueue[command._id] = client;
+  ): Promise<void> {
+    const command: CommandDocument = await this.sharedCommandsService.findOne(commandId)
+    this.clientWaitingQueue[command.id] = client;
   }
 
   @UseGuards(WsJwtAuthGuard)
