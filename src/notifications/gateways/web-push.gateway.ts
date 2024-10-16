@@ -68,22 +68,11 @@ export class WebPushGateway {
         body,
         icon: 'assets/icons/icon-128x128.png',
         vibrate: [500, 110, 500, 110, 450],
-        actions: [
-          {
-            action: 'explore',
-            title: 'Ouvrir'
-          },
-          {
-            action: 'close',
-            title: 'Fermer'
-          }
-        ],
         data: {
           dateOfArrival: Date.now(),
           primaryKey: 1,
           onActionClick: {
-            default: { operation: 'openWindow' },
-            explore: { operation: 'openWindow', url: exploreUrl },
+            default: { operation: 'openWindow', url: exploreUrl },
           }
         },
       },
