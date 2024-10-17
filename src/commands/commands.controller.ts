@@ -32,6 +32,8 @@ import { Accesses } from 'src/shared/decorators/accesses.decorator';
 import { CommandDateRangeDto } from 'src/commands/dto/command-date-range.dto';
 import { CommandDateRangeLast24hoursDto } from 'src/commands/dto/command-date-range-last-24-hours.dto';
 import { CommandPaymentDto } from 'src/commands/dto/command-payment.dto';
+import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
+import { UserDocument } from 'src/users/schemas/user.schema';
 
 @Controller('commands')
 export class CommandsController {
@@ -296,8 +298,9 @@ export class CommandsController {
   async postNotificationSub(
     @Body() body: { sub: PushSubscription },
     @Param('code') code: string,
+    @AuthUser() authUser: UserDocument,
   ): Promise<boolean> {
-    this.webPushGateway.addAdminQueueSubNotification(code, body.sub);
+    this.webPushGateway.addAdminQueueSubNotification(code, authUser.id.toString(), body.sub);
 
     return true;
   }
@@ -310,10 +313,10 @@ export class CommandsController {
   })
   @Post('by-code/:code/notification/delete')
   async deleteNotificationSub(
-    @Body() body: { sub: PushSubscription },
     @Param('code') code: string,
+    @AuthUser() authUser: UserDocument,
   ): Promise<boolean> {
-    this.webPushGateway.deleteAdminQueueSubNotification(code, body.sub);
+    this.webPushGateway.deleteAdminQueueSubNotification(code, authUser.id.toString());
 
     return true;
   }

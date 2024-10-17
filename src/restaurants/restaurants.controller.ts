@@ -196,7 +196,7 @@ export class RestaurantsController {
     const restaurants = process.env.GOD_MODE.split('/').includes(authUser.email)
       ? await this.restaurantsService.findAll()
       : await this.restaurantsService.findAllByUserId(
-          authUser._id.toString(),
+          authUser.id.toString(),
           true,
         );
 
@@ -217,12 +217,12 @@ export class RestaurantsController {
   ): Promise<RestaurantEntity> {
     const restaurant = await this.restaurantsService.create(
       body,
-      authUser._id.toString(),
+      authUser.id.toString(),
     );
 
     // set initial access
     await this.usersService.updateAccess(
-      authUser._id.toString(),
+      authUser.id.toString(),
       [...ACCESS_LIST],
       restaurant._id.toString(),
     );

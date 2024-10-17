@@ -277,7 +277,7 @@ export class UsersController {
     const user = await this.usersService.findOne(_id);
     const restaurant = await this.restaurantsService.findByCode(code);
 
-    if (authUser._id.toString() === _id) {
+    if (authUser.id.toString() === _id) {
       throw new ForbiddenException({
         message: 'you cannot delete yourself',
       });
@@ -303,7 +303,7 @@ export class UsersController {
     @Body() updateUserDto: UpdateUserDto,
     @AuthUser() authUser: UserDocument,
   ): Promise<UserEntity> {
-    if (authUser._id.toString() === updateUserDto._id.toString()) {
+    if (authUser.id.toString() === updateUserDto._id.toString()) {
       throw new ForbiddenException({
         message: 'you cannot delete yourself from *users section*',
       });
@@ -343,7 +343,7 @@ export class UsersController {
       });
     }
 
-    await this.usersService.updatePassword(authUser._id.toString(), password);
+    await this.usersService.updatePassword(authUser.id.toString(), password);
     return true;
   }
 
@@ -358,7 +358,7 @@ export class UsersController {
     @Body('displayDemoResto') displayDemoResto: boolean,
   ): Promise<boolean> {
     await this.usersService.setDisplayDemoResto(
-      authUser._id.toString().toString(),
+      authUser.id.toString().toString(),
       displayDemoResto,
     );
 

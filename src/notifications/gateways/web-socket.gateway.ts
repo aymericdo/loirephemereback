@@ -43,7 +43,8 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   commandsAdmins: { [code: string]: Client[] } = {};
   menuAdmins: { [code: string]: Client[] } = {};
 
-  clientWaitingQueue: { [commandId: string]: Client } = {};
+  clientWsByCommandId: { [commandId: string]: Client } = {};
+  alertCountByCommandId: { [commandId: string]: number } = {};
 
   private logger: Logger = new Logger(SocketGateway.name);
 
@@ -106,9 +107,6 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.commandsAdmins[code]?.forEach((client: Client) =>
       client.send(JSON.stringify({ payedCommand: serializeCommand })),
     );
-
-    // remove old waiting info
-    // delete this.clientWaitingQueue[command._id];
   }
 
   stockChanged(code: string, newStock: { pastryId: string; newStock: number }) {
@@ -132,7 +130,8 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Client,
   ): Promise<void> {
     const command: CommandDocument = await this.sharedCommandsService.findOne(commandId)
-    this.clientWaitingQueue[command.id] = client;
+    this.clientWsByCommandId[command.id] = client;
+    this.alertCountByCommandId[command.id] = 0;
   }
 
   @UseGuards(WsJwtAuthGuard)
@@ -149,12 +148,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     this.webPushGateway.sendCommandReady(command);
-
-    const ws = this.clientWaitingQueue[command.id];
-
-    if (ws) {
-      ws.send(JSON.stringify({ wizz: { commandId: command.id } }));
-    }
+    this.sendCommandReady(command);
   }
 
   @UseGuards(WsJwtAuthGuard)
@@ -205,7 +199,22 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.commandsAdmins = {};
     this.menuAdmins = {};
     this.clients = {};
-    this.clientWaitingQueue = {};
+    this.clientWsByCommandId = {};
+    this.alertCountByCommandId = {};
+  }
+
+  private sendCommandReady(command: CommandDocument): void {
+    const clientWs = this.clientWsByCommandId[command.id];
+
+    if (clientWs) {
+      clientWs.send(JSON.stringify({ wizz: { commandId: command.id } }));
+      this.alertCountByCommandId[command.id] = (this.alertCountByCommandId[command.id] || 0) + 1
+
+      if (this.alertCountByCommandId[command.id] > 2) {
+        delete this.alertCountByCommandId[command.id];
+        delete this.clientWsByCommandId[command.id];
+      }
+    }
   }
 
   private getCodeFromQueryParam(url: string): string {

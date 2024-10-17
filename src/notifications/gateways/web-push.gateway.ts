@@ -3,15 +3,14 @@ import { CommandDocument } from 'src/commands/schemas/command.schema';
 import { sendNotification, PushSubscription } from 'web-push';
 
 export class WebPushGateway {
-  adminsWaitingSubNotification: { [code: string]: PushSubscription[] } = {};
-  clientWaitingQueueSubNotification: { [commandId: string]: PushSubscription } =
-    {};
+  adminSubsByRestaurantCode: { [code: string]: [string, PushSubscription][] } = {};
+  clientSubByCommandId: { [commandId: string]: PushSubscription } = {};
 
   private logger: Logger = new Logger(WebPushGateway.name);
 
   alertNewCommand(restaurantCode: string) {
-    this.adminsWaitingSubNotification[restaurantCode]?.forEach((adminSub) => {
-      this.sendPushNotif(adminSub, 'Une nouvelle commande est arrivée !', `https://oresto.app/${restaurantCode}/admin/commands?tab=ongoing`);
+    this.adminSubsByRestaurantCode[restaurantCode]?.forEach(([_, sub]) => {
+      this.sendPushNotif(sub, 'Une nouvelle commande est arrivée !', `https://oresto.app/${restaurantCode}/admin/commands?tab=ongoing`);
     });
   }
 
@@ -19,46 +18,42 @@ export class WebPushGateway {
     sub: PushSubscription,
     commandId: string,
   ) {
-    this.clientWaitingQueueSubNotification[commandId] = sub;
+    this.clientSubByCommandId[commandId] = sub;
   }
 
-  addAdminQueueSubNotification(code: string, sub: PushSubscription) {
-    if (this.adminsWaitingSubNotification.hasOwnProperty(code)) {
-      if (
-        !this.adminsWaitingSubNotification[code].some(
-          (notif) => notif.endpoint === sub.endpoint,
-        )
-      ) {
-        this.adminsWaitingSubNotification[code].push(sub);
+  addAdminQueueSubNotification(code: string, currentUserId: string, sub: PushSubscription) {
+    if (this.adminSubsByRestaurantCode.hasOwnProperty(code)) {
+      if (this.adminSubsByRestaurantCode[code].some((notification) => notification[0] === currentUserId)) {
+        this.deleteAdminQueueSubNotification(code, currentUserId);
       }
+
+      this.adminSubsByRestaurantCode[code].push([currentUserId, sub]);
     } else {
-      this.adminsWaitingSubNotification[code] = [sub];
+      this.adminSubsByRestaurantCode[code] = [[currentUserId, sub]];
     }
   }
 
-  deleteAdminQueueSubNotification(code: string, sub: PushSubscription) {
-    if (this.adminsWaitingSubNotification.hasOwnProperty(code)) {
-      this.adminsWaitingSubNotification[code] =
-        this.adminsWaitingSubNotification[code].filter(
-          (notif) => notif.endpoint !== sub?.endpoint,
-        );
+  deleteAdminQueueSubNotification(code: string, currentUserId: string) {
+    if (this.adminSubsByRestaurantCode.hasOwnProperty(code)) {
+      this.adminSubsByRestaurantCode[code] =
+        this.adminSubsByRestaurantCode[code].filter((notification) => notification[0] !== currentUserId);
     }
   }
 
   sendCommandReady(command: CommandDocument): void {
-    const subNotification = this.clientWaitingQueueSubNotification[command.id];
+    const subNotification = this.clientSubByCommandId[command.id];
 
     if (subNotification) {
       this.sendPushNotif(subNotification, 'Votre commande est prête !', `https://oresto.app/${command.restaurant.code}?commandId=${command.id}`);
     }
 
-    // remove old waiting info
-    delete this.clientWaitingQueueSubNotification[command.id];
+    // remove sub after one usage
+    delete this.clientSubByCommandId[command.id];
   }
 
   cleanup() {
-    this.adminsWaitingSubNotification = {};
-    this.clientWaitingQueueSubNotification = {};
+    this.adminSubsByRestaurantCode = {};
+    this.clientSubByCommandId = {};
   }
 
   private sendPushNotif(sub: PushSubscription, body: string, exploreUrl: string) {
