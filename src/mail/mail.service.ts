@@ -14,6 +14,7 @@ export class MailService {
       template: './email-confirmation',
       context: {
         code,
+        currentYear: new Date().getFullYear().toString(),
       },
     });
   }
@@ -26,6 +27,7 @@ export class MailService {
       template: './password-forgotten',
       context: {
         code,
+        currentYear: new Date().getFullYear().toString(),
       },
     });
   }
