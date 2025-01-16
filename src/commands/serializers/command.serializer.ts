@@ -1,6 +1,7 @@
 import { Exclude, Expose, Transform } from 'class-transformer';
 import { ObjectId } from 'mongoose';
 import {
+  CancelledByType,
   Discount,
   PaymentPossibility,
 } from 'src/commands/schemas/command.schema';
@@ -46,6 +47,9 @@ export class CommandEntity {
 
   @Expose({ groups: ['admin'] })
   payment: PaymentPossibility[];
+
+  @Expose({ groups: ['admin'] })
+  cancelledBy: CancelledByType;
 
   @Expose({ groups: ['admin'] })
   discount: Discount | null;

@@ -1,23 +1,26 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { CreateCommandDto } from './dto/create-command.dto';
-import { Command, CommandDocument, Discount } from './schemas/command.schema';
+import { CancelledByType, Command, CommandDocument, Discount } from './schemas/command.schema';
 import { randomBytes } from 'crypto';
 import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
 import { PastryDocument } from 'src/pastries/schemas/pastry.schema';
 import { PastriesService } from 'src/pastries/pastries.service';
 import { SocketGateway } from 'src/notifications/gateways/web-socket.gateway';
 import { WebPushGateway } from 'src/notifications/gateways/web-push.gateway';
-import { CommandPastryDto } from 'src/pastries/dto/command-pastry.dto';
 import { RestaurantsService } from 'src/restaurants/restaurants.service';
 import { PaymentDto } from 'src/commands/dto/command-payment.dto';
 import { isOpen, isPickupOpen } from 'src/shared/helpers/is-open';
 import { SharedCommandsService } from 'src/shared/services/shared-commands.service';
+import { PaymentsService } from 'src/payments/payments.service';
+import { Cache } from 'cache-manager';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
 @Injectable()
 export class CommandsService extends SharedCommandsService {
   constructor(
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
     @InjectModel(Command.name) protected commandModel: Model<CommandDocument>,
     protected readonly restaurantsService: RestaurantsService,
     private readonly pastriesService: PastriesService,
@@ -89,11 +92,11 @@ export class CommandsService extends SharedCommandsService {
     return command;
   }
 
-  async cancelCommand(id: string): Promise<CommandDocument> {
+  async cancelCommand(id: string, cancelledBy: CancelledByType): Promise<CommandDocument> {
     const command = await this.commandModel
       .findByIdAndUpdate(
         id,
-        { isCancelled: true },
+        { isCancelled: true, cancelledBy },
         { new: true, useFindAndModify: false },
       )
       .populate('pastries')
@@ -105,10 +108,17 @@ export class CommandsService extends SharedCommandsService {
     return command;
   }
 
-  async payedCommand(
+  async payByInternetCommand(command: CommandDocument) {
+    return this.payCommand(command.id, [{
+      key: 'internet',
+      value: command.totalPrice,
+    }]);
+  }
+
+  async payCommand(
     id: string,
     payment: PaymentDto[],
-    discount: Discount,
+    discount: Discount = null,
   ): Promise<CommandDocument> {
     const command = await this.commandModel
       .findByIdAndUpdate(
@@ -159,34 +169,29 @@ export class CommandsService extends SharedCommandsService {
     code: string,
     fromDate: Date,
     toDate: Date,
+    options: {
+      isCancelled: boolean
+    } = null,
   ): Promise<CommandDocument[]> {
     const restaurantId = await this.restaurantsService.findIdByCode(code);
 
-    return await this.commandModel
-      .find({
-        restaurant: new Types.ObjectId(restaurantId),
-        createdAt: {
-          $gt: fromDate,
-          $lte: toDate,
-        },
-      })
-      .populate('pastries')
-      .populate('restaurant')
-      .sort({ createdAt: 1 })
-      .exec();
-  }
+    let filter = {
+      restaurant: new Types.ObjectId(restaurantId),
+      createdAt: {
+        $gt: fromDate,
+        $lte: toDate,
+      },
+    }
 
-  async findByPastry(
-    code: string,
-    pastryId: string,
-  ): Promise<CommandDocument[]> {
-    const restaurantId = await this.restaurantsService.findIdByCode(code);
+    if (options) {
+      filter = {
+        ...filter,
+        ...options,
+      }
+    }
 
     return await this.commandModel
-      .find({
-        restaurant: new Types.ObjectId(restaurantId),
-        pastries: new Types.ObjectId(pastryId),
-      })
+      .find(filter)
       .populate('pastries')
       .populate('restaurant')
       .sort({ createdAt: 1 })
@@ -201,36 +206,17 @@ export class CommandsService extends SharedCommandsService {
       .exec();
   }
 
-  reduceCountByPastryId(pastries: CommandPastryDto[]): {
+  reduceCountByPastryId(pastries: PastryDocument[]): {
     [pastryId: string]: number;
   } {
-    return pastries.reduce((prev, pastry: CommandPastryDto) => {
-      if (!prev.hasOwnProperty(pastry._id)) {
-        prev[pastry._id.toString()] = 1;
+    return pastries.reduce((prev, pastry: PastryDocument) => {
+      if (!prev.hasOwnProperty(pastry.id)) {
+        prev[pastry.id] = 1;
       } else {
-        prev[pastry._id.toString()] = prev[pastry._id] + 1;
+        prev[pastry.id] = prev[pastry.id] + 1;
       }
       return prev;
     }, {});
-  }
-
-  async pastriesDeactivated(countByPastryId: {
-    [pastryId: string]: number;
-  }): Promise<PastryDocument[]> {
-    return await Object.keys(countByPastryId).reduce(
-      async (previousValue, pastryId: string) => {
-        const pastry: PastryDocument = await this.pastriesService.findOne(
-          pastryId,
-        );
-
-        if (pastry.hidden) {
-          (await previousValue).push(pastry);
-        }
-
-        return previousValue;
-      },
-      Promise.resolve([] as PastryDocument[]),
-    );
   }
 
   async pastriesReached0(countByPastryId: {
@@ -255,18 +241,58 @@ export class CommandsService extends SharedCommandsService {
     );
   }
 
+  async paymentRequiredCommandCancellation(
+    restaurant: RestaurantDocument,
+    command: CommandDocument,
+    countByPastryId: { [pastryId: string]: number; },
+    cancelledBy: CancelledByType = 'payment',
+  ): Promise<CommandDocument> {
+    const updatedCommand = await this.cancelCommand(command.id, cancelledBy);
+    this.stockManagement(countByPastryId, 'increment');
+    
+    const sessionId: string = await this.cacheManager.get(PaymentsService.cacheKey(command.id))
+
+    if (sessionId) {
+      const paymentsService = new PaymentsService(restaurant.paymentInformation.secretKey);
+      paymentsService.expireSession(sessionId);
+    }
+
+    return updatedCommand;
+  }
+
+  async paymentRequiredManagement(
+    restaurant: RestaurantDocument,
+    command: CommandDocument,
+    countByPastryId: { [pastryId: string]: number; },
+  ): Promise<void> {
+    if (restaurant.paymentInformation.paymentActivated && restaurant.paymentInformation.paymentRequired) {
+      setTimeout(async () => {
+        if (!(await this.isPayedByInternet(command.id))) {
+          this.paymentRequiredCommandCancellation(restaurant, command, countByPastryId);
+        }
+      }, (5 * 60 * 1000) + 10000); // 5 minutes + 10 secondes
+    }
+  }
+
   async stockManagement(countByPastryId: {
     [pastryId: string]: number;
-  }): Promise<void> {
+  }, type: 'increment' | 'decrement' = 'decrement'): Promise<void> {
     Object.keys(countByPastryId).forEach(async (pastryId) => {
       const currentPastry: PastryDocument = await this.pastriesService.findOne(
         pastryId,
       );
 
-      await this.pastriesService.decrementStock(
-        currentPastry as PastryDocument,
-        countByPastryId[currentPastry._id.toString()],
-      );
+      if (type === 'decrement') {
+        await this.pastriesService.decrementStock(
+          currentPastry as PastryDocument,
+          countByPastryId[currentPastry.id],
+        );
+      } else {
+        await this.pastriesService.incrementStock(
+          currentPastry as PastryDocument,
+          countByPastryId[currentPastry.id],
+        );
+      }
     });
   }
 
@@ -281,5 +307,13 @@ export class CommandsService extends SharedCommandsService {
     }
 
     return false;
+  }
+
+  async isPayedByInternet(commandId: string): Promise<boolean> {
+    return (
+      (await this.commandModel
+        .countDocuments({ _id: commandId, isPayed: true, 'payment.key': 'internet' }, { limit: 1 })
+        .exec()) === 1
+    );
   }
 }

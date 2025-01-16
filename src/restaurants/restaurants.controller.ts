@@ -21,6 +21,7 @@ import { RestaurantEntity } from 'src/restaurants/serializer/restaurant.serializ
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { UsersService } from 'src/users/users.service';
 import { hourMinuteToDate } from 'src/shared/helpers/date';
+import { PaymentInformationDto } from 'src/restaurants/dto/payment-information.dto';
 
 @Controller('restaurants')
 export class RestaurantsController {
@@ -172,6 +173,28 @@ export class RestaurantsController {
     const restaurant = await this.restaurantsService.setAlwaysOpen(
       code,
       alwaysOpen,
+    );
+
+    return new RestaurantEntity(restaurant.toObject());
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
+  @Post('by-code/:code/payment-information')
+  async postPaymentInformation(
+    @Param('code') code: string,
+    @Body() { paymentActivated, paymentRequired, publicKey, secretKey }: PaymentInformationDto,
+  ): Promise<RestaurantEntity> {
+    const restaurant = await this.restaurantsService.setPaymentInformation(
+      code,
+      'Stripe',
+      paymentActivated,
+      paymentRequired,
+      publicKey,
+      secretKey,
     );
 
     return new RestaurantEntity(restaurant.toObject());

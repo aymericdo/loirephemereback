@@ -19,6 +19,14 @@ export class SharedCommandsService {
       .exec();
   }
 
+  async findByReference(reference: string): Promise<CommandDocument> {
+    return await this.commandModel
+      .findOne({ reference: reference })
+      .populate('pastries')
+      .populate('restaurant')
+      .exec();
+  }
+
   async findByPastry(
     code: string,
     pastryId: string,

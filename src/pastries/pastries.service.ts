@@ -454,6 +454,12 @@ export class PastriesService {
     }
   }
 
+  async incrementStock(pastry: PastryDocument, count: number): Promise<void> {
+    // increment is juste decrement but with the negative count
+    const newCount = count * -1;
+    await this.decrementStock(pastry, newCount);
+  }
+
   async verifyAllPastriesRestaurant(
     code: string,
     pastryIds: string[],
@@ -483,6 +489,13 @@ export class PastriesService {
           .exec()) as { totalCount: number }[]
       )[0]?.totalCount === pastryIds.length
     );
+  }
+
+  async hiddenPastries(pastryIds: string[]): Promise<PastryDocument[]> {
+    return await this.pastryModel.find({
+      _id: { $in: pastryIds.map((id) => new Types.ObjectId(id)) },
+      hidden: true,
+    }).exec();
   }
 
   async isImageUrlExists(code: string, imageUrl: string): Promise<boolean> {

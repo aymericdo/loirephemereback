@@ -156,6 +156,41 @@ export class RestaurantsService {
       .exec();
   }
 
+  async setPaymentInformation(
+    code: string,
+    type: string,
+    paymentActivated: boolean,
+    paymentRequired: boolean,
+    publicKey: string,
+    secretKey: string,
+  ): Promise<RestaurantDocument> {
+    const newData = {
+      'paymentInformation.type': type,
+      'paymentInformation.paymentActivated': paymentActivated,
+      'paymentInformation.paymentRequired': paymentRequired,
+    }
+
+    if (publicKey) {
+      newData['paymentInformation.publicKey'] = publicKey
+    }
+
+    if (secretKey) {
+      newData['paymentInformation.secretKey'] = secretKey
+    }
+
+    return await this.restaurantModel
+      .findOneAndUpdate(
+        { code: code },
+        {
+          $set: {
+            ...newData,
+          }
+        },
+        { new: true },
+      )
+      .exec();
+  }
+
   async isStockDisplayable(code: string): Promise<boolean> {
     return (await this.findByCode(code))?.displayStock;
   }

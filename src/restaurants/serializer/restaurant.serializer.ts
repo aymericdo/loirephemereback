@@ -1,12 +1,13 @@
 import { Exclude, Expose, Transform } from 'class-transformer';
 import { ObjectId } from 'mongoose';
 import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
+import { SIZE } from 'src/shared/helpers/sizes';
 import { User, UserDocument } from 'src/users/schemas/user.schema';
 import { UserEntity } from 'src/users/serializers/user.serializer';
 
 export class RestaurantEntity {
   @Expose()
-  @Transform((params) => params.obj._id.toString())
+  @Transform(({ obj }) => obj._id.toString())
   id: ObjectId;
 
   @Expose()
@@ -21,6 +22,14 @@ export class RestaurantEntity {
   @Expose()
   openingPickTime: Date;
 
+  @Expose()
+  @Transform(({ obj }) => {
+    return obj.paymentInformation !== null ?
+      obj.paymentInformation?.publicKey :
+      null
+  })
+  paymentInformationPublicKey: Object
+
   @Expose({ groups: ['admin'] })
   createdAt: Date;
 
@@ -32,6 +41,16 @@ export class RestaurantEntity {
 
   @Expose({ groups: ['admin'] })
   alwaysOpen: boolean;
+
+  @Expose({ groups: ['admin'] })
+  @Transform(({ value }) => {
+    return value?.publicKey && value?.secretKey ? {
+      ...value,
+      publicKey: '*'.repeat(SIZE.STRIPE_KEY),
+      secretKey: '*'.repeat(SIZE.STRIPE_KEY),
+    } : null
+  })
+  paymentInformation: Object
 
   // never
   @Exclude()

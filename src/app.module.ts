@@ -17,6 +17,7 @@ import { AuthModule } from './auth/auth.module';
 import { CommandsModule } from './commands/commands.module';
 import { PastriesModule } from './pastries/pastries.module';
 import { RestaurantsModule } from './restaurants/restaurants.module';
+import { PaymentsModule } from 'src/payments/payments.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { RestaurantsModule } from './restaurants/restaurants.module';
       logLevels: ['debug'],
     }),
     PastriesModule,
+    PaymentsModule,
     CommandsModule,
     RestaurantsModule,
     AuthModule,

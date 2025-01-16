@@ -9,8 +9,9 @@ import { SIZE } from 'src/shared/helpers/sizes';
 
 export type CommandDocument = Command & Document;
 
-export const PAYMENT_TYPES = ['creditCart', 'cash', 'bankCheque'] as const;
+export const PAYMENT_TYPES = ['creditCart', 'cash', 'bankCheque', 'internet'] as const;
 export type PaymentType = (typeof PAYMENT_TYPES)[number];
+export type CancelledByType = 'admin' | 'client' | 'payment';
 
 export interface PaymentPossibility {
   key: PaymentType;
@@ -78,6 +79,13 @@ export class Command {
 
   @Prop({ type: Boolean, required: true, default: false })
   isCancelled: boolean;
+
+  @Prop({
+    type: String,
+    required: true,
+    default: 'admin',
+  })
+  cancelledBy: CancelledByType;
 
   @Prop({ type: Number, required: true, min: 0 })
   totalPrice: number;

@@ -3,6 +3,7 @@ import {
   Body,
   ClassSerializerInterceptor,
   Controller,
+  Delete,
   ForbiddenException,
   Get,
   NotFoundException,
@@ -34,6 +35,7 @@ import { CommandDateRangeLast24hoursDto } from 'src/commands/dto/command-date-ra
 import { CommandPaymentDto } from 'src/commands/dto/command-payment.dto';
 import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
 import { UserDocument } from 'src/users/schemas/user.schema';
+import { PaymentsService } from 'src/payments/payments.service';
 
 @Controller('commands')
 export class CommandsController {
@@ -66,7 +68,7 @@ export class CommandsController {
     }
 
     const countByPastryId: { [pastryId: string]: number } =
-      this.commandsService.reduceCountByPastryId(body.pastries);
+      this.commandsService.reduceCountByPastryId(body.pastries as PastryDocument[]);
 
     if (
       !(await this.pastriesService.verifyAllPastriesRestaurant(
@@ -81,11 +83,12 @@ export class CommandsController {
 
     const transactionSession = await this.connection.startSession();
 
+    let commandEntity = null
+
     try {
       transactionSession.startTransaction();
 
-      const deactivatedPastries: PastryDocument[] =
-        await this.commandsService.pastriesDeactivated(countByPastryId);
+      const deactivatedPastries: PastryDocument[] = await this.pastriesService.hiddenPastries(Object.keys(countByPastryId));
 
       if (deactivatedPastries.length) {
         throw new UnprocessableEntityException({
@@ -109,13 +112,18 @@ export class CommandsController {
       await this.commandsService.stockManagement(countByPastryId);
 
       transactionSession.commitTransaction();
-      return new CommandEntity(command.toObject());
+
+      this.commandsService.paymentRequiredManagement(restaurant, command, countByPastryId);
+
+      commandEntity = new CommandEntity(command.toObject());
     } catch (err) {
       transactionSession.abortTransaction();
       throw err;
     } finally {
       transactionSession.endSession();
     }
+
+    return commandEntity
   }
 
   @UseInterceptors(ClassSerializerInterceptor)
@@ -124,28 +132,131 @@ export class CommandsController {
     @Param('id') id: string,
     @Param('code') code: string,
   ): Promise<CommandEntity> {
+    let command: CommandDocument = null
     try {
-      const command: CommandDocument = (await this.commandsService.findOne(id));
-      if (command.restaurant.code !== code) {
-        throw new BadRequestException({
-          message: 'mismatch between command and restaurant',
-        });
-      }
-
-      const now = new Date();
-      // 3 hours ago in the past
-      now.setHours(now.getHours() - 3);
-
-      if (now > command.createdAt) {
-        throw new BadRequestException({
-          message: 'command is too old to be returned',
-        });
-      }
-
-      return new CommandEntity(command.toObject());
+      command = (await this.commandsService.findOne(id));
     } catch (error) {
       throw new NotFoundException({
         message: 'command not found',
+      });
+    }
+
+    if (command.restaurant.code !== code) {
+      throw new BadRequestException({
+        message: 'mismatch between command and restaurant',
+      });
+    }
+
+    const now = new Date();
+    // 3 hours ago in the past
+    now.setHours(now.getHours() - 3);
+
+    if (now > command.createdAt) {
+      throw new BadRequestException({
+        message: 'command is too old to be returned',
+      });
+    }
+
+    return new CommandEntity(command.toObject());
+  }
+
+  @UseInterceptors(ClassSerializerInterceptor)
+  @Delete('by-code/:code/personal-command/:id')
+  async cancelPersonalCommand(
+    @Param('id') id: string,
+    @Param('code') code: string,
+  ): Promise<CommandEntity> {
+    let command: CommandDocument = null
+    let restaurant: RestaurantDocument = null
+    try {
+      command = (await this.commandsService.findOne(id));
+      restaurant = command.restaurant;
+    } catch (error) {
+      throw new NotFoundException({
+        message: 'command not found',
+      });
+    }
+
+    if (restaurant.code !== code) {
+      throw new BadRequestException({
+        message: 'mismatch between command and restaurant',
+      });
+    }
+
+    const now = new Date();
+    // 3 hours ago in the past
+    now.setHours(now.getHours() - 3);
+
+    if (now > command.createdAt) {
+      throw new BadRequestException({
+        message: 'command is too old to be modified',
+      });
+    }
+
+    if (command.isCancellable) {
+      throw new BadRequestException({
+        message: 'command is not cancellable anymore',
+      });
+    }
+
+    const countByPastryId: { [pastryId: string]: number } =
+      this.commandsService.reduceCountByPastryId(command.pastries);
+
+    const updatedCommand = await this.commandsService.paymentRequiredCommandCancellation(
+      restaurant, command, countByPastryId, 'client',
+    );
+
+    return new CommandEntity(updatedCommand.toObject());
+  }
+
+  @UseInterceptors(ClassSerializerInterceptor)
+  @Patch('by-code/:code/personal-command/:id/mark-as-payed')
+  async markPersonalCommandAsPayed(
+    @Param('id') id: string,
+    @Param('code') code: string,
+    @Body('sessionId') sessionId: string,
+  ): Promise<CommandEntity> {
+    let command: CommandDocument = null
+    let restaurant: RestaurantDocument = null
+    try {
+      command = (await this.commandsService.findOne(id));
+      restaurant = command.restaurant;
+    } catch (error) {
+      throw new NotFoundException({
+        message: 'command not found',
+      });
+    }
+
+    if (restaurant.code !== code) {
+      throw new BadRequestException({
+        message: 'mismatch between command and restaurant',
+      });
+    }
+
+    const now = new Date();
+    // 3 hours ago in the past
+    now.setHours(now.getHours() - 3);
+
+    if (now > command.createdAt) {
+      throw new BadRequestException({
+        message: 'command is too old to be modified',
+      });
+    }
+
+    try {
+      const paymentsService = new PaymentsService(restaurant.paymentInformation.secretKey);
+      const session = await paymentsService.getSession(sessionId);
+      if (session.status === 'complete') {
+        const updatedCommand =
+          await this.commandsService.payByInternetCommand(command);
+        return new CommandEntity(updatedCommand.toObject());
+      } else {
+        throw new Error;
+      } 
+    } catch {
+      throw new UnprocessableEntityException({
+        message: 'command not payed',
+        stripe: true,
       });
     }
   }
@@ -186,11 +297,10 @@ export class CommandsController {
       code,
       fromDate,
       toDate,
+      { isCancelled: false },
     );
 
-    return commands
-      .filter((command) => !command.isCancelled)
-      .map((command) => new CommandEntity(command.toObject()));
+    return commands.map((command) => new CommandEntity(command.toObject()));
   }
 
   @UseGuards(AuthorizationGuard)
@@ -244,7 +354,8 @@ export class CommandsController {
       });
     }
 
-    const command = await this.commandsService.cancelCommand(id);
+    const command = await this.commandsService.cancelCommand(id, 'admin');
+
     return new CommandEntity(command.toObject());
   }
 
@@ -255,7 +366,7 @@ export class CommandsController {
     groups: ['admin'],
   })
   @Patch('by-code/:code/payed/:id')
-  async patchCommand2(
+  async payCommand(
     @Param('id') id: string,
     @Param('code') code: string,
     @Body() body: CommandPaymentDto,
@@ -280,7 +391,7 @@ export class CommandsController {
       });
     }
 
-    const command = await this.commandsService.payedCommand(
+    const command = await this.commandsService.payCommand(
       id,
       body.payments,
       body.discount,

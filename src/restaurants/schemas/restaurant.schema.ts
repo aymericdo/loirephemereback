@@ -65,6 +65,19 @@ export class Restaurant {
     default: false,
   })
   alwaysOpen: boolean;
+
+  @Prop({
+    type: Object,
+    required: true,
+    default: {},
+  })
+  paymentInformation: {
+    type: 'Stripe',
+    paymentActivated: boolean,
+    paymentRequired: boolean,
+    publicKey: string,
+    secretKey: string,
+  }
 }
 
 export const RestaurantSchema = SchemaFactory.createForClass(Restaurant);
