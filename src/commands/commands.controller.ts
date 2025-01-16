@@ -183,6 +183,12 @@ export class CommandsController {
       });
     }
 
+    if (!command.paymentRequired) {
+      throw new BadRequestException({
+        message: 'payment is not required',
+      });
+    }
+
     const now = new Date();
     // 3 hours ago in the past
     now.setHours(now.getHours() - 3);
@@ -230,6 +236,12 @@ export class CommandsController {
     if (restaurant.code !== code) {
       throw new BadRequestException({
         message: 'mismatch between command and restaurant',
+      });
+    }
+
+    if (!command.paymentRequired) {
+      throw new BadRequestException({
+        message: 'payment is not required',
       });
     }
 

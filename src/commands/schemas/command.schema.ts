@@ -100,6 +100,9 @@ export class Command {
   })
   payment: PaymentPossibility[];
 
+  @Prop({ type: Boolean, required: true, default: false })
+  paymentRequired: boolean;
+
   @Prop({
     type: Object,
     required: false,

@@ -58,6 +58,7 @@ export class CommandsService extends SharedCommandsService {
       }, 0),
       reference,
       restaurant,
+      paymentRequired: restaurant.paymentInformation.paymentActivated && restaurant.paymentInformation.paymentRequired
     });
 
     const savedCommand = await createdCommand.save();
@@ -249,7 +250,7 @@ export class CommandsService extends SharedCommandsService {
   ): Promise<CommandDocument> {
     const updatedCommand = await this.cancelCommand(command.id, cancelledBy);
     this.stockManagement(countByPastryId, 'increment');
-    
+
     const sessionId: string = await this.cacheManager.get(PaymentsService.cacheKey(command.id))
 
     if (sessionId) {
@@ -265,7 +266,7 @@ export class CommandsService extends SharedCommandsService {
     command: CommandDocument,
     countByPastryId: { [pastryId: string]: number; },
   ): Promise<void> {
-    if (restaurant.paymentInformation.paymentActivated && restaurant.paymentInformation.paymentRequired) {
+    if (command.paymentRequired) {
       setTimeout(async () => {
         if (!(await this.isPayedByInternet(command.id))) {
           this.paymentRequiredCommandCancellation(restaurant, command, countByPastryId);
