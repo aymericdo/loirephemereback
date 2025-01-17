@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, UnprocessableEntityException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { CreateCommandDto } from './dto/create-command.dto';
@@ -20,8 +20,8 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 @Injectable()
 export class CommandsService extends SharedCommandsService {
   constructor(
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
     @InjectModel(Command.name) protected commandModel: Model<CommandDocument>,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
     protected readonly restaurantsService: RestaurantsService,
     private readonly pastriesService: PastriesService,
     private readonly webPushGateway: WebPushGateway,
@@ -41,7 +41,7 @@ export class CommandsService extends SharedCommandsService {
   async create(
     restaurant: RestaurantDocument,
     createCommandDto: CreateCommandDto,
-    notify = true,
+    { notify }: { notify: boolean },
   ): Promise<CommandDocument> {
     let reference: string;
     do {
@@ -62,9 +62,8 @@ export class CommandsService extends SharedCommandsService {
     });
 
     const savedCommand = await createdCommand.save();
-
     const newCommand = await this.commandModel
-      .findById(new Types.ObjectId(savedCommand._id.toString()))
+      .findById(savedCommand.id)
       .populate('restaurant')
       .populate('pastries')
       .exec();
@@ -119,7 +118,7 @@ export class CommandsService extends SharedCommandsService {
   async payCommand(
     id: string,
     payment: PaymentDto[],
-    discount: Discount = null,
+    { discount }: { discount: Discount } = { discount: null },
   ): Promise<CommandDocument> {
     const command = await this.commandModel
       .findByIdAndUpdate(
@@ -220,9 +219,9 @@ export class CommandsService extends SharedCommandsService {
     }, {});
   }
 
-  async pastriesReached0(countByPastryId: {
-    [pastryId: string]: number;
-  }): Promise<PastryDocument[]> {
+  async pastriesReachedZero(
+    countByPastryId: { [pastryId: string]: number },
+  ): Promise<PastryDocument[]> {
     return await Object.keys(countByPastryId).reduce(
       async (previousValue, pastryId: string) => {
         const oldPastry: PastryDocument = await this.pastriesService.findOne(
@@ -248,24 +247,30 @@ export class CommandsService extends SharedCommandsService {
     countByPastryId: { [pastryId: string]: number; },
     cancelledBy: CancelledByType = 'payment',
   ): Promise<CommandDocument> {
-    const updatedCommand = await this.cancelCommand(command.id, cancelledBy);
-    this.stockManagement(countByPastryId, 'increment');
+    try {
+      const updatedCommand = await this.cancelCommand(command.id, cancelledBy);
+      this.stockManagement(countByPastryId, { type: 'increment' });
 
-    const sessionId: string = await this.cacheManager.get(PaymentsService.cacheKey(command.id))
+      const sessionId: string = await this.cacheManager.get(PaymentsService.cacheKey(command.id))
 
-    if (sessionId) {
-      const paymentsService = new PaymentsService(restaurant.paymentInformation.secretKey);
-      paymentsService.expireSession(sessionId);
+      if (sessionId) {
+        const paymentsService = new PaymentsService(restaurant.paymentInformation.secretKey);
+        paymentsService.expireSession(sessionId);
+      }
+
+      return updatedCommand;
+    } catch {
+      throw new UnprocessableEntityException({
+        message: 'command not cancelled',
+      });
     }
-
-    return updatedCommand;
   }
 
-  async paymentRequiredManagement(
+  paymentRequiredManagement(
     restaurant: RestaurantDocument,
     command: CommandDocument,
     countByPastryId: { [pastryId: string]: number; },
-  ): Promise<void> {
+  ): void {
     if (command.paymentRequired) {
       setTimeout(async () => {
         if (!(await this.isPayedByInternet(command.id))) {
@@ -275,9 +280,10 @@ export class CommandsService extends SharedCommandsService {
     }
   }
 
-  async stockManagement(countByPastryId: {
-    [pastryId: string]: number;
-  }, type: 'increment' | 'decrement' = 'decrement'): Promise<void> {
+  async stockManagement(
+    countByPastryId: { [pastryId: string]: number; },
+    { type }: { type: 'increment' | 'decrement'; },
+  ): Promise<void> {
     Object.keys(countByPastryId).forEach(async (pastryId) => {
       const currentPastry: PastryDocument = await this.pastriesService.findOne(
         pastryId,

@@ -6,7 +6,7 @@ import {
   Delete,
   ForbiddenException,
   Get,
-  NotFoundException,
+  Logger,
   Param,
   Patch,
   Post,
@@ -20,8 +20,6 @@ import { PushSubscription } from 'web-push';
 import { PastryDocument } from 'src/pastries/schemas/pastry.schema';
 import { CommandsService } from './commands.service';
 import { CreateCommandDto } from './dto/create-command.dto';
-import { InjectConnection } from '@nestjs/mongoose';
-import { Connection } from 'mongoose';
 import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
 import { RestaurantsService } from 'src/restaurants/restaurants.service';
 import { PastriesService } from 'src/pastries/pastries.service';
@@ -36,15 +34,17 @@ import { CommandPaymentDto } from 'src/commands/dto/command-payment.dto';
 import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
 import { UserDocument } from 'src/users/schemas/user.schema';
 import { PaymentsService } from 'src/payments/payments.service';
+import { PersonalCommandGuard } from 'src/commands/guards/personal-command.guard';
 
 @Controller('commands')
 export class CommandsController {
+  private logger: Logger = new Logger(CommandsController.name);
+
   constructor(
     private readonly restaurantsService: RestaurantsService,
     private readonly commandsService: CommandsService,
     private readonly pastriesService: PastriesService,
     private readonly webPushGateway: WebPushGateway,
-    @InjectConnection() private readonly connection: Connection,
   ) {}
 
   @UseInterceptors(ClassSerializerInterceptor)
@@ -81,121 +81,55 @@ export class CommandsController {
       });
     }
 
-    const transactionSession = await this.connection.startSession();
+    const deactivatedPastries: PastryDocument[] = await this.pastriesService.hiddenPastries(Object.keys(countByPastryId));
 
-    let commandEntity = null
-
-    try {
-      transactionSession.startTransaction();
-
-      const deactivatedPastries: PastryDocument[] = await this.pastriesService.hiddenPastries(Object.keys(countByPastryId));
-
-      if (deactivatedPastries.length) {
-        throw new UnprocessableEntityException({
-          message: 'pastry deactivated',
-          deactivated: deactivatedPastries,
-        });
-      }
-
-      const pastriesToZero: PastryDocument[] =
-        await this.commandsService.pastriesReached0(countByPastryId);
-
-      if (pastriesToZero.length) {
-        throw new UnprocessableEntityException({
-          message: 'pastry out of stock',
-          outOfStock: pastriesToZero,
-        });
-      }
-
-      const command = await this.commandsService.create(restaurant, body);
-
-      await this.commandsService.stockManagement(countByPastryId);
-
-      transactionSession.commitTransaction();
-
-      this.commandsService.paymentRequiredManagement(restaurant, command, countByPastryId);
-
-      commandEntity = new CommandEntity(command.toObject());
-    } catch (err) {
-      transactionSession.abortTransaction();
-      throw err;
-    } finally {
-      transactionSession.endSession();
-    }
-
-    return commandEntity
-  }
-
-  @UseInterceptors(ClassSerializerInterceptor)
-  @Get('by-code/:code/personal-command/:id')
-  async getPersonalCommand(
-    @Param('id') id: string,
-    @Param('code') code: string,
-  ): Promise<CommandEntity> {
-    let command: CommandDocument = null
-    try {
-      command = (await this.commandsService.findOne(id));
-    } catch (error) {
-      throw new NotFoundException({
-        message: 'command not found',
+    if (deactivatedPastries.length) {
+      throw new UnprocessableEntityException({
+        message: 'pastry deactivated',
+        deactivated: deactivatedPastries,
       });
     }
 
-    if (command.restaurant.code !== code) {
-      throw new BadRequestException({
-        message: 'mismatch between command and restaurant',
+    const pastriesToZero: PastryDocument[] =
+      await this.commandsService.pastriesReachedZero(countByPastryId);
+
+    if (pastriesToZero.length) {
+      throw new UnprocessableEntityException({
+        message: 'pastry out of stock',
+        outOfStock: pastriesToZero,
       });
     }
 
-    const now = new Date();
-    // 3 hours ago in the past
-    now.setHours(now.getHours() - 3);
-
-    if (now > command.createdAt) {
-      throw new BadRequestException({
-        message: 'command is too old to be returned',
-      });
-    }
+    const command = await this.commandsService.create(restaurant, body, { notify: true });
+    await this.commandsService.stockManagement(countByPastryId, { type: 'decrement' });
+    this.commandsService.paymentRequiredManagement(restaurant, command, countByPastryId);
 
     return new CommandEntity(command.toObject());
   }
 
+  @UseGuards(PersonalCommandGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
+  @Get('by-code/:code/personal-command/:id')
+  async getPersonalCommand(
+    @Param('id') id: string,
+  ): Promise<CommandEntity> {
+    const command: CommandDocument = (await this.commandsService.findOne(id))
+
+    return new CommandEntity(command.toObject());
+  }
+
+  @UseGuards(PersonalCommandGuard)
   @UseInterceptors(ClassSerializerInterceptor)
   @Delete('by-code/:code/personal-command/:id')
   async cancelPersonalCommand(
     @Param('id') id: string,
-    @Param('code') code: string,
   ): Promise<CommandEntity> {
-    let command: CommandDocument = null
-    let restaurant: RestaurantDocument = null
-    try {
-      command = (await this.commandsService.findOne(id));
-      restaurant = command.restaurant;
-    } catch (error) {
-      throw new NotFoundException({
-        message: 'command not found',
-      });
-    }
-
-    if (restaurant.code !== code) {
-      throw new BadRequestException({
-        message: 'mismatch between command and restaurant',
-      });
-    }
+    const command: CommandDocument = (await this.commandsService.findOne(id))
+    const restaurant: RestaurantDocument = command.restaurant;
 
     if (!command.paymentRequired) {
       throw new BadRequestException({
         message: 'payment is not required',
-      });
-    }
-
-    const now = new Date();
-    // 3 hours ago in the past
-    now.setHours(now.getHours() - 3);
-
-    if (now > command.createdAt) {
-      throw new BadRequestException({
-        message: 'command is too old to be modified',
       });
     }
 
@@ -209,35 +143,24 @@ export class CommandsController {
       this.commandsService.reduceCountByPastryId(command.pastries);
 
     const updatedCommand = await this.commandsService.paymentRequiredCommandCancellation(
-      restaurant, command, countByPastryId, 'client',
+      restaurant,
+      command,
+      countByPastryId,
+      'client',
     );
 
     return new CommandEntity(updatedCommand.toObject());
   }
 
+  @UseGuards(PersonalCommandGuard)
   @UseInterceptors(ClassSerializerInterceptor)
   @Patch('by-code/:code/personal-command/:id/mark-as-payed')
   async markPersonalCommandAsPayed(
     @Param('id') id: string,
-    @Param('code') code: string,
     @Body('sessionId') sessionId: string,
   ): Promise<CommandEntity> {
-    let command: CommandDocument = null
-    let restaurant: RestaurantDocument = null
-    try {
-      command = (await this.commandsService.findOne(id));
-      restaurant = command.restaurant;
-    } catch (error) {
-      throw new NotFoundException({
-        message: 'command not found',
-      });
-    }
-
-    if (restaurant.code !== code) {
-      throw new BadRequestException({
-        message: 'mismatch between command and restaurant',
-      });
-    }
+    const command: CommandDocument = (await this.commandsService.findOne(id))
+    const restaurant: RestaurantDocument = command.restaurant;
 
     if (!command.paymentRequired) {
       throw new BadRequestException({
@@ -245,27 +168,18 @@ export class CommandsController {
       });
     }
 
-    const now = new Date();
-    // 3 hours ago in the past
-    now.setHours(now.getHours() - 3);
-
-    if (now > command.createdAt) {
-      throw new BadRequestException({
-        message: 'command is too old to be modified',
-      });
-    }
-
     try {
       const paymentsService = new PaymentsService(restaurant.paymentInformation.secretKey);
       const session = await paymentsService.getSession(sessionId);
       if (session.status === 'complete') {
-        const updatedCommand =
-          await this.commandsService.payByInternetCommand(command);
+        const updatedCommand = await this.commandsService.payByInternetCommand(command);
         return new CommandEntity(updatedCommand.toObject());
       } else {
         throw new Error;
-      } 
-    } catch {
+      }
+    } catch (err) {
+      this.logger.error(err)
+
       throw new UnprocessableEntityException({
         message: 'command not payed',
         stripe: true,
@@ -392,6 +306,12 @@ export class CommandsController {
       });
     }
 
+    if (oldCommand.isCancelled) {
+      throw new BadRequestException({
+        message: 'command is not payable anymore',
+      });
+    }
+
     const totalPayed = body.payments.reduce((prev, p) => p.value + prev, 0);
     const toPayed = body.discount
       ? body.discount.newPrice
@@ -406,7 +326,7 @@ export class CommandsController {
     const command = await this.commandsService.payCommand(
       id,
       body.payments,
-      body.discount,
+      { discount: body.discount },
     );
     return new CommandEntity(command.toObject());
   }

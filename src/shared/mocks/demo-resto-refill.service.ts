@@ -88,7 +88,7 @@ export class DemoRestoRefillService {
       const newCommand = await this.commandsService.create(
         this.demoResto,
         command,
-        false,
+        { notify: false },
       );
 
       if (i > 5) {

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { InjectConnection, InjectModel } from '@nestjs/mongoose';
-import { Connection, Model, ObjectId, Types } from 'mongoose';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, ObjectId, Types } from 'mongoose';
 import { SocketGateway } from 'src/notifications/gateways/web-socket.gateway';
 import { CreatePastryDto } from 'src/pastries/dto/create-pastry.dto';
 import { UpdatePastryDto } from 'src/pastries/dto/update-pastry.dto';
@@ -17,7 +17,6 @@ import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
 export class PastriesService {
   constructor(
     @InjectModel(Pastry.name) private pastryModel: Model<PastryDocument>,
-    @InjectConnection() private readonly connection: Connection,
     private readonly restaurantsService: RestaurantsService,
     private readonly socketGateway: SocketGateway,
   ) {}
@@ -190,99 +189,87 @@ export class PastriesService {
     );
 
     if (newDisplaySequence !== oldDisplaySequence) {
-      const transactionSession = await this.connection.startSession();
-      try {
-        transactionSession.startTransaction();
-
-        const pastryToMoveUpper = await this.pastryModel
-          .aggregate([
-            {
-              $lookup: {
-                from: 'restaurants',
-                localField: 'restaurant',
-                foreignField: '_id',
-                as: 'restaurant',
-              },
-            },
-            {
-              $match: {
-                'restaurant.code': code,
-                displaySequence: { $gte: newDisplaySequence },
-              },
-            },
-            {
-              $sort: {
-                displaySequence: -1,
-              },
-            },
-          ])
-          .exec();
-
-        await this.pastryModel.bulkWrite([
-          ...pastryToMoveUpper.map((pastry) => {
-            return {
-              updateOne: {
-                filter: { _id: pastry._id },
-                update: {
-                  $inc: { displaySequence: 1 },
-                },
-              },
-            };
-          }),
+      const pastryToMoveUpper = await this.pastryModel
+        .aggregate([
           {
-            updateOne: {
-              filter: { _id: updatePastryDto._id },
-              update: {
-                $set: { displaySequence: newDisplaySequence },
-              },
+            $lookup: {
+              from: 'restaurants',
+              localField: 'restaurant',
+              foreignField: '_id',
+              as: 'restaurant',
             },
           },
-        ]);
+          {
+            $match: {
+              'restaurant.code': code,
+              displaySequence: { $gte: newDisplaySequence },
+            },
+          },
+          {
+            $sort: {
+              displaySequence: -1,
+            },
+          },
+        ])
+        .exec();
 
-        const pastryToMoveLower = await this.pastryModel
-          .aggregate([
-            {
-              $lookup: {
-                from: 'restaurants',
-                localField: 'restaurant',
-                foreignField: '_id',
-                as: 'restaurant',
+      await this.pastryModel.bulkWrite([
+        ...pastryToMoveUpper.map((pastry) => {
+          return {
+            updateOne: {
+              filter: { _id: pastry._id },
+              update: {
+                $inc: { displaySequence: 1 },
               },
             },
-            {
-              $match: {
-                'restaurant.code': code,
-                displaySequence: { $gt: oldDisplaySequence },
+          };
+        }),
+        {
+          updateOne: {
+            filter: { _id: updatePastryDto._id },
+            update: {
+              $set: { displaySequence: newDisplaySequence },
+            },
+          },
+        },
+      ]);
+
+      const pastryToMoveLower = await this.pastryModel
+        .aggregate([
+          {
+            $lookup: {
+              from: 'restaurants',
+              localField: 'restaurant',
+              foreignField: '_id',
+              as: 'restaurant',
+            },
+          },
+          {
+            $match: {
+              'restaurant.code': code,
+              displaySequence: { $gt: oldDisplaySequence },
+            },
+          },
+          {
+            $sort: {
+              displaySequence: 1,
+            },
+          },
+        ])
+        .exec();
+
+      await this.pastryModel.bulkWrite([
+        ...pastryToMoveLower.map((pastry) => {
+          return {
+            updateOne: {
+              filter: { _id: pastry._id },
+              update: {
+                $inc: { displaySequence: -1 },
               },
             },
-            {
-              $sort: {
-                displaySequence: 1,
-              },
-            },
-          ])
-          .exec();
-
-        await this.pastryModel.bulkWrite([
-          ...pastryToMoveLower.map((pastry) => {
-            return {
-              updateOne: {
-                filter: { _id: pastry._id },
-                update: {
-                  $inc: { displaySequence: -1 },
-                },
-              },
-            };
-          }),
-        ]);
-
-        transactionSession.commitTransaction();
-      } catch (err) {
-        console.error(err);
-        transactionSession.abortTransaction();
-      } finally {
-        transactionSession.endSession();
-      }
+          };
+        }),
+      ]);
     }
 
     return (
@@ -455,7 +442,7 @@ export class PastriesService {
   }
 
   async incrementStock(pastry: PastryDocument, count: number): Promise<void> {
-    // increment is juste decrement but with the negative count
+    // increment is just decrement but with the negative count
     const newCount = count * -1;
     await this.decrementStock(pastry, newCount);
   }

@@ -24,7 +24,7 @@ export class RestaurantEntity {
 
   @Expose()
   @Transform(({ obj }) => {
-    return obj.paymentInformation !== null ?
+    return obj.paymentInformation?.paymentActivated ?
       obj.paymentInformation?.publicKey :
       null
   })
