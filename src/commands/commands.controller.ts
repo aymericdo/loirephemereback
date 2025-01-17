@@ -102,7 +102,7 @@ export class CommandsController {
 
     const command = await this.commandsService.create(restaurant, body, { notify: true });
     await this.commandsService.stockManagement(countByPastryId, { type: 'decrement' });
-    this.commandsService.paymentRequiredManagement(restaurant, command, countByPastryId);
+    this.commandsService.paymentRequiredManagement(command);
 
     return new CommandEntity(command.toObject());
   }
@@ -125,7 +125,6 @@ export class CommandsController {
     @Param('id') id: string,
   ): Promise<CommandEntity> {
     const command: CommandDocument = (await this.commandsService.findOne(id))
-    const restaurant: RestaurantDocument = command.restaurant;
 
     if (!command.paymentRequired) {
       throw new BadRequestException({
@@ -139,13 +138,8 @@ export class CommandsController {
       });
     }
 
-    const countByPastryId: { [pastryId: string]: number } =
-      this.commandsService.reduceCountByPastryId(command.pastries);
-
     const updatedCommand = await this.commandsService.paymentRequiredCommandCancellation(
-      restaurant,
-      command,
-      countByPastryId,
+      command.id,
       'client',
     );
 
@@ -165,6 +159,12 @@ export class CommandsController {
     if (!command.paymentRequired) {
       throw new BadRequestException({
         message: 'payment is not required',
+      });
+    }
+
+    if (command.sessionId !== sessionId) {
+      throw new BadRequestException({
+        message: 'sessionId is not valid',
       });
     }
 

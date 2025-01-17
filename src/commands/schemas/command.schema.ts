@@ -82,8 +82,7 @@ export class Command {
 
   @Prop({
     type: String,
-    required: true,
-    default: 'admin',
+    required: false,
   })
   cancelledBy: CancelledByType;
 
@@ -95,8 +94,6 @@ export class Command {
 
   @Prop({
     type: [{ type: Object }],
-    required: true,
-    default: [],
   })
   payment: PaymentPossibility[];
 
@@ -105,9 +102,13 @@ export class Command {
 
   @Prop({
     type: Object,
-    required: false,
   })
   discount: Discount;
+
+  @Prop({
+    type: String,
+  })
+  sessionId: string;
 
   get isCancellable(): boolean {
     return !this.isDone && !this.isPayed;

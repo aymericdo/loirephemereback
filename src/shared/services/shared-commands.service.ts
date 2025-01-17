@@ -13,7 +13,7 @@ export class SharedCommandsService {
 
   async findOne(id: string): Promise<CommandDocument> {
     return await this.commandModel
-      .findOne({ _id: id })
+      .findById(id)
       .populate('pastries')
       .populate('restaurant')
       .exec();
@@ -25,6 +25,20 @@ export class SharedCommandsService {
       .populate('pastries')
       .populate('restaurant')
       .exec();
+  }
+
+  async addSessionId(id: string, sessionId: string): Promise<CommandDocument> {
+    const command = await this.commandModel
+      .findByIdAndUpdate(
+        id,
+        { sessionId },
+        { new: true, useFindAndModify: false },
+      )
+      .populate('pastries')
+      .populate('restaurant')
+      .exec();
+
+    return command;
   }
 
   async findByPastry(

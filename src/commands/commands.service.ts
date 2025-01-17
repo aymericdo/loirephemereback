@@ -1,4 +1,4 @@
-import { Inject, Injectable, UnprocessableEntityException } from '@nestjs/common';
+import { Injectable, UnprocessableEntityException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { CreateCommandDto } from './dto/create-command.dto';
@@ -14,14 +14,11 @@ import { PaymentDto } from 'src/commands/dto/command-payment.dto';
 import { isOpen, isPickupOpen } from 'src/shared/helpers/is-open';
 import { SharedCommandsService } from 'src/shared/services/shared-commands.service';
 import { PaymentsService } from 'src/payments/payments.service';
-import { Cache } from 'cache-manager';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
 @Injectable()
 export class CommandsService extends SharedCommandsService {
   constructor(
     @InjectModel(Command.name) protected commandModel: Model<CommandDocument>,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
     protected readonly restaurantsService: RestaurantsService,
     private readonly pastriesService: PastriesService,
     private readonly webPushGateway: WebPushGateway,
@@ -62,11 +59,7 @@ export class CommandsService extends SharedCommandsService {
     });
 
     const savedCommand = await createdCommand.save();
-    const newCommand = await this.commandModel
-      .findById(savedCommand.id)
-      .populate('restaurant')
-      .populate('pastries')
-      .exec();
+    const newCommand = await this.findOne(savedCommand.id);
 
     if (notify) {
       this.socketGateway.alertNewCommand(restaurant.code, newCommand);
@@ -242,21 +235,30 @@ export class CommandsService extends SharedCommandsService {
   }
 
   async paymentRequiredCommandCancellation(
-    restaurant: RestaurantDocument,
-    command: CommandDocument,
-    countByPastryId: { [pastryId: string]: number; },
+    commandId: string,
     cancelledBy: CancelledByType = 'payment',
   ): Promise<CommandDocument> {
     try {
-      const updatedCommand = await this.cancelCommand(command.id, cancelledBy);
-      this.stockManagement(countByPastryId, { type: 'increment' });
+      const currentCommand = await this.findOne(commandId);
+      const countByPastryId: { [pastryId: string]: number } =
+        this.reduceCountByPastryId(currentCommand.pastries);
 
-      const sessionId: string = await this.cacheManager.get(PaymentsService.cacheKey(command.id))
+      const sessionId = currentCommand.sessionId;
 
       if (sessionId) {
-        const paymentsService = new PaymentsService(restaurant.paymentInformation.secretKey);
-        paymentsService.expireSession(sessionId);
+        const paymentsService = new PaymentsService(currentCommand.restaurant.paymentInformation.secretKey);
+
+        const session = await paymentsService.getSession(sessionId);
+        if (session.status === 'complete') {
+          await this.payByInternetCommand(currentCommand);
+          throw new Error;
+        } else {
+          await paymentsService.expireSession(sessionId);
+        }
       }
+
+      const updatedCommand = await this.cancelCommand(commandId, cancelledBy);
+      this.stockManagement(countByPastryId, { type: 'increment' });
 
       return updatedCommand;
     } catch {
@@ -266,15 +268,11 @@ export class CommandsService extends SharedCommandsService {
     }
   }
 
-  paymentRequiredManagement(
-    restaurant: RestaurantDocument,
-    command: CommandDocument,
-    countByPastryId: { [pastryId: string]: number; },
-  ): void {
+  paymentRequiredManagement(command: CommandDocument): void {
     if (command.paymentRequired) {
       setTimeout(async () => {
         if (!(await this.isPayedByInternet(command.id))) {
-          this.paymentRequiredCommandCancellation(restaurant, command, countByPastryId);
+          this.paymentRequiredCommandCancellation(command.id);
         }
       }, (5 * 60 * 1000) + 10000); // 5 minutes + 10 secondes
     }
@@ -322,5 +320,18 @@ export class CommandsService extends SharedCommandsService {
         .countDocuments({ _id: commandId, isPayed: true, 'payment.key': 'internet' }, { limit: 1 })
         .exec()) === 1
     );
+  }
+
+  async oldPaymentRequiredPendingCommands(): Promise<CommandDocument[]> {
+    const tenMinutesAgo = new Date();
+    tenMinutesAgo.setMinutes(tenMinutesAgo.getMinutes() - 10);
+
+    return await this.commandModel
+      .find({
+        paymentRequired: true,
+        isPayed: false,
+        isCancelled: false,
+        createdAt: { $lte: tenMinutesAgo}
+      }).populate('restaurant').exec();
   }
 }

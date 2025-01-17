@@ -6,6 +6,7 @@ import { NotificationsModule } from 'src/notifications/notifications.module';
 import { CommandsController } from './commands.controller';
 import { CommandsService } from './commands.service';
 import { Command, CommandSchema } from './schemas/command.schema';
+import { PaymentRequiredCommandCleanerService } from 'src/commands/cron/payment-required-command-cleaner.service';
 
 @Module({
   imports: [
@@ -15,7 +16,7 @@ import { Command, CommandSchema } from './schemas/command.schema';
     MongooseModule.forFeature([{ name: Command.name, schema: CommandSchema }]),
   ],
   controllers: [CommandsController],
-  providers: [CommandsService],
+  providers: [CommandsService, PaymentRequiredCommandCleanerService],
   exports: [CommandsService],
 })
 export class CommandsModule {}

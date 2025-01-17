@@ -12,10 +12,6 @@ export class PaymentsService {
     this.stripeService = new StripeService(this.apiKey)
   }
 
-  static cacheKey(commandId: string): string {
-    return `payment-in-progress-${commandId}`;
-  }
-
   async getCustomers() {
     return await this.stripeService.stripe.customers.list();
   }
