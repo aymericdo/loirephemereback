@@ -4,11 +4,15 @@ import { StripeService } from 'src/stripe/stripe.service';
 
 @Injectable()
 export class PaymentsService {
+  private readonly DOMAIN: 'http://localhost:4200' | 'https://oresto.app' = 'http://localhost:4200';
   private readonly stripeService: StripeService;
 
   constructor(
     private apiKey: string,
   ) {
+    this.DOMAIN = process.env.ENVIRONMENT === 'dev' ?
+      'http://localhost:4200' :
+      'https://oresto.app'
     this.stripeService = new StripeService(this.apiKey)
   }
 
@@ -52,7 +56,7 @@ export class PaymentsService {
     return await this.stripeService.stripe.checkout.sessions.expire(sessionId);
   }
 
-  async buildSession(command: CommandDocument, locale: string) {
+  async buildSession(command: CommandDocument) {
     const prices = await this.buildPrices(command);
 
     const session = await this.stripeService.stripe.checkout.sessions.create({
@@ -62,16 +66,10 @@ export class PaymentsService {
         quantity: prices[priceId],
       })),
       mode: 'payment',
-      return_url: `${this.getDomain(locale)}/${command.restaurant.code}?sessionCommandId=${command.id}&sessionId={CHECKOUT_SESSION_ID}`,
+      return_url: `${this.DOMAIN}/${command.restaurant.code}?sessionCommandId=${command.id}&sessionId={CHECKOUT_SESSION_ID}`,
     });
 
     return session;
-  }
-
-  private getDomain(locale: string): string {
-    return process.env.ENVIRONMENT === 'dev' ?
-      'http://localhost:4200' :
-      `https://oresto.app/${locale}`
   }
 
   private async buildPrices(command: CommandDocument): Promise<{ [key: string]: number }> {

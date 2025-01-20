@@ -13,7 +13,6 @@ export class PaymentsController {
   @Post('create-checkout-session')
   async postCreateCheckoutSession(
     @Body('commandReference') commandReference: string,
-    @Body('locale') locale: string,
   ) {
     const command: CommandDocument = await this.sharedCommandsService.findByReference(commandReference)
     if (!command) {
@@ -21,7 +20,7 @@ export class PaymentsController {
         message: "command reference not valid",
       });
     }
-    const session = await this.paymentsService(command.restaurant).buildSession(command, locale);
+    const session = await this.paymentsService(command.restaurant).buildSession(command);
     
     await this.sharedCommandsService.addSessionId(command.id, session.id);
   

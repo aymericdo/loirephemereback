@@ -1,11 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { CommandsService } from 'src/commands/commands.service';
 import { PaymentsService } from 'src/payments/payments.service';
 
 @Injectable()
 export class PaymentRequiredCommandCleanerService {
-  private readonly logger = new Logger(PaymentRequiredCommandCleanerService.name);
 
   constructor(
     private readonly commandsService: CommandsService,
@@ -13,7 +12,6 @@ export class PaymentRequiredCommandCleanerService {
 
   @Cron(CronExpression.EVERY_MINUTE)
   async handleCron() {
-    this.logger.log(`Running...`);
     const commands = await this.commandsService.oldPaymentRequiredPendingCommands();
 
     commands.forEach(async (command) => {
@@ -33,7 +31,5 @@ export class PaymentRequiredCommandCleanerService {
         await this.commandsService.cancelCommand(command.id, 'payment');
       }
     });
-
-    this.logger.log(`Done`);
   }
 }
