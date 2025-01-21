@@ -93,3 +93,11 @@ PastrySchema.index(
 );
 
 PastrySchema.index({ restaurant: 1, displaySequence: 1 }, { unique: true });
+
+PastrySchema.pre('validate', function (next) {
+  if (this.stock < 0) {
+    return next(new Error('Stock must be 0 or above'));
+  }
+
+  next();
+});

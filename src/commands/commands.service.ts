@@ -1,6 +1,6 @@
-import { Injectable, UnprocessableEntityException } from '@nestjs/common';
+import { Injectable, Logger, UnprocessableEntityException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { ClientSession, Model, Types } from 'mongoose';
 import { CreateCommandDto } from './dto/create-command.dto';
 import { CancelledByType, Command, CommandDocument, Discount } from './schemas/command.schema';
 import { randomBytes } from 'crypto';
@@ -14,11 +14,16 @@ import { PaymentDto } from 'src/commands/dto/command-payment.dto';
 import { isOpen, isPickupOpen } from 'src/shared/helpers/is-open';
 import { SharedCommandsService } from 'src/shared/services/shared-commands.service';
 import { PaymentsService } from 'src/payments/payments.service';
+import { InjectConnection } from '@nestjs/mongoose';
+import { Connection } from 'mongoose';
 
 @Injectable()
 export class CommandsService extends SharedCommandsService {
+  private logger: Logger = new Logger(CommandsService.name);
+
   constructor(
     @InjectModel(Command.name) protected commandModel: Model<CommandDocument>,
+    @InjectConnection() private readonly connection: Connection,
     protected readonly restaurantsService: RestaurantsService,
     private readonly pastriesService: PastriesService,
     private readonly webPushGateway: WebPushGateway,
@@ -40,32 +45,66 @@ export class CommandsService extends SharedCommandsService {
     createCommandDto: CreateCommandDto,
     { notify }: { notify: boolean },
   ): Promise<CommandDocument> {
-    let reference: string;
-    do {
-      reference = randomBytes(24).toString('hex').toUpperCase().slice(0, 4);
-    } while (await this.isReferenceExists(reference));
+    const session = await this.connection.startSession();
+    let newCommand: CommandDocument;
 
-    const createdCommand = new this.commandModel({
-      pastries: createCommandDto.pastries,
-      takeAway: createCommandDto.takeAway,
-      pickUpTime: createCommandDto.pickUpTime,
-      name: createCommandDto.name.trim(),
-      totalPrice: createCommandDto.pastries.reduce((prev, pastry) => {
-        return prev + pastry.price;
-      }, 0),
-      reference,
-      restaurant,
-      paymentRequired: restaurant.paymentInformation.paymentActivated && restaurant.paymentInformation.paymentRequired
-    });
+    try {
+      session.startTransaction();
+      let reference: string;
+      do {
+        reference = randomBytes(24).toString('hex').toUpperCase().slice(0, 4);
+      } while (await this.isReferenceExists(reference));
 
-    const savedCommand = await createdCommand.save();
-    const newCommand = await this.findOne(savedCommand.id);
+      const createdCommand = new this.commandModel({
+        pastries: createCommandDto.pastries,
+        takeAway: createCommandDto.takeAway,
+        pickUpTime: createCommandDto.pickUpTime,
+        name: createCommandDto.name.trim(),
+        totalPrice: createCommandDto.pastries.reduce((prev, pastry) => {
+          return prev + pastry.price;
+        }, 0),
+        reference,
+        restaurant,
+        paymentRequired: restaurant.paymentInformation.paymentActivated && restaurant.paymentInformation.paymentRequired
+      });
 
-    if (notify) {
-      this.socketGateway.alertNewCommand(restaurant.code, newCommand);
-      this.webPushGateway.alertNewCommand(restaurant.code);
+      const savedCommand = await createdCommand.save({ session });
+      const pastryIds = savedCommand.pastries.map((pastry) => pastry.toString());
+
+      const countByPastryId: { [pastryId: string]: number } = this.reduceCountByPastryId(pastryIds);
+
+      await this.stockManagement(countByPastryId, { type: 'decrement', session });
+
+      const pastriesToZero: PastryDocument[] = await this.pastriesReachedZero([...new Set(pastryIds)], session);
+
+      if (pastriesToZero.length) {
+        throw new UnprocessableEntityException({
+          message: 'pastry out of stock',
+          outOfStock: pastriesToZero,
+        });
+      }
+
+      await session.commitTransaction();
+
+      newCommand = await this.findOne(savedCommand.id);
+
+      [...new Set(pastryIds)].forEach(async (pastryId) => {
+        const pastry = await this.pastriesService.findOne(pastryId)
+        await this.pastriesService.sendStockNotification(pastry);
+      })
+
+      if (notify) {
+        this.socketGateway.alertNewCommand(restaurant.code, newCommand);
+        this.webPushGateway.alertNewCommand(restaurant.code);
+      }
+    } catch (error) {
+      this.logger.log(error);
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      await session.endSession();
     }
-
+    
     return newCommand;
   }
 
@@ -199,41 +238,6 @@ export class CommandsService extends SharedCommandsService {
       .exec();
   }
 
-  reduceCountByPastryId(pastries: PastryDocument[]): {
-    [pastryId: string]: number;
-  } {
-    return pastries.reduce((prev, pastry: PastryDocument) => {
-      if (!prev.hasOwnProperty(pastry.id)) {
-        prev[pastry.id] = 1;
-      } else {
-        prev[pastry.id] = prev[pastry.id] + 1;
-      }
-      return prev;
-    }, {});
-  }
-
-  async pastriesReachedZero(
-    countByPastryId: { [pastryId: string]: number },
-  ): Promise<PastryDocument[]> {
-    return await Object.keys(countByPastryId).reduce(
-      async (previousValue, pastryId: string) => {
-        const oldPastry: PastryDocument = await this.pastriesService.findOne(
-          pastryId,
-        );
-
-        // null = infinity
-        if (oldPastry.stock !== null) {
-          if (oldPastry.stock - countByPastryId[pastryId] < 0) {
-            (await previousValue).push(oldPastry);
-          }
-        }
-
-        return previousValue;
-      },
-      Promise.resolve([] as PastryDocument[]),
-    );
-  }
-
   async paymentRequiredCommandCancellation(
     commandId: string,
     cancelledBy: CancelledByType = 'payment',
@@ -241,7 +245,7 @@ export class CommandsService extends SharedCommandsService {
     try {
       const currentCommand = await this.findOne(commandId);
       const countByPastryId: { [pastryId: string]: number } =
-        this.reduceCountByPastryId(currentCommand.pastries);
+        this.reduceCountByPastryId(currentCommand.pastries.map((pastry) => pastry.id));
 
       const sessionId = currentCommand.sessionId;
 
@@ -258,7 +262,7 @@ export class CommandsService extends SharedCommandsService {
       }
 
       const updatedCommand = await this.cancelCommand(commandId, cancelledBy);
-      this.stockManagement(countByPastryId, { type: 'increment' });
+      await this.stockManagement(countByPastryId, { type: 'increment' });
 
       return updatedCommand;
     } catch {
@@ -276,29 +280,6 @@ export class CommandsService extends SharedCommandsService {
         }
       }, (5 * 60 * 1000) + 10000); // 5 minutes + 10 secondes
     }
-  }
-
-  async stockManagement(
-    countByPastryId: { [pastryId: string]: number; },
-    { type }: { type: 'increment' | 'decrement'; },
-  ): Promise<void> {
-    Object.keys(countByPastryId).forEach(async (pastryId) => {
-      const currentPastry: PastryDocument = await this.pastriesService.findOne(
-        pastryId,
-      );
-
-      if (type === 'decrement') {
-        await this.pastriesService.decrementStock(
-          currentPastry as PastryDocument,
-          countByPastryId[currentPastry.id],
-        );
-      } else {
-        await this.pastriesService.incrementStock(
-          currentPastry as PastryDocument,
-          countByPastryId[currentPastry.id],
-        );
-      }
-    });
   }
 
   async isRestaurantOpened(
@@ -333,5 +314,65 @@ export class CommandsService extends SharedCommandsService {
         isCancelled: false,
         createdAt: { $lte: tenMinutesAgo}
       }).populate('restaurant').exec();
+  }
+
+  private async pastriesReachedZero(
+    pastryIds: string[],
+    session: ClientSession,
+  ): Promise<PastryDocument[]> {
+    const pastriesReachedZero = []
+
+    for (let pastryId of pastryIds) {
+      const newPastry: PastryDocument = await this.pastriesService.findOneWithSession(
+        pastryId,
+        session,
+      );
+
+      // null = infinity
+      if (newPastry.stock !== null) {
+        if (newPastry.stock < 0) {
+          pastriesReachedZero.push(newPastry);
+        }
+      }
+    }
+
+    return pastriesReachedZero;
+  }
+
+  private reduceCountByPastryId(pastryIds: string[]): {
+    [pastryId: string]: number;
+  } {
+    return pastryIds.reduce((prev, pastryId: string) => {
+      if (!prev.hasOwnProperty(pastryId)) {
+        prev[pastryId] = 1;
+      } else {
+        prev[pastryId] = prev[pastryId] + 1;
+      }
+      return prev;
+    }, {});
+  }
+
+  private async stockManagement(
+    countByPastryId: { [pastryId: string]: number; },
+    { type, session }: { type: 'increment' | 'decrement'; session?: ClientSession },
+  ): Promise<void> {
+    for (let pastryId of Object.keys(countByPastryId)) {
+      const currentPastry: PastryDocument = await this.pastriesService.findOne(
+        pastryId,
+      );
+
+      if (type === 'decrement') {
+        await this.pastriesService.decrementStock(
+          currentPastry as PastryDocument,
+          countByPastryId[currentPastry.id],
+          { session },
+        );
+      } else {
+        await this.pastriesService.incrementStock(
+          currentPastry as PastryDocument,
+          countByPastryId[currentPastry.id],
+        );
+      }
+    }
   }
 }

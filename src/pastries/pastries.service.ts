@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, ObjectId, Types } from 'mongoose';
+import { ClientSession, Model, ObjectId, QueryOptions, Types } from 'mongoose';
 import { SocketGateway } from 'src/notifications/gateways/web-socket.gateway';
 import { CreatePastryDto } from 'src/pastries/dto/create-pastry.dto';
 import { UpdatePastryDto } from 'src/pastries/dto/update-pastry.dto';
@@ -23,7 +23,14 @@ export class PastriesService {
 
   async findOne(id: string): Promise<PastryDocument> {
     return await this.pastryModel
-      .findOne({ _id: id })
+      .findById(id)
+      .populate('restaurant')
+      .exec();
+  }
+
+  async findOneWithSession(id: string, session: ClientSession): Promise<PastryDocument> {
+    return await this.pastryModel
+      .findById(id, null, { session })
       .populate('restaurant')
       .exec();
   }
@@ -66,7 +73,17 @@ export class PastriesService {
     historical: Historical[],
     isUpdatingStock = false,
   ): Promise<PastryDocument> {
-    const pastry = await this.findOne(updatePastryDto.id);
+    const pastry = await this.pastryModel
+      .findByIdAndUpdate(
+        updatePastryDto._id.toString(),
+        {
+          ...updatePastryDto,
+          historical,
+        },
+        { new: true },
+      )
+      .populate('restaurant')
+      .exec();
 
     if (isUpdatingStock && updatePastryDto.commonStock) {
       const commonStockPastries = await this.findByCommonStock(
@@ -85,56 +102,13 @@ export class PastriesService {
           .populate('restaurant')
           .exec();
 
-        const displayStock = await this.restaurantsService.isStockDisplayable(
-          newCommonStockPastry.restaurant.code,
-        );
-
-        if (displayStock) {
-          this.socketGateway.stockChanged(
-            newCommonStockPastry.restaurant.code,
-            {
-              pastryId: commonStockPastry._id.toString(),
-              newStock: newCommonStockPastry.stock,
-            },
-          );
-        }
-
-        this.socketGateway.stockChangedAdmin(
-          newCommonStockPastry.restaurant.code,
-          {
-            pastryId: commonStockPastry._id.toString(),
-            newStock: newCommonStockPastry.stock,
-          },
-        );
+        await this.sendStockNotification(newCommonStockPastry);
       });
     } else if (isUpdatingStock) {
-      const displayStock = await this.restaurantsService.isStockDisplayable(
-        pastry.restaurant.code,
-      );
-
-      if (displayStock) {
-        this.socketGateway.stockChanged(pastry.restaurant.code, {
-          pastryId: updatePastryDto._id.toString(),
-          newStock: updatePastryDto.stock,
-        });
-      }
-
-      this.socketGateway.stockChangedAdmin(pastry.restaurant.code, {
-        pastryId: updatePastryDto._id.toString(),
-        newStock: updatePastryDto.stock,
-      });
+      await this.sendStockNotification(pastry);
     }
 
-    return await this.pastryModel
-      .findByIdAndUpdate(
-        updatePastryDto._id.toString(),
-        {
-          ...updatePastryDto,
-          historical,
-        },
-        { new: true },
-      )
-      .exec();
+    return pastry;
   }
 
   async deleteCommonStock(code: string, commonStock: string): Promise<void> {
@@ -384,7 +358,7 @@ export class PastriesService {
   }
 
   async findByCommonStock(commonStock: string): Promise<PastryDocument[]> {
-    return await this.pastryModel.find({ commonStock: commonStock }).exec();
+    return await this.pastryModel.find({ commonStock }).exec();
   }
 
   async isNameNotExists(
@@ -427,17 +401,17 @@ export class PastriesService {
     return !totalCountList.length || totalCountList[0]?.totalCount === 0;
   }
 
-  async decrementStock(pastry: PastryDocument, count: number): Promise<void> {
+  async decrementStock(pastry: PastryDocument, count: number, { session }: { session?: ClientSession } = {}): Promise<void> {
     if (pastry.commonStock) {
       const commonStockPastries = await this.findByCommonStock(
         pastry.commonStock,
       );
 
       commonStockPastries.forEach(async (commonStockPastry: PastryDocument) => {
-        await this.decrementStockPastry(commonStockPastry, count);
+        await this.decrementStockPastry(commonStockPastry, count, { session });
       });
     } else {
-      await this.decrementStockPastry(pastry, count);
+      await this.decrementStockPastry(pastry, count, { session },);
     }
   }
 
@@ -543,36 +517,52 @@ export class PastriesService {
     return historical;
   }
 
+  async sendStockNotification(pastry: PastryDocument): Promise<void> {
+    const displayStock = await this.restaurantsService.isStockDisplayable(
+      pastry.restaurant.code,
+    );
+
+    if (displayStock) {
+      this.socketGateway.stockChanged(pastry.restaurant.code, {
+        pastryId: pastry._id.toString(),
+        newStock: pastry.stock,
+      });
+    }
+
+    this.socketGateway.stockChangedAdmin(pastry.restaurant.code, {
+      pastryId: pastry._id.toString(),
+      newStock: pastry.stock,
+    });
+  }
+
   private async decrementStockPastry(
     pastry: PastryDocument,
     count: number,
+    { session }: { session?: ClientSession } = {},
   ): Promise<PastryDocument> {
     if (await this.isInfiniteStock(pastry)) return;
 
+    let requestOptions: QueryOptions = { new: true, useFindAndModify: false }
+
+    if (session) {
+      requestOptions = {
+        ...requestOptions,
+        session,
+      }
+    }
+
     const newPastry = await this.pastryModel
-      .findByIdAndUpdate(
-        pastry._id.toString(),
+      .findOneAndUpdate(
+        { _id: pastry._id.toString() },
         { stock: pastry.stock - count },
-        { new: true, useFindAndModify: false },
+        requestOptions,
       )
       .populate('restaurant')
       .exec();
 
-    const displayStock = await this.restaurantsService.isStockDisplayable(
-      newPastry.restaurant.code,
-    );
-
-    if (displayStock) {
-      this.socketGateway.stockChanged(newPastry.restaurant.code, {
-        pastryId: newPastry._id.toString(),
-        newStock: newPastry.stock,
-      });
+    if (!session) {
+      await this.sendStockNotification(newPastry);
     }
-
-    this.socketGateway.stockChangedAdmin(newPastry.restaurant.code, {
-      pastryId: newPastry._id.toString(),
-      newStock: newPastry.stock,
-    });
 
     return newPastry;
   }

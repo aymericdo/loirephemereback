@@ -67,21 +67,20 @@ export class CommandsController {
       });
     }
 
-    const countByPastryId: { [pastryId: string]: number } =
-      this.commandsService.reduceCountByPastryId(body.pastries as PastryDocument[]);
+    const currentPastryIds = [...new Set(body.pastries.map((pastry) => pastry.id))];
 
-    if (
-      !(await this.pastriesService.verifyAllPastriesRestaurant(
-        code,
-        Object.keys(countByPastryId),
-      ))
-    ) {
+    const allCurrentPastriesAreFromTheCurrentRestaurant = await this.pastriesService.verifyAllPastriesRestaurant(
+      code,
+      currentPastryIds,
+    )
+
+    if (!allCurrentPastriesAreFromTheCurrentRestaurant) {
       throw new BadRequestException({
         message: 'mismatch between pastries and restaurant',
       });
     }
 
-    const deactivatedPastries: PastryDocument[] = await this.pastriesService.hiddenPastries(Object.keys(countByPastryId));
+    const deactivatedPastries: PastryDocument[] = await this.pastriesService.hiddenPastries(currentPastryIds);
 
     if (deactivatedPastries.length) {
       throw new UnprocessableEntityException({
@@ -90,18 +89,8 @@ export class CommandsController {
       });
     }
 
-    const pastriesToZero: PastryDocument[] =
-      await this.commandsService.pastriesReachedZero(countByPastryId);
-
-    if (pastriesToZero.length) {
-      throw new UnprocessableEntityException({
-        message: 'pastry out of stock',
-        outOfStock: pastriesToZero,
-      });
-    }
-
     const command = await this.commandsService.create(restaurant, body, { notify: true });
-    await this.commandsService.stockManagement(countByPastryId, { type: 'decrement' });
+
     this.commandsService.paymentRequiredManagement(command);
 
     return new CommandEntity(command.toObject());
