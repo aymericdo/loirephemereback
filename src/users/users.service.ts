@@ -70,7 +70,7 @@ export class UsersService {
             [restaurantId]: access,
           },
         },
-        { new: true },
+        { new: true, useFindAndModify: false },
       )
       .exec();
   }
@@ -90,7 +90,7 @@ export class UsersService {
             ...currentAccess,
           },
         },
-        { new: true },
+        { new: true, useFindAndModify: false },
       )
       .exec();
   }
@@ -107,7 +107,7 @@ export class UsersService {
             password: await this.encryptPassword(password),
           },
         },
-        { new: true },
+        { new: true, useFindAndModify: false },
       )
       .exec();
   }
@@ -124,7 +124,7 @@ export class UsersService {
             displayDemoResto,
           },
         },
-        { new: true },
+        { new: true, useFindAndModify: false },
       )
       .exec();
   }

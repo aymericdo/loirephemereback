@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { ClientSession, Model, ObjectId, QueryOptions, Types } from 'mongoose';
+import { Model, ObjectId, Types } from 'mongoose';
 import { SocketGateway } from 'src/notifications/gateways/web-socket.gateway';
 import { CreatePastryDto } from 'src/pastries/dto/create-pastry.dto';
 import { UpdatePastryDto } from 'src/pastries/dto/update-pastry.dto';
@@ -15,6 +15,15 @@ import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
 
 @Injectable()
 export class PastriesService {
+  lookupRestaurant = {
+    $lookup: {
+      from: 'restaurants',
+      localField: 'restaurant',
+      foreignField: '_id',
+      as: 'restaurant',
+    },
+  }
+
   constructor(
     @InjectModel(Pastry.name) private pastryModel: Model<PastryDocument>,
     private readonly restaurantsService: RestaurantsService,
@@ -24,13 +33,6 @@ export class PastriesService {
   async findOne(id: string): Promise<PastryDocument> {
     return await this.pastryModel
       .findById(id)
-      .populate('restaurant')
-      .exec();
-  }
-
-  async findOneWithSession(id: string, session: ClientSession): Promise<PastryDocument> {
-    return await this.pastryModel
-      .findById(id, null, { session })
       .populate('restaurant')
       .exec();
   }
@@ -63,7 +65,7 @@ export class PastriesService {
       .findByIdAndUpdate(
         updatePastryDto._id.toString(),
         { $push: { historical: changes } },
-        { new: true },
+        { new: true, useFindAndModify: false },
       )
       .exec();
   }
@@ -80,7 +82,7 @@ export class PastriesService {
           ...updatePastryDto,
           historical,
         },
-        { new: true },
+        { new: true, useFindAndModify: false },
       )
       .populate('restaurant')
       .exec();
@@ -94,10 +96,8 @@ export class PastriesService {
         const newCommonStockPastry = await this.pastryModel
           .findByIdAndUpdate(
             commonStockPastry._id.toString(),
-            {
-              $set: { stock: updatePastryDto.stock },
-            },
-            { new: true },
+            { $set: { stock: updatePastryDto.stock } },
+            { new: true, useFindAndModify: false },
           )
           .populate('restaurant')
           .exec();
@@ -165,25 +165,14 @@ export class PastriesService {
     if (newDisplaySequence !== oldDisplaySequence) {
       const pastryToMoveUpper = await this.pastryModel
         .aggregate([
-          {
-            $lookup: {
-              from: 'restaurants',
-              localField: 'restaurant',
-              foreignField: '_id',
-              as: 'restaurant',
-            },
-          },
+          { ...this.lookupRestaurant },
           {
             $match: {
               'restaurant.code': code,
               displaySequence: { $gte: newDisplaySequence },
             },
           },
-          {
-            $sort: {
-              displaySequence: -1,
-            },
-          },
+          { $sort: { displaySequence: -1 } },
         ])
         .exec();
 
@@ -210,25 +199,13 @@ export class PastriesService {
 
       const pastryToMoveLower = await this.pastryModel
         .aggregate([
-          {
-            $lookup: {
-              from: 'restaurants',
-              localField: 'restaurant',
-              foreignField: '_id',
-              as: 'restaurant',
-            },
-          },
+          { ...this.lookupRestaurant },
           {
             $match: {
-              'restaurant.code': code,
-              displaySequence: { $gt: oldDisplaySequence },
+              'restaurant.code': code, displaySequence: { $gt: oldDisplaySequence },
             },
           },
-          {
-            $sort: {
-              displaySequence: 1,
-            },
-          },
+          { $sort: { displaySequence: 1 } },
         ])
         .exec();
 
@@ -249,31 +226,12 @@ export class PastriesService {
     return (
       (await this.pastryModel
         .aggregate([
-          {
-            $lookup: {
-              from: 'restaurants',
-              localField: 'restaurant',
-              foreignField: '_id',
-              as: 'restaurant',
-            },
-          },
-          {
-            $match: {
-              'restaurant.code': code,
-            },
-          },
-          {
-            $sort: {
-              displaySequence: 1,
-            },
-          },
-          {
-            $project: {
-              displaySequence: 1,
-            },
-          },
-        ])
-        .exec()) as { _id: ObjectId; displaySequence: number }[]
+          { ...this.lookupRestaurant },
+          { $match: { 'restaurant.code': code } },
+          { $sort: { displaySequence: 1 } },
+          { $project: { displaySequence: 1 } },
+        ]).exec()
+      ) as { _id: ObjectId; displaySequence: number }[]
     ).reduce((prev, data) => {
       prev[data._id.toString()] = data.displaySequence;
       return prev;
@@ -284,12 +242,7 @@ export class PastriesService {
     return await this.pastryModel
       .aggregate([
         {
-          $lookup: {
-            from: 'restaurants',
-            localField: 'restaurant',
-            foreignField: '_id',
-            as: 'restaurant',
-          },
+          ...this.lookupRestaurant,
         },
         {
           $match: { 'restaurant.code': code, hidden: { $ne: true } },
@@ -305,12 +258,7 @@ export class PastriesService {
     return await this.pastryModel
       .aggregate([
         {
-          $lookup: {
-            from: 'restaurants',
-            localField: 'restaurant',
-            foreignField: '_id',
-            as: 'restaurant',
-          },
+          ...this.lookupRestaurant,
         },
         {
           $match: { 'restaurant.code': code },
@@ -328,12 +276,7 @@ export class PastriesService {
     return await this.pastryModel
       .aggregate([
         {
-          $lookup: {
-            from: 'restaurants',
-            localField: 'restaurant',
-            foreignField: '_id',
-            as: 'restaurant',
-          },
+          ...this.lookupRestaurant,
         },
         {
           $match: {
@@ -369,12 +312,7 @@ export class PastriesService {
     const totalCountList = (await this.pastryModel
       .aggregate([
         {
-          $lookup: {
-            from: 'restaurants',
-            localField: 'restaurant',
-            foreignField: '_id',
-            as: 'restaurant',
-          },
+          ...this.lookupRestaurant,
         },
         {
           $match: pastryId
@@ -401,24 +339,20 @@ export class PastriesService {
     return !totalCountList.length || totalCountList[0]?.totalCount === 0;
   }
 
-  async decrementStock(pastry: PastryDocument, count: number, { session }: { session?: ClientSession } = {}): Promise<void> {
+  async incrementStock(pastryId: string, count: number): Promise<void> {
+    const pastry: PastryDocument = await this.findOne(pastryId);
+
     if (pastry.commonStock) {
-      const commonStockPastries = await this.findByCommonStock(
+      const pastriesWithCommonStock = await this.findByCommonStock(
         pastry.commonStock,
       );
 
-      commonStockPastries.forEach(async (commonStockPastry: PastryDocument) => {
-        await this.decrementStockPastry(commonStockPastry, count, { session });
+      pastriesWithCommonStock.forEach(async (pastry: PastryDocument) => {
+        await this.incrementStockPastry(pastry, count);
       });
     } else {
-      await this.decrementStockPastry(pastry, count, { session },);
+      await this.incrementStockPastry(pastry, count);
     }
-  }
-
-  async incrementStock(pastry: PastryDocument, count: number): Promise<void> {
-    // increment is just decrement but with the negative count
-    const newCount = count * -1;
-    await this.decrementStock(pastry, newCount);
   }
 
   async verifyAllPastriesRestaurant(
@@ -429,14 +363,7 @@ export class PastriesService {
       (
         (await this.pastryModel
           .aggregate([
-            {
-              $lookup: {
-                from: 'restaurants',
-                localField: 'restaurant',
-                foreignField: '_id',
-                as: 'restaurant',
-              },
-            },
+            { ...this.lookupRestaurant },
             {
               $match: {
                 'restaurant.code': code,
@@ -464,14 +391,7 @@ export class PastriesService {
       (
         (await this.pastryModel
           .aggregate([
-            {
-              $lookup: {
-                from: 'restaurants',
-                localField: 'restaurant',
-                foreignField: '_id',
-                as: 'restaurant',
-              },
-            },
+            { ...this.lookupRestaurant },
             {
               $match: {
                 'restaurant.code': code,
@@ -535,40 +455,47 @@ export class PastriesService {
     });
   }
 
-  private async decrementStockPastry(
+  private async incrementStockPastry(
     pastry: PastryDocument,
     count: number,
-    { session }: { session?: ClientSession } = {},
   ): Promise<PastryDocument> {
-    if (await this.isInfiniteStock(pastry)) return;
+    if (pastry.isInfiniteStock) return;
 
-    let requestOptions: QueryOptions = { new: true, useFindAndModify: false }
+    let filter: {
+      _id: string,
+      stock?: Object,
+    } = {
+      _id: pastry.id,
+    }
 
-    if (session) {
-      requestOptions = {
-        ...requestOptions,
-        session,
+    if (count < 0) {
+      // it's means decrement
+      filter = {
+        ...filter,
+        stock: { $gte: count * -1 },
       }
     }
 
     const newPastry = await this.pastryModel
       .findOneAndUpdate(
-        { _id: pastry._id.toString() },
-        { stock: pastry.stock - count },
-        requestOptions,
+        filter,
+        { $inc: { stock: count } },
+        { new: true, useFindAndModify: false },
       )
       .populate('restaurant')
       .exec();
 
-    if (!session) {
-      await this.sendStockNotification(newPastry);
+    if (!newPastry) {
+      throw {
+        code: 'out_of_stock',
+        pastry,
+        error: new Error()
+      };
     }
 
-    return newPastry;
-  }
+    await this.sendStockNotification(newPastry);
 
-  private async isInfiniteStock(pastry: PastryDocument): Promise<boolean> {
-    return pastry.stock === null;
+    return newPastry;
   }
 
   private async getDisplaySequence(
@@ -585,9 +512,7 @@ export class PastriesService {
       : await this.getDefaultDisplaySequence(currentMaxDisplaySequence);
   }
 
-  private async getDefaultDisplaySequence(
-    currentMaxDisplaySequence: number | null,
-  ): Promise<number> {
+  private async getDefaultDisplaySequence(currentMaxDisplaySequence: number | null): Promise<number> {
     return currentMaxDisplaySequence === null
       ? 0
       : currentMaxDisplaySequence + 1;
@@ -600,32 +525,11 @@ export class PastriesService {
       (
         (await this.pastryModel
           .aggregate([
-            {
-              $lookup: {
-                from: 'restaurants',
-                localField: 'restaurant',
-                foreignField: '_id',
-                as: 'restaurant',
-              },
-            },
-            {
-              $match: {
-                'restaurant.code': code,
-              },
-            },
-            {
-              $sort: {
-                displaySequence: -1,
-              },
-            },
-            {
-              $limit: 1,
-            },
-            {
-              $project: {
-                displaySequence: 1,
-              },
-            },
+            { ...this.lookupRestaurant },
+            { $match: { 'restaurant.code': code } },
+            { $sort: { displaySequence: -1 } },
+            { $limit: 1 },
+            { $project: { displaySequence: 1 } },
           ])
           .exec()) as { displaySequence?: number }[]
       )[0]?.displaySequence ?? null

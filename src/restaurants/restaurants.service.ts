@@ -69,7 +69,10 @@ export class RestaurantsService {
 
   async deleteAllUserByCode(code: string): Promise<Restaurant> {
     return await this.restaurantModel
-      .findOneAndUpdate({ code: code }, { $set: { users: [] } }, { new: true })
+      .findOneAndUpdate(
+        { code: code },
+        { $set: { users: [] } },
+        { new: true, useFindAndModify: false })
       .exec();
   }
 
@@ -83,7 +86,7 @@ export class RestaurantsService {
       .findOneAndUpdate(
         { code: code },
         { $set: { openingTime: openingTime } },
-        { new: true },
+        { new: true, useFindAndModify: false },
       )
       .exec();
   }
@@ -111,7 +114,7 @@ export class RestaurantsService {
       .findOneAndUpdate(
         { code: code },
         { $set: { openingPickupTime: fixedOpeningPickupTime } },
-        { new: true },
+        { new: true, useFindAndModify: false },
       )
       .exec();
   }
@@ -126,7 +129,7 @@ export class RestaurantsService {
       .findOneAndUpdate(
         { code: code },
         { $set: { openingPickupTime: openingTime } },
-        { new: true },
+        { new: true, useFindAndModify: false },
       )
       .exec();
   }
@@ -139,7 +142,7 @@ export class RestaurantsService {
       .findOneAndUpdate(
         { code: code },
         { $set: { displayStock } },
-        { new: true },
+        { new: true, useFindAndModify: false },
       )
       .exec();
   }
@@ -151,7 +154,7 @@ export class RestaurantsService {
       .findOneAndUpdate(
         { code: code },
         { $set: { alwaysOpen } },
-        { new: true },
+        { new: true, useFindAndModify: false },
       )
       .exec();
   }
@@ -186,7 +189,7 @@ export class RestaurantsService {
             ...newData,
           }
         },
-        { new: true },
+        { new: true, useFindAndModify: false },
       )
       .exec();
   }
@@ -244,7 +247,7 @@ export class RestaurantsService {
       .findOneAndUpdate(
         { code: code },
         { $addToSet: { users: user._id.toString().toString() } },
-        { new: true },
+        { new: true, useFindAndModify: false },
       )
       .exec();
   }
@@ -257,7 +260,7 @@ export class RestaurantsService {
       .findOneAndUpdate(
         { code: code },
         { $pull: { users: user._id.toString().toString() } },
-        { new: true },
+        { new: true, useFindAndModify: false },
       )
       .exec();
   }
