@@ -76,7 +76,7 @@ export class DemoRestoRefillService {
           (pastry) =>
             ({
               ...pastry,
-              id: pastry._id,
+              id: pastry.id,
             } as CommandPastryDto),
         ),
         takeAway: faker.datatype.boolean(),
@@ -103,7 +103,7 @@ export class DemoRestoRefillService {
   ): Promise<void> {
     await this.commandModel
       .updateOne(
-        { _id: command._id },
+        { _id: command.id },
         {
           $set: {
             createdAt: date,

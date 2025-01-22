@@ -111,7 +111,7 @@ export class PastriesController {
     displaySequenceById: { [id: string]: number };
   }> {
     const displayStock = await this.restaurantsService.isStockDisplayable(code);
-    const currentPastry = await this.pastriesService.findOne(body._id);
+    const currentPastry = await this.pastriesService.findOne(body.id);
 
     if (currentPastry.restaurant.code !== code) {
       throw new BadRequestException({
@@ -123,10 +123,8 @@ export class PastriesController {
 
     const isUpdatingStock: boolean = currentPastry.stock !== body.stock;
 
-    if (
-      currentPastry.name !== body.name &&
-      (await this.sharedCommandsService.findByPastry(code, body._id.toString()))
-        .length > 0
+    if (currentPastry.name !== body.name &&
+      await this.sharedCommandsService.hasCommandsRelatedToPastry(code, body.id)
     ) {
       throw new BadRequestException({
         message: 'you cannot edit the name of a pastry already ordered',
@@ -141,11 +139,11 @@ export class PastriesController {
 
     let historical = [];
     // Update historical
-    if (this.pastriesService.isStatsAttributesChanged(currentPastry, body)) {
+    if (currentPastry.isStatsAttributesChanged(body)) {
       historical = (
         await this.pastriesService.updateHistorical(
-          { ...body, _id: body._id },
-          this.pastriesService.getStatsAttributesChanged(currentPastry, body),
+          { ...body, _id: body.id },
+          currentPastry.getStatsAttributesChanged(body),
         )
       ).historical;
     }
@@ -153,8 +151,8 @@ export class PastriesController {
     const pastry = await this.pastriesService.update(
       {
         ...body,
-        _id: body._id,
-        displaySequence: displaySequenceById[currentPastry._id.toString()],
+        _id: body.id,
+        displaySequence: displaySequenceById[currentPastry.id],
       },
       historical,
       isUpdatingStock,
@@ -234,7 +232,7 @@ export class PastriesController {
     @Param('pastryId') pastryId: string,
   ): Promise<boolean> {
     return (
-      (await this.sharedCommandsService.findByPastry(code, pastryId)).length > 0
+      await this.sharedCommandsService.hasCommandsRelatedToPastry(code, pastryId)
     );
   }
 

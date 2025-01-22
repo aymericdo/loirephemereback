@@ -6,7 +6,7 @@ import { RestaurantEntity } from 'src/restaurants/serializer/restaurant.serializ
 
 export class PastryEntity {
   @Expose()
-  @Transform((params) => params.obj._id.toString())
+  @Transform(({ obj }) => obj._id.toString())
   id: ObjectId;
 
   @Expose()

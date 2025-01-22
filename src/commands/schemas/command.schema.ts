@@ -119,3 +119,5 @@ export class Command {
 }
 
 export const CommandSchema = SchemaFactory.createForClass(Command);
+
+CommandSchema.index({ restaurant: 1, reference: 1 }, { unique: true });

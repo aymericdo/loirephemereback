@@ -105,7 +105,7 @@ export class UsersController {
 
     await this.authService.deleteCodes(body.email);
     await this.usersService.updatePassword(
-      user._id.toString().toString(),
+      user.id,
       body.password,
     );
 
@@ -208,7 +208,7 @@ export class UsersController {
     const users = await this.restaurantsService.findUsersByCode(code);
     const restaurant = await this.restaurantsService.findByCode(code);
     return users.map(
-      (user) => new UserEntity(user.toObject(), restaurant._id.toString()),
+      (user) => new UserEntity(user.toObject(), restaurant.id),
     );
   }
 
@@ -237,7 +237,7 @@ export class UsersController {
     if (
       await this.restaurantsService.isUserInRestaurant(
         code,
-        currentUser._id.toString(),
+        currentUser.id,
       )
     ) {
       throw new ForbiddenException({
@@ -254,12 +254,12 @@ export class UsersController {
       restaurant.code === DEMO_RESTO ? [...ACCESS_LIST] : [];
 
     const user = await this.usersService.updateAccess(
-      currentUser._id.toString(),
+      currentUser.id,
       access,
-      restaurant._id.toString(),
+      restaurant.id,
     );
 
-    return new UserEntity(user.toObject(), restaurant._id.toString());
+    return new UserEntity(user.toObject(), restaurant.id);
   }
 
   @UseGuards(AuthorizationGuard)
@@ -271,13 +271,13 @@ export class UsersController {
   @Post('by-code/:code/delete')
   async deleteUserFromRestaurant(
     @Param('code') code: string,
-    @Body('id') _id: string,
+    @Body('id') id: string,
     @AuthUser() authUser: UserDocument,
   ): Promise<boolean> {
-    const user = await this.usersService.findOne(_id);
+    const user = await this.usersService.findOne(id);
     const restaurant = await this.restaurantsService.findByCode(code);
 
-    if (authUser.id.toString() === _id) {
+    if (authUser.id === id) {
       throw new ForbiddenException({
         message: 'you cannot delete yourself',
       });
@@ -285,8 +285,8 @@ export class UsersController {
 
     await this.restaurantsService.deleteUserToRestaurant(code, user);
     await this.usersService.removeAccessFromRestaurant(
-      user._id.toString().toString(),
-      restaurant._id.toString(),
+      user.id,
+      restaurant.id,
     );
     return true;
   }
@@ -303,7 +303,7 @@ export class UsersController {
     @Body() updateUserDto: UpdateUserDto,
     @AuthUser() authUser: UserDocument,
   ): Promise<UserEntity> {
-    if (authUser.id.toString() === updateUserDto._id.toString()) {
+    if (authUser.id === updateUserDto.id) {
       throw new ForbiddenException({
         message: 'you cannot delete yourself from *users section*',
       });
@@ -312,7 +312,7 @@ export class UsersController {
     const restaurantId = await this.restaurantsService.findIdByCode(code);
 
     const user = await this.usersService.updateAccess(
-      updateUserDto._id.toString(),
+      updateUserDto.id,
       updateUserDto.access,
       restaurantId,
     );
@@ -343,7 +343,7 @@ export class UsersController {
       });
     }
 
-    await this.usersService.updatePassword(authUser.id.toString(), password);
+    await this.usersService.updatePassword(authUser.id, password);
     return true;
   }
 
@@ -358,7 +358,7 @@ export class UsersController {
     @Body('displayDemoResto') displayDemoResto: boolean,
   ): Promise<boolean> {
     await this.usersService.setDisplayDemoResto(
-      authUser.id.toString().toString(),
+      authUser.id,
       displayDemoResto,
     );
 

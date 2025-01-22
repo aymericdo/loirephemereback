@@ -1,6 +1,6 @@
 import { Injectable, UnprocessableEntityException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model } from 'mongoose';
 import { CreateCommandDto } from './dto/create-command.dto';
 import { CancelledByType, Command, CommandDocument, Discount } from './schemas/command.schema';
 import { randomBytes } from 'crypto';
@@ -10,7 +10,6 @@ import { SocketGateway } from 'src/notifications/gateways/web-socket.gateway';
 import { WebPushGateway } from 'src/notifications/gateways/web-push.gateway';
 import { RestaurantsService } from 'src/restaurants/restaurants.service';
 import { PaymentDto } from 'src/commands/dto/command-payment.dto';
-import { isOpen, isPickupOpen } from 'src/shared/helpers/is-open';
 import { SharedCommandsService } from 'src/shared/services/shared-commands.service';
 import { PaymentsService } from 'src/payments/payments.service';
 import { CommandPastryDto } from 'src/pastries/dto/command-pastry.dto';
@@ -28,14 +27,6 @@ export class CommandsService extends SharedCommandsService {
     super(commandModel, restaurantsService);
   }
 
-  async isReferenceExists(reference: string): Promise<boolean> {
-    return (
-      (await this.commandModel
-        .countDocuments({ reference: reference }, { limit: 1 })
-        .exec()) === 1
-    );
-  }
-
   async create(
     restaurant: RestaurantDocument,
     createCommandDto: CreateCommandDto,
@@ -45,12 +36,7 @@ export class CommandsService extends SharedCommandsService {
     const countByPastryId: { [pastryId: string]: number } = this.reduceCountByPastryId(pastryIds);
     await this.stockManagement(countByPastryId, { type: 'decrement' });
 
-    let reference: string;
-    do {
-      reference = randomBytes(24).toString('hex').toUpperCase().slice(0, 4);
-    } while (await this.isReferenceExists(reference));
-
-    const savedCommand = await this.createCommandAndSave(createCommandDto, restaurant, reference)
+    const savedCommand = await this.createCommandAndSave(createCommandDto, restaurant)
 
     const newCommand: CommandDocument = await this.findOne(savedCommand.id);
 
@@ -129,7 +115,7 @@ export class CommandsService extends SharedCommandsService {
 
     return await this.commandModel
       .find({
-        restaurant: new Types.ObjectId(restaurantId),
+        restaurant: restaurantId,
         $or: [
           {
             createdAt: {
@@ -162,7 +148,7 @@ export class CommandsService extends SharedCommandsService {
     const restaurantId = await this.restaurantsService.findIdByCode(code);
 
     let filter = {
-      restaurant: new Types.ObjectId(restaurantId),
+      restaurant: restaurantId,
       createdAt: {
         $gt: fromDate,
         $lte: toDate,
@@ -181,14 +167,6 @@ export class CommandsService extends SharedCommandsService {
       .populate('pastries')
       .populate('restaurant')
       .sort({ createdAt: 1 })
-      .exec();
-  }
-
-  async deleteAllByCode(code: string): Promise<void> {
-    const restaurantId = await this.restaurantsService.findIdByCode(code);
-
-    await this.commandModel
-      .deleteMany({ restaurant: new Types.ObjectId(restaurantId) })
       .exec();
   }
 
@@ -236,19 +214,6 @@ export class CommandsService extends SharedCommandsService {
     }
   }
 
-  async isRestaurantOpened(
-    restaurant: RestaurantDocument,
-    pickupTime: Date = null,
-  ): Promise<boolean> {
-    if (isOpen(restaurant)) {
-      return true;
-    } else if (isPickupOpen(restaurant)) {
-      return isOpen(restaurant, pickupTime);
-    }
-
-    return false;
-  }
-
   async isPayedByInternet(commandId: string): Promise<boolean> {
     return (
       (await this.commandModel
@@ -270,21 +235,45 @@ export class CommandsService extends SharedCommandsService {
       }).populate('restaurant').exec();
   }
 
-  private async createCommandAndSave(createCommandDto: CreateCommandDto, restaurant: RestaurantDocument, reference: string): Promise<CommandDocument> {
-    const createdCommand = new this.commandModel({
-      pastries: createCommandDto.pastries,
-      takeAway: createCommandDto.takeAway,
-      pickUpTime: createCommandDto.pickUpTime,
-      name: createCommandDto.name.trim(),
-      totalPrice: createCommandDto.pastries.reduce((prev, pastry) => {
-        return prev + pastry.price;
-      }, 0),
-      reference,
-      restaurant,
-      paymentRequired: restaurant.paymentInformation.paymentActivated && restaurant.paymentInformation.paymentRequired
-    });
+  async deleteAllByCode(code: string): Promise<void> {
+    const restaurantId = await this.restaurantsService.findIdByCode(code);
 
-    return await createdCommand.save();
+    await this.commandModel
+      .deleteMany({ restaurant: restaurantId })
+      .exec();
+  }
+
+  private async createCommandAndSave(createCommandDto: CreateCommandDto, restaurant: RestaurantDocument): Promise<CommandDocument> {
+    let newCommand = null;
+
+    do {
+      const reference = randomBytes(24).toString('hex').toUpperCase().slice(0, 4);
+
+      try {
+        const createdCommand = new this.commandModel({
+          pastries: createCommandDto.pastries,
+          takeAway: createCommandDto.takeAway,
+          pickUpTime: createCommandDto.pickUpTime,
+          name: createCommandDto.name.trim(),
+          totalPrice: createCommandDto.pastries.reduce((prev, pastry) => {
+            return prev + pastry.price;
+          }, 0),
+          reference,
+          restaurant,
+          paymentRequired: restaurant.paymentInformation.paymentActivated && restaurant.paymentInformation.paymentRequired
+        });
+        
+        newCommand = await createdCommand.save();
+      } catch (err) {
+        if (err.code === 11000) {
+          // retry
+        } else {
+          throw err
+        }
+      }
+    } while (!newCommand)
+
+    return newCommand;
   }
 
   private reduceCountByPastryId(pastryIds: string[]): {

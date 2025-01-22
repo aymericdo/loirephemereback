@@ -152,19 +152,19 @@ export class UsersService {
       if (
         !(await this.restaurantsService.isUserInRestaurant(
           code,
-          user._id.toString(),
+          user.id,
         ))
       ) {
         return true;
       } else {
-        return await this.hasAccess(user._id.toString(), code, accesses);
+        return await this.hasAccess(user.id, code, accesses);
       }
     } else {
       return (
         (await this.restaurantsService.isUserInRestaurant(
           code,
-          user._id.toString(),
-        )) && (await this.hasAccess(user._id.toString(), code, accesses))
+          user.id,
+        )) && (await this.hasAccess(user.id, code, accesses))
       );
     }
   }

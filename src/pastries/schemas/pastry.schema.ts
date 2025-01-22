@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, SchemaTypes } from 'mongoose';
+import { UpdatePastryDto } from 'src/pastries/dto/update-pastry.dto';
 import {
   Restaurant,
   RestaurantDocument,
@@ -87,9 +88,32 @@ export class Pastry {
   get isInfiniteStock(): boolean {
     return this.stock === null;
   }
+
+  isStatsAttributesChanged: Function;
+  getStatsAttributesChanged: Function;
 }
 
 export const PastrySchema = SchemaFactory.createForClass(Pastry);
+
+PastrySchema.methods.isStatsAttributesChanged = function (newPastry: UpdatePastryDto): boolean {
+  return statsAttributes.some((attribute: string) => {
+    return this[attribute] !== newPastry[attribute];
+  });
+};
+
+PastrySchema.methods.getStatsAttributesChanged = function (newPastry: UpdatePastryDto): Historical {
+  const historical: Historical = {
+    date: new Date(),
+  };
+
+  statsAttributes.forEach((attribute: string) => {
+    if (this[attribute] !== newPastry[attribute]) {
+      historical[attribute] = [this[attribute], newPastry[attribute]];
+    }
+  });
+
+  return historical;
+};
 
 PastrySchema.index(
   { restaurant: 1, name: 1 },

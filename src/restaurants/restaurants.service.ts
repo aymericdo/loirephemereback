@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model } from 'mongoose';
 import {
   Access,
   ACCESS_LIST,
@@ -49,7 +49,7 @@ export class RestaurantsService {
   async findIdByCode(code: string): Promise<string> {
     return (
       await this.restaurantModel.findOne({ code: code }, { _id: 1 }).exec()
-    )?._id.toString();
+    )?.id;
   }
 
   async findUsersByCode(code: string): Promise<UserDocument[]> {
@@ -184,11 +184,7 @@ export class RestaurantsService {
     return await this.restaurantModel
       .findOneAndUpdate(
         { code: code },
-        {
-          $set: {
-            ...newData,
-          }
-        },
+        { $set: { ...newData } },
         { new: true, useFindAndModify: false },
       )
       .exec();
@@ -202,7 +198,7 @@ export class RestaurantsService {
     return (
       (await this.restaurantModel
         .countDocuments(
-          { code: code, users: new Types.ObjectId(userId) },
+          { code: code, users: userId },
           { limit: 1 },
         )
         .exec()) === 1
@@ -246,7 +242,7 @@ export class RestaurantsService {
     return await this.restaurantModel
       .findOneAndUpdate(
         { code: code },
-        { $addToSet: { users: user._id.toString().toString() } },
+        { $addToSet: { users: user.id } },
         { new: true, useFindAndModify: false },
       )
       .exec();
@@ -259,7 +255,7 @@ export class RestaurantsService {
     return await this.restaurantModel
       .findOneAndUpdate(
         { code: code },
-        { $pull: { users: user._id.toString().toString() } },
+        { $pull: { users: user.id } },
         { new: true, useFindAndModify: false },
       )
       .exec();
@@ -269,7 +265,7 @@ export class RestaurantsService {
     [restaurantId: string]: Access[];
   }> {
     const allRestaurantIds: string[] = (await this.findAll()).map(
-      (restaurant) => restaurant._id.toString(),
+      (restaurant) => restaurant.id,
     );
 
     return allRestaurantIds.reduce(
@@ -286,7 +282,7 @@ export class RestaurantsService {
   async fullAccessForDemoResto(user: UserDocument): Promise<{
     [restaurantId: string]: Access[];
   }> {
-    const demoRestaurantId = (await this.findDemoResto())._id.toString();
+    const demoRestaurantId = (await this.findDemoResto()).id;
 
     return {
       [demoRestaurantId]: [...ACCESS_LIST],

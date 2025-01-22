@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, SchemaTypes } from 'mongoose';
+import { isOpen, isPickupOpen } from 'src/shared/helpers/is-open';
 import { SIZE } from 'src/shared/helpers/sizes';
 import { User, UserDocument } from 'src/users/schemas/user.schema';
 
@@ -9,6 +10,7 @@ export type RestaurantDocument = Restaurant & Document;
 export class Restaurant {
   @Prop({
     type: String,
+    unique: true,
     required: true,
     trim: true,
     minlength: SIZE.MIN,
@@ -78,9 +80,21 @@ export class Restaurant {
     publicKey: string,
     secretKey: string,
   }
+
+  isRestaurantOpened: Function;
 }
 
 export const RestaurantSchema = SchemaFactory.createForClass(Restaurant);
+
+RestaurantSchema.methods.isRestaurantOpened = function (pickupTime: Date = null) {
+  if (isOpen(this)) {
+    return true;
+  } else if (isPickupOpen(this)) {
+    return isOpen(this, pickupTime);
+  }
+
+  return false;
+};
 
 RestaurantSchema.index(
   { name: 1 },

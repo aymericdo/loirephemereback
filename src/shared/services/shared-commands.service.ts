@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model } from 'mongoose';
 import { Command, CommandDocument } from 'src/commands/schemas/command.schema';
 import { RestaurantsService } from 'src/restaurants/restaurants.service';
 
@@ -41,20 +41,19 @@ export class SharedCommandsService {
     return command;
   }
 
-  async findByPastry(
+  async hasCommandsRelatedToPastry(
     code: string,
     pastryId: string,
-  ): Promise<CommandDocument[]> {
+  ): Promise<boolean> {
     const restaurantId = await this.restaurantsService.findIdByCode(code);
 
-    return await this.commandModel
-      .find({
-        restaurant: new Types.ObjectId(restaurantId),
-        pastries: new Types.ObjectId(pastryId),
-      })
-      .populate('pastries')
-      .populate('restaurant')
-      .sort({ createdAt: 1 })
-      .exec();
+    return (
+      (await this.commandModel
+        .countDocuments({
+          restaurant: restaurantId,
+          pastries: pastryId,
+        })
+        .exec()) > 0
+    );
   }
 }

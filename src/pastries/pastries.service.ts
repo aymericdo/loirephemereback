@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, ObjectId, Types } from 'mongoose';
+import { Model } from 'mongoose';
 import { SocketGateway } from 'src/notifications/gateways/web-socket.gateway';
 import { CreatePastryDto } from 'src/pastries/dto/create-pastry.dto';
 import { UpdatePastryDto } from 'src/pastries/dto/update-pastry.dto';
@@ -8,14 +8,13 @@ import {
   Historical,
   Pastry,
   PastryDocument,
-  statsAttributes,
 } from 'src/pastries/schemas/pastry.schema';
 import { RestaurantsService } from 'src/restaurants/restaurants.service';
 import { RestaurantDocument } from 'src/restaurants/schemas/restaurant.schema';
 
 @Injectable()
 export class PastriesService {
-  lookupRestaurant = {
+  private readonly lookupRestaurant = {
     $lookup: {
       from: 'restaurants',
       localField: 'restaurant',
@@ -63,7 +62,7 @@ export class PastriesService {
   ): Promise<PastryDocument> {
     return await this.pastryModel
       .findByIdAndUpdate(
-        updatePastryDto._id.toString(),
+        updatePastryDto.id,
         { $push: { historical: changes } },
         { new: true, useFindAndModify: false },
       )
@@ -77,7 +76,7 @@ export class PastriesService {
   ): Promise<PastryDocument> {
     const pastry = await this.pastryModel
       .findByIdAndUpdate(
-        updatePastryDto._id.toString(),
+        updatePastryDto.id,
         {
           ...updatePastryDto,
           historical,
@@ -95,7 +94,7 @@ export class PastriesService {
       commonStockPastries.forEach(async (commonStockPastry: PastryDocument) => {
         const newCommonStockPastry = await this.pastryModel
           .findByIdAndUpdate(
-            commonStockPastry._id.toString(),
+            commonStockPastry.id,
             { $set: { stock: updatePastryDto.stock } },
             { new: true, useFindAndModify: false },
           )
@@ -117,7 +116,7 @@ export class PastriesService {
     await this.pastryModel
       .updateMany(
         {
-          restaurant: new Types.ObjectId(restaurantId),
+          restaurant: restaurantId,
           commonStock: commonStock,
         },
         {
@@ -136,8 +135,8 @@ export class PastriesService {
     await this.pastryModel
       .updateMany(
         {
-          restaurant: new Types.ObjectId(restaurantId),
-          _id: { $in: pastryIds.map((id) => new Types.ObjectId(id)) },
+          restaurant: restaurantId,
+          _id: { $in: pastryIds },
         },
         {
           $set: { commonStock: commonStock, stock: 0 },
@@ -163,7 +162,7 @@ export class PastriesService {
     );
 
     if (newDisplaySequence !== oldDisplaySequence) {
-      const pastryToMoveUpper = await this.pastryModel
+      const pastryToMoveUpper: PastryDocument[] = await this.pastryModel
         .aggregate([
           { ...this.lookupRestaurant },
           {
@@ -173,6 +172,7 @@ export class PastriesService {
             },
           },
           { $sort: { displaySequence: -1 } },
+          { $addFields: { id: '$_id' } },
         ])
         .exec();
 
@@ -180,7 +180,7 @@ export class PastriesService {
         ...pastryToMoveUpper.map((pastry) => {
           return {
             updateOne: {
-              filter: { _id: pastry._id },
+              filter: { _id: pastry.id },
               update: {
                 $inc: { displaySequence: 1 },
               },
@@ -189,7 +189,7 @@ export class PastriesService {
         }),
         {
           updateOne: {
-            filter: { _id: updatePastryDto._id },
+            filter: { _id: updatePastryDto.id },
             update: {
               $set: { displaySequence: newDisplaySequence },
             },
@@ -202,10 +202,12 @@ export class PastriesService {
           { ...this.lookupRestaurant },
           {
             $match: {
-              'restaurant.code': code, displaySequence: { $gt: oldDisplaySequence },
+              'restaurant.code': code,
+              displaySequence: { $gt: oldDisplaySequence },
             },
           },
           { $sort: { displaySequence: 1 } },
+          { $addFields: { id: '$_id' } },
         ])
         .exec();
 
@@ -213,7 +215,7 @@ export class PastriesService {
         ...pastryToMoveLower.map((pastry) => {
           return {
             updateOne: {
-              filter: { _id: pastry._id },
+              filter: { _id: pastry.id },
               update: {
                 $inc: { displaySequence: -1 },
               },
@@ -229,11 +231,12 @@ export class PastriesService {
           { ...this.lookupRestaurant },
           { $match: { 'restaurant.code': code } },
           { $sort: { displaySequence: 1 } },
-          { $project: { displaySequence: 1 } },
+          { $addFields: { id: '$_id' } },
+          { $project: { displaySequence: 1, id: 1 } },
         ]).exec()
-      ) as { _id: ObjectId; displaySequence: number }[]
+      ) as { id: string; displaySequence: number }[]
     ).reduce((prev, data) => {
-      prev[data._id.toString()] = data.displaySequence;
+      prev[data.id] = data.displaySequence;
       return prev;
     }, {} as { [id: string]: number });
   }
@@ -296,7 +299,7 @@ export class PastriesService {
     const restaurantId = await this.restaurantsService.findIdByCode(code);
 
     await this.pastryModel
-      .deleteMany({ restaurant: new Types.ObjectId(restaurantId) })
+      .deleteMany({ restaurant: restaurantId })
       .exec();
   }
 
@@ -319,7 +322,7 @@ export class PastriesService {
             ? {
                 'restaurant.code': code,
                 name: pastryName,
-                _id: { $ne: new Types.ObjectId(pastryId) },
+                _id: { $ne: pastryId },
               }
             : {
                 'restaurant.code': code,
@@ -367,7 +370,7 @@ export class PastriesService {
             {
               $match: {
                 'restaurant.code': code,
-                _id: { $in: pastryIds.map((id) => new Types.ObjectId(id)) },
+                _id: { $in: pastryIds },
               },
             },
             {
@@ -381,7 +384,7 @@ export class PastriesService {
 
   async hiddenPastries(pastryIds: string[]): Promise<PastryDocument[]> {
     return await this.pastryModel.find({
-      _id: { $in: pastryIds.map((id) => new Types.ObjectId(id)) },
+      _id: { $in: pastryIds },
       hidden: true,
     }).exec();
   }
@@ -411,32 +414,6 @@ export class PastriesService {
     );
   }
 
-  isStatsAttributesChanged(
-    oldPastry: PastryDocument,
-    newPastry: UpdatePastryDto,
-  ): boolean {
-    return statsAttributes.some((attribute: string) => {
-      return oldPastry[attribute] !== newPastry[attribute];
-    });
-  }
-
-  getStatsAttributesChanged(
-    oldPastry: PastryDocument,
-    newPastry: UpdatePastryDto,
-  ): Historical {
-    const historical: Historical = {
-      date: new Date(),
-    };
-
-    statsAttributes.forEach((attribute: string) => {
-      if (oldPastry[attribute] !== newPastry[attribute]) {
-        historical[attribute] = [oldPastry[attribute], newPastry[attribute]];
-      }
-    });
-
-    return historical;
-  }
-
   async sendStockNotification(pastry: PastryDocument): Promise<void> {
     const displayStock = await this.restaurantsService.isStockDisplayable(
       pastry.restaurant.code,
@@ -444,13 +421,13 @@ export class PastriesService {
 
     if (displayStock) {
       this.socketGateway.stockChanged(pastry.restaurant.code, {
-        pastryId: pastry._id.toString(),
+        pastryId: pastry.id,
         newStock: pastry.stock,
       });
     }
 
     this.socketGateway.stockChangedAdmin(pastry.restaurant.code, {
-      pastryId: pastry._id.toString(),
+      pastryId: pastry.id,
       newStock: pastry.stock,
     });
   }

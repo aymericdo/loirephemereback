@@ -56,12 +56,7 @@ export class CommandsController {
     const restaurant: RestaurantDocument =
       await this.restaurantsService.findByCode(code);
 
-    if (
-      !(await this.commandsService.isRestaurantOpened(
-        restaurant,
-        body.pickUpTime,
-      ))
-    ) {
+    if (!restaurant.isRestaurantOpened(body.pickUpTime)) {
       throw new ForbiddenException({
         message: 'restaurant is closed',
       });
@@ -103,7 +98,6 @@ export class CommandsController {
     @Param('id') id: string,
   ): Promise<CommandEntity> {
     const command: CommandDocument = (await this.commandsService.findOne(id))
-
     return new CommandEntity(command.toObject());
   }
 
@@ -332,7 +326,7 @@ export class CommandsController {
     @Param('code') code: string,
     @AuthUser() authUser: UserDocument,
   ): Promise<boolean> {
-    this.webPushGateway.addAdminQueueSubNotification(code, authUser.id.toString(), body.sub);
+    this.webPushGateway.addAdminQueueSubNotification(code, authUser.id, body.sub);
 
     return true;
   }
@@ -348,7 +342,7 @@ export class CommandsController {
     @Param('code') code: string,
     @AuthUser() authUser: UserDocument,
   ): Promise<boolean> {
-    this.webPushGateway.deleteAdminQueueSubNotification(code, authUser.id.toString());
+    this.webPushGateway.deleteAdminQueueSubNotification(code, authUser.id);
 
     return true;
   }

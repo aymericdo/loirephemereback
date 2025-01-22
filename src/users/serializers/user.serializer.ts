@@ -4,7 +4,7 @@ import { Access, UserDocument } from 'src/users/schemas/user.schema';
 
 export class UserEntity {
   @Expose()
-  @Transform((params) => params.obj._id.toString())
+  @Transform(({ obj }) => obj._id.toString())
   id: ObjectId;
 
   @Expose()
