@@ -81,6 +81,10 @@ export class Restaurant {
     secretKey: string,
   }
 
+  get paymentRequired(): boolean {
+    return this.paymentInformation.paymentActivated && this.paymentInformation.paymentRequired;
+  }
+
   isRestaurantOpened: Function;
 }
 

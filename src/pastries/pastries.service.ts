@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
-import { Connection, Model } from 'mongoose';
+import { Connection, Model, Types } from 'mongoose';
 import { SocketGateway } from 'src/notifications/gateways/web-socket.gateway';
 import { CreatePastryDto } from 'src/pastries/dto/create-pastry.dto';
 import { UpdatePastryDto } from 'src/pastries/dto/update-pastry.dto';
@@ -137,7 +137,7 @@ export class PastriesService {
       .updateMany(
         {
           restaurant: restaurantId,
-          _id: { $in: pastryIds },
+          _id: { $in: pastryIds.map((id) => new Types.ObjectId(id)) },
         },
         {
           $set: { commonStock: commonStock, stock: 0 },
@@ -295,9 +295,7 @@ export class PastriesService {
           ...this.lookupRestaurant,
         },
         {
-          $match: {
-            'restaurant.code': code,
-          },
+          $match: { 'restaurant.code': code },
         },
         {
           $sample: {
@@ -335,7 +333,7 @@ export class PastriesService {
             ? {
                 'restaurant.code': code,
                 name: pastryName,
-                _id: { $ne: pastryId },
+                _id: { $ne: new Types.ObjectId(pastryId) },
               }
             : {
                 'restaurant.code': code,
@@ -383,7 +381,7 @@ export class PastriesService {
             {
               $match: {
                 'restaurant.code': code,
-                _id: { $in: pastryIds },
+                _id: { $in: pastryIds.map((id) => new Types.ObjectId(id)) },
               },
             },
             {
@@ -397,7 +395,7 @@ export class PastriesService {
 
   async hiddenPastries(pastryIds: string[]): Promise<PastryDocument[]> {
     return await this.pastryModel.find({
-      _id: { $in: pastryIds },
+      _id: { $in: pastryIds.map((id) => new Types.ObjectId(id)) },
       hidden: true,
     }).exec();
   }

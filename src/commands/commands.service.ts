@@ -260,7 +260,7 @@ export class CommandsService extends SharedCommandsService {
           }, 0),
           reference,
           restaurant,
-          paymentRequired: restaurant.paymentInformation.paymentActivated && restaurant.paymentInformation.paymentRequired
+          paymentRequired: restaurant.paymentRequired,
         });
         
         newCommand = await createdCommand.save();
