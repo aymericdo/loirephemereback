@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { InjectConnection, InjectModel } from '@nestjs/mongoose';
+import { Connection, Model } from 'mongoose';
 import { SocketGateway } from 'src/notifications/gateways/web-socket.gateway';
 import { CreatePastryDto } from 'src/pastries/dto/create-pastry.dto';
 import { UpdatePastryDto } from 'src/pastries/dto/update-pastry.dto';
@@ -24,6 +24,7 @@ export class PastriesService {
   }
 
   constructor(
+    @InjectConnection() private connection: Connection,
     @InjectModel(Pastry.name) private pastryModel: Model<PastryDocument>,
     private readonly restaurantsService: RestaurantsService,
     private readonly socketGateway: SocketGateway,
@@ -162,67 +163,79 @@ export class PastriesService {
     );
 
     if (newDisplaySequence !== oldDisplaySequence) {
-      const pastryToMoveUpper: PastryDocument[] = await this.pastryModel
-        .aggregate([
-          { ...this.lookupRestaurant },
-          {
-            $match: {
-              'restaurant.code': code,
-              displaySequence: { $gte: newDisplaySequence },
-            },
-          },
-          { $sort: { displaySequence: -1 } },
-          { $addFields: { id: '$_id' } },
-        ])
-        .exec();
+      const session = await this.connection.startSession();
+      
+      try {
+        session.startTransaction();
 
-      await this.pastryModel.bulkWrite([
-        ...pastryToMoveUpper.map((pastry) => {
-          return {
-            updateOne: {
-              filter: { _id: pastry.id },
-              update: {
-                $inc: { displaySequence: 1 },
+        const pastriesToMoveUpper: PastryDocument[] = await this.pastryModel
+          .aggregate([
+            { ...this.lookupRestaurant },
+            {
+              $match: {
+                'restaurant.code': code,
+                displaySequence: { $gte: newDisplaySequence },
               },
             },
-          };
-        }),
-        {
-          updateOne: {
-            filter: { _id: updatePastryDto.id },
-            update: {
-              $set: { displaySequence: newDisplaySequence },
-            },
-          },
-        },
-      ]);
+            { $sort: { displaySequence: -1 } },
+            { $addFields: { id: '$_id' } },
+          ], { session })
+          .exec();
 
-      const pastryToMoveLower = await this.pastryModel
-        .aggregate([
-          { ...this.lookupRestaurant },
+        await this.pastryModel.bulkWrite([
+          ...pastriesToMoveUpper.map((pastry) => {
+            return {
+              updateOne: {
+                filter: { _id: pastry.id },
+                update: {
+                  $inc: { displaySequence: 1 },
+                },
+              },
+            };
+          }),
           {
-            $match: {
-              'restaurant.code': code,
-              displaySequence: { $gt: oldDisplaySequence },
-            },
-          },
-          { $sort: { displaySequence: 1 } },
-          { $addFields: { id: '$_id' } },
-        ])
-        .exec();
-
-      await this.pastryModel.bulkWrite([
-        ...pastryToMoveLower.map((pastry) => {
-          return {
             updateOne: {
-              filter: { _id: pastry.id },
+              filter: { _id: updatePastryDto.id },
               update: {
-                $inc: { displaySequence: -1 },
+                $set: { displaySequence: newDisplaySequence },
               },
             },
-          };
-        }),
-      ]);
+          },
+        ], { session });
+
+        const pastriesToMoveLower = await this.pastryModel
+          .aggregate([
+            { ...this.lookupRestaurant },
+            {
+              $match: {
+                'restaurant.code': code,
+                displaySequence: { $gt: oldDisplaySequence },
+              },
+            },
+            { $sort: { displaySequence: 1 } },
+            { $addFields: { id: '$_id' } },
+          ], { session })
+          .exec();
+
+        await this.pastryModel.bulkWrite([
+          ...pastriesToMoveLower.map((pastry) => {
+            return {
+              updateOne: {
+                filter: { _id: pastry.id },
+                update: {
+                  $inc: { displaySequence: -1 },
+                },
+              },
+            };
+          }),
+        ], { session });
+
+        await session.commitTransaction();
+      } catch {
+        await session.abortTransaction();
+      } finally {
+        await session.endSession();
+      }
     }
 
     return (
