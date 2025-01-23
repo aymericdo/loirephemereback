@@ -84,7 +84,7 @@ export class CommandsController {
       });
     }
 
-    const command = await this.commandsService.create(restaurant, body, { notify: !restaurant.paymentRequired });
+    const command = await this.commandsService.create(restaurant, body);
 
     this.commandsService.paymentRequiredManagement(command);
 

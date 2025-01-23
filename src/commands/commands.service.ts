@@ -30,7 +30,7 @@ export class CommandsService extends SharedCommandsService {
   async create(
     restaurant: RestaurantDocument,
     createCommandDto: CreateCommandDto,
-    { notify }: { notify: boolean },
+    { notify }: { notify: boolean } = { notify: true },
   ): Promise<CommandDocument> {
     const pastryIds = createCommandDto.pastries.map((pastry: CommandPastryDto) => pastry.id);
     const countByPastryId: { [pastryId: string]: number } = this.reduceCountByPastryId(pastryIds);
@@ -40,7 +40,7 @@ export class CommandsService extends SharedCommandsService {
 
     const newCommand: CommandDocument = await this.findOne(savedCommand.id);
 
-    if (notify) {
+    if (notify && !newCommand.paymentRequired) {
       this.socketGateway.alertNewCommand(restaurant.code, newCommand);
       this.webPushGateway.alertNewCommand(restaurant.code);
     }
@@ -103,6 +103,12 @@ export class CommandsService extends SharedCommandsService {
       .exec();
 
     this.socketGateway.alertPayedCommand(command.restaurant.code, command);
+
+    if (command.paymentRequired) {
+      this.socketGateway.alertNewCommand(command.restaurant.code, command);
+      this.webPushGateway.alertNewCommand(command.restaurant.code);
+    }
+
     return command;
   }
 
@@ -113,23 +119,29 @@ export class CommandsService extends SharedCommandsService {
   ): Promise<CommandDocument[]> {
     const restaurantId = await this.restaurantsService.findIdByCode(code);
 
+    const orFilter = {
+      $or: [
+        { createdAt: { $gt: fromDate, $lte: toDate } },
+        { isDone: false },
+        { isPayed: false },
+      ],
+    }
+
     return await this.commandModel
       .find({
         restaurant: restaurantId,
-        $or: [
-          {
-            createdAt: {
-              $gt: fromDate,
-              $lte: toDate,
-            },
-          },
-          {
-            isDone: false,
-          },
-          {
-            isPayed: false,
-          },
-        ],
+        $or: [{
+          $and: [{
+            paymentRequired: false,
+            ...orFilter,
+          }],
+        }, {
+          $and: [{
+            paymentRequired: true,
+            isPayed: true,
+            ...orFilter,
+          }],
+        }]
       })
       .populate('pastries')
       .populate('restaurant')
