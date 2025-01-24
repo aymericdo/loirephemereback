@@ -85,10 +85,7 @@ export class Pastry {
   })
   historical: Historical[];
 
-  get isInfiniteStock(): boolean {
-    return this.stock === null;
-  }
-
+  isInfiniteStock: Function;
   isStatsAttributesChanged: Function;
   getStatsAttributesChanged: Function;
 }
@@ -99,6 +96,10 @@ PastrySchema.methods.isStatsAttributesChanged = function (newPastry: UpdatePastr
   return statsAttributes.some((attribute: string) => {
     return this[attribute] !== newPastry[attribute];
   });
+};
+
+PastrySchema.methods.isInfiniteStock = function (): boolean {
+  return this.stock === null;
 };
 
 PastrySchema.methods.getStatsAttributesChanged = function (newPastry: UpdatePastryDto): Historical {

@@ -22,14 +22,6 @@ export class RestaurantEntity {
   @Expose()
   openingPickTime: Date;
 
-  @Expose()
-  @Transform(({ obj }) => {
-    return obj.paymentInformation?.paymentActivated ?
-      obj.paymentInformation?.publicKey :
-      null
-  })
-  paymentInformationPublicKey: Object
-
   @Expose({ groups: ['admin'] })
   createdAt: Date;
 

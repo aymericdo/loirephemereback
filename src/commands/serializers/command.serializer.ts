@@ -45,6 +45,9 @@ export class CommandEntity {
   @Expose()
   pickUpTime: Date;
 
+  @Expose()
+  paymentRequired: boolean;
+
   @Expose({ groups: ['admin'] })
   payment: PaymentPossibility[];
 
@@ -63,6 +66,9 @@ export class CommandEntity {
   // never
   @Exclude()
   _id: number;
+
+  @Exclude()
+  sessionId: string;
 
   @Exclude()
   @Transform(({ value }) => new RestaurantEntity(value))

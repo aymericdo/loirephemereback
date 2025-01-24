@@ -110,14 +110,16 @@ export class Command {
   })
   sessionId: string;
 
-  get isCancellable(): boolean {
-    return !this.isDone && !this.isPayed;
-  }
-
   createdAt: Date;
   updatedAt: Date;
+
+  isCancellable: Function;
 }
 
 export const CommandSchema = SchemaFactory.createForClass(Command);
+
+CommandSchema.methods.isCancellable = function () {
+  return !this.isDone && !this.isPayed;
+};
 
 CommandSchema.index({ restaurant: 1, reference: 1 }, { unique: true });

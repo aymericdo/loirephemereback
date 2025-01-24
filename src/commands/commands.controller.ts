@@ -35,6 +35,7 @@ import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
 import { UserDocument } from 'src/users/schemas/user.schema';
 import { PaymentsService } from 'src/payments/payments.service';
 import { PersonalCommandGuard } from 'src/commands/guards/personal-command.guard';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('commands')
 export class CommandsController {
@@ -91,6 +92,7 @@ export class CommandsController {
     return new CommandEntity(command.toObject());
   }
 
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @UseGuards(PersonalCommandGuard)
   @UseInterceptors(ClassSerializerInterceptor)
   @Get('by-code/:code/personal-command/:id')
@@ -101,6 +103,7 @@ export class CommandsController {
     return new CommandEntity(command.toObject());
   }
 
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @UseGuards(PersonalCommandGuard)
   @UseInterceptors(ClassSerializerInterceptor)
   @Delete('by-code/:code/personal-command/:id')
@@ -115,7 +118,7 @@ export class CommandsController {
       });
     }
 
-    if (command.isCancellable) {
+    if (command.isCancellable()) {
       throw new BadRequestException({
         message: 'command is not cancellable anymore',
       });
@@ -129,6 +132,7 @@ export class CommandsController {
     return new CommandEntity(updatedCommand.toObject());
   }
 
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @UseGuards(PersonalCommandGuard)
   @UseInterceptors(ClassSerializerInterceptor)
   @Patch('by-code/:code/personal-command/:id/mark-as-payed')
@@ -139,9 +143,9 @@ export class CommandsController {
     const command: CommandDocument = (await this.commandsService.findOne(id))
     const restaurant: RestaurantDocument = command.restaurant;
 
-    if (!command.paymentRequired) {
+    if (command.isPayed) {
       throw new BadRequestException({
-        message: 'payment is not required',
+        message: 'command is already payed',
       });
     }
 
@@ -257,7 +261,7 @@ export class CommandsController {
       });
     }
 
-    if (oldCommand.isCancellable) {
+    if (oldCommand.isCancellable()) {
       throw new BadRequestException({
         message: 'command is not cancellable anymore',
       });

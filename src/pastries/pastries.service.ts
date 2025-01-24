@@ -447,7 +447,7 @@ export class PastriesService {
     pastry: PastryDocument,
     count: number,
   ): Promise<PastryDocument> {
-    if (pastry.isInfiniteStock) return;
+    if (pastry.isInfiniteStock()) return;
 
     let filter: {
       _id: string,

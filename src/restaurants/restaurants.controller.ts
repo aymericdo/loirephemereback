@@ -22,6 +22,7 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { UsersService } from 'src/users/users.service';
 import { hourMinuteToDate } from 'src/shared/helpers/date';
 import { PaymentInformationDto } from 'src/restaurants/dto/payment-information.dto';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('restaurants')
 export class RestaurantsController {
@@ -34,6 +35,24 @@ export class RestaurantsController {
   @Get('not-exists')
   async validateRestaurant(@Query('name') name: string): Promise<boolean> {
     return await this.restaurantsService.isNameNotExists(name);
+  }
+
+  @UseInterceptors(ClassSerializerInterceptor)
+  @Get('demo-resto')
+  async getDemoResto(): Promise<RestaurantEntity> {
+    const restaurant = await this.restaurantsService.findDemoResto();
+    return new RestaurantEntity(restaurant.toObject());
+  }
+
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @Get('by-code/:code/payment-information-public-key')
+  async getPaymentInformationPublicKey(
+    @Param('code') code: string,
+  ): Promise<{ publicKey: string }> {
+    const restaurant = await this.restaurantsService.findByCode(code);
+    return restaurant.paymentInformation?.paymentActivated ?
+      { publicKey: restaurant.paymentInformation?.publicKey } :
+      null;
   }
 
   @UseInterceptors(ClassSerializerInterceptor)
@@ -197,13 +216,6 @@ export class RestaurantsController {
       secretKey,
     );
 
-    return new RestaurantEntity(restaurant.toObject());
-  }
-
-  @UseInterceptors(ClassSerializerInterceptor)
-  @Get('demo-resto')
-  async getDemoResto(): Promise<RestaurantEntity> {
-    const restaurant = await this.restaurantsService.findDemoResto();
     return new RestaurantEntity(restaurant.toObject());
   }
 

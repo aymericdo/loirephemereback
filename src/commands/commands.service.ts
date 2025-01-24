@@ -272,7 +272,7 @@ export class CommandsService extends SharedCommandsService {
           }, 0),
           reference,
           restaurant,
-          paymentRequired: restaurant.paymentRequired,
+          paymentRequired: restaurant.paymentRequired(),
         });
         
         newCommand = await createdCommand.save();
