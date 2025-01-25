@@ -15,12 +15,18 @@ export class PaymentsController {
     @Body('commandReference') commandReference: string,
   ) {
     const command: CommandDocument = await this.sharedCommandsService.findByReference(commandReference)
+
     if (!command) {
       throw new BadRequestException({
         message: "command reference not valid",
       });
     }
-    const session = await this.paymentsService(command.restaurant).buildSession(command);
+
+    const paymentService = this.paymentsService(command.restaurant);
+
+    const session = (command.sessionId) ?
+      await paymentService.getSession(command.sessionId) :
+      await paymentService.buildSession(command);
     
     await this.sharedCommandsService.addSessionId(command.id, session.id);
   
