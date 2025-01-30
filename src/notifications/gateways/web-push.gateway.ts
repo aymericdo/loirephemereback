@@ -44,6 +44,7 @@ export class WebPushGateway {
     const subNotification = this.clientSubByCommandId[command.id];
 
     if (subNotification) {
+      // TODO : translate that
       this.sendPushNotif(subNotification, 'Votre commande est prête !', `https://oresto.app/${command.restaurant.code}?commandId=${command.id}`);
     }
 

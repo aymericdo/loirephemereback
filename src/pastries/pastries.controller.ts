@@ -33,6 +33,7 @@ import { WebPushGateway } from 'src/notifications/gateways/web-push.gateway';
 import { AuthorizationGuard } from 'src/shared/guards/authorization.guard';
 import { Accesses } from 'src/shared/decorators/accesses.decorator';
 import { SharedCommandsService } from 'src/shared/services/shared-commands.service';
+import sharp from 'sharp';
 
 export const IMAGE_URL_PATH = './client/photos';
 
@@ -281,14 +282,23 @@ export class PastriesController {
         ],
       }),
     )
-    file: Express.Multer.File,
+    image: Express.Multer.File,
   ): Promise<{
     originalname: string;
     filename: string;
   }> {
+    const buffer = await sharp(image.path)
+      .rotate()
+      .resize(1000)
+      .jpeg({ quality: 80 })
+      .withMetadata()
+      .toBuffer();
+
+    sharp(buffer).toFile(image.path);
+
     const response = {
-      originalname: file.originalname,
-      filename: file.filename,
+      originalname: image.originalname,
+      filename: image.filename,
     };
 
     return response;
