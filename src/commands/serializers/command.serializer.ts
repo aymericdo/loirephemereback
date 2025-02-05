@@ -48,6 +48,10 @@ export class CommandEntity {
   @Expose()
   paymentRequired: boolean;
 
+  @Expose()
+  @Transform(({ obj }) => obj.restaurant.paymentInformation.paymentActivated)
+  paymentActivated: boolean;
+
   @Expose({ groups: ['admin'] })
   payment: PaymentPossibility[];
 
