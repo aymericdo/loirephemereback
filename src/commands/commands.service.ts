@@ -209,9 +209,10 @@ export class CommandsService extends SharedCommandsService {
       await this.stockManagement(countByPastryId, { type: 'increment' });
 
       return updatedCommand;
-    } catch {
+    } catch (error) {
       throw new UnprocessableEntityException({
         message: 'command not cancelled',
+        error,
       });
     }
   }

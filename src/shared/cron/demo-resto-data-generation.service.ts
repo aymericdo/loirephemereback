@@ -14,6 +14,8 @@ export class DemoRestoDataGenerationService {
 
   @Cron(CronExpression.EVERY_DAY_AT_2AM)
   async handleCron() {
+    if (process.env.ENVIRONMENT === 'dev') return
+
     this.logger.log(`Running...`);
     await this.demoRestoCleanupService.call();
     this.logger.log('Cleanup done');
