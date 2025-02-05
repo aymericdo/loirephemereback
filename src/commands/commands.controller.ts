@@ -118,7 +118,7 @@ export class CommandsController {
       });
     }
 
-    if (command.isCancellable()) {
+    if (!command.isCancellable()) {
       throw new BadRequestException({
         message: 'command is not cancellable anymore',
       });
@@ -261,7 +261,7 @@ export class CommandsController {
       });
     }
 
-    if (oldCommand.isCancellable()) {
+    if (!oldCommand.isCancellable()) {
       throw new BadRequestException({
         message: 'command is not cancellable anymore',
       });
