@@ -61,7 +61,7 @@ export class DemoRestoRefillService {
   }
 
   private async createCommands(): Promise<void> {
-    for (let i = 0; i < 500; ++i) {
+    for (let i = 0; i < 50; ++i) {
       const pastries = await this.pastriesService.findRandomByCode(
         this.demoResto.code,
         faker.helpers.arrayElement([2, 3, 4]),
@@ -91,7 +91,7 @@ export class DemoRestoRefillService {
         { notify: false },
       );
 
-      if (i > 5) {
+      if (i > 10) {
         await this.moveCommandInThePast(newCommand, faker.date.past());
       }
     }
@@ -115,8 +115,8 @@ export class DemoRestoRefillService {
         {
           new: true,
           useFindAndModify: false,
-          // timestamps: false,
-          // strict: false,
+          timestamps: false,
+          strict: false,
         },
       )
       .exec();
