@@ -85,16 +85,42 @@ export class DemoRestoRefillService {
             ? faker.date.between(Date(), endOfToday)
             : null,
       };
+
       const newCommand = await this.commandsService.create(
         this.demoResto,
         command,
         { notify: false },
       );
 
+      // I need to manually edit some attributes because of the normal path
+      // is not completely relevant for bulk generating mock data
+      this.setPaymentRequiredFalse(newCommand)
+
       if (i > 10) {
         await this.moveCommandInThePast(newCommand, faker.date.past());
       }
     }
+  }
+
+  private async setPaymentRequiredFalse(
+    command: CommandDocument,
+  ): Promise<void> {
+    await this.commandModel
+      .updateOne(
+        { _id: command.id },
+        {
+          $set: {
+            paymentRequired: false,
+          },
+        },
+        {
+          new: true,
+          useFindAndModify: false,
+          timestamps: false,
+          strict: false,
+        },
+      )
+      .exec();
   }
 
   private async moveCommandInThePast(
