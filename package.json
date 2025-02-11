@@ -43,7 +43,9 @@
     "@nestjs/throttler": "^6.2.1",
     "@nestjs/websockets": "^10.4.4",
     "@ntegral/nestjs-sentry": "^4.0.1",
+    "@sentry/nestjs": "^9.0.0",
     "@sentry/node": "^7.119.2",
+    "@sentry/profiling-node": "^9.0.0",
     "@types/web-push": "^3.6.3",
     "@types/ws": "^8.5.3",
     "bcrypt": "^5.1.0",
@@ -93,7 +95,7 @@
     "ts-loader": "^9.4.1",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.1.0",
-    "typescript": "^4.9.4"
+    "typescript": "^5.1.3"
   },
   "jest": {
     "moduleFileExtensions": [

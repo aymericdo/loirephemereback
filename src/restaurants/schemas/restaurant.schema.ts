@@ -62,6 +62,13 @@ export class Restaurant {
   displayStock: boolean;
 
   @Prop({
+    type: String,
+    required: true,
+    default: 'Europe/Paris',
+  })
+  timezone: string;
+
+  @Prop({
     type: Boolean,
     required: true,
     default: false,

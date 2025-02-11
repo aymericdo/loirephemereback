@@ -166,14 +166,15 @@ export class RestaurantsController {
   @SerializeOptions({
     groups: ['admin'],
   })
-  @Patch('by-code/:code/display-stock')
-  async patchDisplayStock(
+  @Patch('by-code/:code')
+  async patchRestaurantInformation(
     @Param('code') code: string,
+    @Body('timezone') timezone: string,
     @Body('displayStock') displayStock: boolean,
   ): Promise<RestaurantEntity> {
-    const restaurant = await this.restaurantsService.setDisplayStock(
+    const restaurant = await this.restaurantsService.setRestaurantInformation(
       code,
-      displayStock,
+      { timezone, displayStock },
     );
 
     return new RestaurantEntity(restaurant.toObject());
@@ -263,5 +264,15 @@ export class RestaurantsController {
     );
 
     return new RestaurantEntity(restaurant.toObject());
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
+  @Get('timezones')
+  async getTimezones(
+  ): Promise<string[]> {
+    return Intl.supportedValuesOf('timeZone');
   }
 }

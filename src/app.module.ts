@@ -1,12 +1,12 @@
-import { HttpException, MiddlewareConsumer, Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module } from '@nestjs/common';
 import { CacheModule } from '@nestjs/cache-manager';
 import { ConfigModule } from '@nestjs/config';
-import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { SentryInterceptor, SentryModule } from '@ntegral/nestjs-sentry';
+import { SentryGlobalFilter, SentryModule } from "@sentry/nestjs/setup";
 import { join } from 'path';
 import { ApiLoggerMiddleware } from 'src/shared/middlewares/api-logger.middleware';
 import { SharedModule } from 'src/shared/shared.module';
@@ -36,13 +36,7 @@ import { PaymentsModule } from 'src/payments/payments.module';
       ttl: 60000,
       limit: 500,
     }]),
-    SentryModule.forRoot({
-      dsn: process.env.SENTRY_DNS,
-      debug: false,
-      environment: process.env.ENVIRONMENT,
-      release: '1.0',
-      logLevels: ['debug'],
-    }),
+    SentryModule.forRoot(),
     PastriesModule,
     PaymentsModule,
     CommandsModule,
@@ -56,20 +50,12 @@ import { PaymentsModule } from 'src/payments/payments.module';
   providers: [
     AppService,
     {
-      provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      provide: APP_FILTER,
+      useClass: SentryGlobalFilter,
     },
     {
-      provide: APP_INTERCEPTOR,
-      useFactory: () =>
-        new SentryInterceptor({
-          filters: [
-            {
-              type: HttpException,
-              filter: (exception: HttpException) => 500 > exception.getStatus(),
-            },
-          ],
-        }),
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
     },
   ],
 })

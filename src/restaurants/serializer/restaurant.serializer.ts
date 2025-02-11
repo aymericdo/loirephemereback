@@ -22,6 +22,9 @@ export class RestaurantEntity {
   @Expose()
   openingPickTime: Date;
 
+  @Expose()
+  timezone: string;
+
   @Expose({ groups: ['admin'] })
   createdAt: Date;
 

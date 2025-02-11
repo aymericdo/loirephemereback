@@ -134,18 +134,19 @@ export class RestaurantsService {
       .exec();
   }
 
-  async setDisplayStock(
+  async setRestaurantInformation(
     code: string,
-    displayStock: boolean,
+    attributes: { timezone?: string, displayStock?: boolean },
   ): Promise<RestaurantDocument> {
     return await this.restaurantModel
       .findOneAndUpdate(
         { code: code },
-        { $set: { displayStock } },
+        { $set: attributes },
         { new: true, useFindAndModify: false },
       )
       .exec();
   }
+
   async setAlwaysOpen(
     code: string,
     alwaysOpen: boolean,
