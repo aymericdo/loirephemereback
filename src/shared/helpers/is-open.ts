@@ -18,8 +18,8 @@ export const getTodayOpeningTimes = (restaurant: Restaurant): OpeningHours => {
     const openingHoursMinutes = restaurant.openingTime[cwday].startTime.split(':');
     const closingHoursMinutes = restaurant.openingTime[cwday].endTime.split(':');
 
-    const start = hourMinuteToDate(openingHoursMinutes[0], openingHoursMinutes[1]);
-    const end = hourMinuteToDate(closingHoursMinutes[0], closingHoursMinutes[1]);
+    const start = hourMinuteToDate(openingHoursMinutes[0], openingHoursMinutes[1], restaurant.timezone);
+    const end = hourMinuteToDate(closingHoursMinutes[0], closingHoursMinutes[1], restaurant.timezone);
     let isOnTwoDay = false;
 
     if (start >= end) {
@@ -44,8 +44,8 @@ export const getYesterdayOpeningTimes = (restaurant: Restaurant): OpeningHours =
     const openingHoursMinutes = restaurant.openingTime[yesterday].startTime.split(':');
     const closingHoursMinutes = restaurant.openingTime[yesterday].endTime.split(':');
 
-    const start = hourMinuteToDate(openingHoursMinutes[0], openingHoursMinutes[1]);
-    const end = hourMinuteToDate(closingHoursMinutes[0], closingHoursMinutes[1]);
+    const start = hourMinuteToDate(openingHoursMinutes[0], openingHoursMinutes[1], restaurant.timezone);
+    const end = hourMinuteToDate(closingHoursMinutes[0], closingHoursMinutes[1], restaurant.timezone);
 
     let isOnTwoDay = false;
 
@@ -90,7 +90,7 @@ export const isPickupOpen = (restaurant: Restaurant): boolean => {
     restaurant.openingPickupTime[cwday].startTime
   ) {
     const openingPickupHoursMinutes = restaurant.openingPickupTime[cwday].startTime.split(':');
-    const startTime = hourMinuteToDate(openingPickupHoursMinutes[0], openingPickupHoursMinutes[1]);
+    const startTime = hourMinuteToDate(openingPickupHoursMinutes[0], openingPickupHoursMinutes[1], restaurant.timezone);
 
     return !!(startTime && now >= startTime);
   }

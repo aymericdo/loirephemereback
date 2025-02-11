@@ -133,6 +133,7 @@ export class RestaurantsController {
           const openingPickupStartTime = hourMinuteToDate(
             openingPickupHoursMinutes[0],
             openingPickupHoursMinutes[1],
+            restaurant.timezone,
           );
 
           const openingHoursMinutes =
@@ -140,6 +141,7 @@ export class RestaurantsController {
           const openingStartTime = hourMinuteToDate(
             openingHoursMinutes[0],
             openingHoursMinutes[1],
+            restaurant.timezone,
           );
 
           return openingPickupStartTime > openingStartTime;

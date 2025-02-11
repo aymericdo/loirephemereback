@@ -14,10 +14,10 @@ export const formatYYYYMMDD = (date: Date, separator = '/'): string => {
   return `${year}${separator}${month}${separator}${day}`;
 };
 
-export const hourMinuteToDate = (hour: string, minute: string): Date => {
+export const hourMinuteToDate = (hour: string, minute: string, timezone: string | undefined): Date => {
   const dateTime = DateTime.fromObject(
     { hour: +hour, minute: +minute },
-    { zone: TIMEZONE },
+    { zone: timezone || TIMEZONE },
   );
 
   return new Date(dateTime.toString());
