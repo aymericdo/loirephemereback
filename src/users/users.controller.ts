@@ -198,6 +198,16 @@ export class UsersController {
   }
 
   @UseGuards(AuthorizationGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
+  @Get('by-code/:code/count')
+  async getCount(@Param('code') code: string): Promise<number> {
+    return await this.restaurantsService.countByCode(code);
+  }
+
+  @UseGuards(AuthorizationGuard)
   @Accesses('users')
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({

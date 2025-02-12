@@ -269,6 +269,7 @@ export class RestaurantsController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     groups: ['admin'],
   })

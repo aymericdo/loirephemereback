@@ -182,6 +182,26 @@ export class CommandsService extends SharedCommandsService {
       .exec();
   }
 
+  async countByCode(
+    code: string,
+  ): Promise<number> {
+    const restaurantId = await this.restaurantsService.findIdByCode(code);
+
+    return await this.commandModel
+      .countDocuments({ restaurant: restaurantId })
+      .exec();
+  }
+
+  async payedCommandsCountByCode(
+    code: string,
+  ): Promise<number> {
+    const restaurantId = await this.restaurantsService.findIdByCode(code);
+
+    return await this.commandModel
+      .countDocuments({ restaurant: restaurantId, isPayed: true })
+      .exec();
+  }
+
   async paymentRequiredCommandCancellation(
     commandId: string,
     cancelledBy: CancelledByType = 'payment',

@@ -196,6 +196,22 @@ export class CommandsController {
   }
 
   @UseGuards(AuthorizationGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
+  @Get('by-code/:code/count')
+  async getCount(@Param('code') code: string): Promise<{
+    total: number,
+    payed: number,
+  }> {
+    return {
+      total: await this.commandsService.countByCode(code),
+      payed: await this.commandsService.payedCommandsCountByCode(code),
+    }
+  }
+
+  @UseGuards(AuthorizationGuard)
   @Accesses('stats')
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
