@@ -105,7 +105,7 @@ RestaurantSchema.methods.isRestaurantOpened = function (pickupTime: Date = null)
 };
 
 RestaurantSchema.methods.paymentRequired = function () {
-  return this.paymentInformation.paymentActivated && this.paymentInformation.paymentRequired;
+  return !!(this.paymentInformation?.paymentActivated && this.paymentInformation?.paymentRequired);
 };
 
 RestaurantSchema.index(

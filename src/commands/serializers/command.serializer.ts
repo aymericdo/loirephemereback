@@ -49,7 +49,7 @@ export class CommandEntity {
   paymentRequired: boolean;
 
   @Expose()
-  @Transform(({ obj }) => obj.restaurant.paymentInformation.paymentActivated)
+  @Transform(({ obj }) => obj.restaurant?.paymentInformation?.paymentActivated || false)
   paymentActivated: boolean;
 
   @Expose({ groups: ['admin'] })
