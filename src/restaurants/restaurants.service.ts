@@ -61,12 +61,6 @@ export class RestaurantsService {
     ).users as UserDocument[];
   }
 
-  async countByCode(code: string): Promise<number> {
-    return await this.restaurantModel
-      .countDocuments({ code: code })
-      .exec()
-  }
-
   async findUsersCountByCode(code: string): Promise<number> {
     return (
       await this.restaurantModel.findOne({ code: code }, { users: 1 }).exec()

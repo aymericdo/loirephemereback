@@ -204,7 +204,7 @@ export class UsersController {
   })
   @Get('by-code/:code/count')
   async getCount(@Param('code') code: string): Promise<number> {
-    return await this.restaurantsService.countByCode(code);
+    return (await this.restaurantsService.findUsersByCode(code)).length;
   }
 
   @UseGuards(AuthorizationGuard)
