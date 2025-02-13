@@ -11,6 +11,7 @@ export type UserDocument = User & Document;
 export class User {
   @Prop({
     type: String,
+    unique: true,
     required: true,
     lowercase: true,
     minlength: SIZE.MIN,
@@ -42,8 +43,3 @@ export class User {
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
-
-UserSchema.index(
-  { email: 1 },
-  { collation: { locale: 'fr', strength: 1 }, unique: true },
-);

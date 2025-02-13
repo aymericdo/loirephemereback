@@ -20,6 +20,7 @@ export class Restaurant {
 
   @Prop({
     type: String,
+    unique: true,
     required: true,
     trim: true,
     minlength: SIZE.MIN,
@@ -107,13 +108,3 @@ RestaurantSchema.methods.isRestaurantOpened = function (pickupTime: Date = null)
 RestaurantSchema.methods.paymentRequired = function () {
   return !!(this.paymentInformation?.paymentActivated && this.paymentInformation?.paymentRequired);
 };
-
-RestaurantSchema.index(
-  { name: 1 },
-  { collation: { locale: 'fr', strength: 1 }, unique: true },
-);
-
-RestaurantSchema.index(
-  { code: 1 },
-  { collation: { locale: 'fr', strength: 1 }, unique: true },
-);

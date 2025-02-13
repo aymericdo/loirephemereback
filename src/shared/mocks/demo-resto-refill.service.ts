@@ -82,7 +82,7 @@ export class DemoRestoRefillService {
         takeAway: faker.datatype.boolean(),
         pickUpTime:
           getRandomInt(0, 5) === 0
-            ? faker.date.between(Date(), endOfToday)
+            ? faker.date.between({ from: Date(), to: endOfToday })
             : null,
       };
 
