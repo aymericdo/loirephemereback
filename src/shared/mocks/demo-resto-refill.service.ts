@@ -71,7 +71,7 @@ export class DemoRestoRefillService {
       endOfToday.setUTCHours(23, 59, 59, 999);
 
       const command: CreateCommandDto = {
-        name: faker.name.firstName().slice(0, SIZE.SMALL),
+        name: faker.person.firstName().slice(0, SIZE.SMALL),
         pastries: pastries.map(
           (pastry) =>
             ({
