@@ -40,6 +40,8 @@ export class AuthorizationGuard extends JwtAuthGuard implements CanActivate {
     const accesses =
       this.reflector.get<Access[]>('accesses', context.getHandler()) || [];
 
+    if (!accesses.length) return true
+
     if (
       !(await this.usersService.isAuthorized(
         user.authUser,
