@@ -313,7 +313,7 @@ export class UsersController {
     @Body() updateUserDto: UpdateUserDto,
     @AuthUser() authUser: UserDocument,
   ): Promise<UserEntity> {
-    if (authUser.id === updateUserDto.id) {
+    if (authUser.id === updateUserDto.id && !updateUserDto.access.includes('users')) {
       throw new ForbiddenException({
         message: 'you cannot delete yourself from *users section*',
       });
