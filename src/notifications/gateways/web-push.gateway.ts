@@ -45,7 +45,11 @@ export class WebPushGateway {
 
     if (subNotification) {
       // TODO : translate that
-      this.sendPushNotif(subNotification, 'Votre commande est prête !', `https://oresto.app/${command.restaurant.code}?commandId=${command.id}`);
+      this.sendPushNotif(
+        subNotification,
+        'Votre commande est prête !',
+        `https://oresto.app/${command.restaurant.code}?wizzCommandId=${command.id}`,
+      );
     }
 
     // remove sub after one usage
