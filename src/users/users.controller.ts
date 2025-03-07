@@ -374,4 +374,22 @@ export class UsersController {
 
     return displayDemoResto;
   }
+
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
+  @Patch('waiter-mode')
+  async patcWaiterMode(
+    @AuthUser() authUser: UserDocument,
+    @Body('waiterMode') waiterMode: boolean,
+  ): Promise<boolean> {
+    await this.usersService.setWaiterMode(
+      authUser.id,
+      waiterMode,
+    );
+
+    return waiterMode;
+  }
 }

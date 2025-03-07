@@ -129,6 +129,23 @@ export class UsersService {
       .exec();
   }
 
+  async setWaiterMode(
+    userId: string,
+    waiterMode: boolean,
+  ): Promise<UserDocument> {
+    return await this.userModel
+      .findByIdAndUpdate(
+        userId,
+        {
+          $set: {
+            waiterMode,
+          },
+        },
+        { new: true, useFindAndModify: false },
+      )
+      .exec();
+  }
+
   async hasAccess(
     id: string,
     code: string,

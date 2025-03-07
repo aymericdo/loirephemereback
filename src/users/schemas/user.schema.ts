@@ -40,6 +40,13 @@ export class User {
     default: true,
   })
   displayDemoResto: boolean;
+
+  @Prop({
+    type: Boolean,
+    required: true,
+    default: false,
+  })
+  waiterMode: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

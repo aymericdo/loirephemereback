@@ -13,6 +13,9 @@ export class UserEntity {
   @Expose()
   displayDemoResto: boolean;
 
+  @Expose()
+  waiterMode: boolean;
+
   @Expose({ groups: ['admin'] })
   createdAt: Date;
 
