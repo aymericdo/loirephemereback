@@ -14,7 +14,14 @@ export class UserEntity {
   displayDemoResto: boolean;
 
   @Expose()
-  waiterMode: boolean;
+  @Transform(({ obj }) => {
+    if (obj.forRestaurantId) {
+      return (obj.waiterMode && obj.waiterMode[obj.forRestaurantId]) ?? false;
+    } else {
+      return obj.waiterMode ?? {};
+    }
+  })
+  waiterMode: { [restaurantId: string]: boolean } | boolean;
 
   @Expose({ groups: ['admin'] })
   createdAt: Date;
@@ -24,14 +31,10 @@ export class UserEntity {
 
   @Expose({ groups: ['admin'] })
   @Transform(({ obj }) => {
-    if (
-      obj.forRestaurantId &&
-      obj.access &&
-      obj.access.hasOwnProperty(obj.forRestaurantId)
-    ) {
-      return obj.access[obj.forRestaurantId];
+    if (obj.forRestaurantId) {
+      return (obj.access && obj.access[obj.forRestaurantId]) ?? false;
     } else {
-      return obj.access || [];
+      return obj.access ?? {};
     }
   })
   access: { [restaurantId: string]: Access[] } | Access[];

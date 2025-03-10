@@ -42,11 +42,11 @@ export class User {
   displayDemoResto: boolean;
 
   @Prop({
-    type: Boolean,
+    type: Object,
     required: true,
-    default: false,
+    default: {},
   })
-  waiterMode: boolean;
+  waiterMode: { [restaurantId: string]: boolean };
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

@@ -55,7 +55,7 @@ export class RestaurantsService {
   async findUsersByCode(code: string): Promise<UserDocument[]> {
     return (
       await this.restaurantModel
-        .findOne({ code: code }, { users: 1 })
+        .findOne({ code }, { users: 1 })
         .populate('users')
         .exec()
     ).users as UserDocument[];
@@ -63,14 +63,14 @@ export class RestaurantsService {
 
   async findUsersCountByCode(code: string): Promise<number> {
     return (
-      await this.restaurantModel.findOne({ code: code }, { users: 1 }).exec()
+      await this.restaurantModel.findOne({ code }, { users: 1 }).exec()
     ).users.length;
   }
 
   async deleteAllUserByCode(code: string): Promise<Restaurant> {
     return await this.restaurantModel
       .findOneAndUpdate(
-        { code: code },
+        { code },
         { $set: { users: [] } },
         { new: true, useFindAndModify: false })
       .exec();
@@ -84,7 +84,7 @@ export class RestaurantsService {
   ): Promise<RestaurantDocument> {
     return await this.restaurantModel
       .findOneAndUpdate(
-        { code: code },
+        { code },
         { $set: { openingTime: openingTime } },
         { new: true, useFindAndModify: false },
       )

@@ -8,7 +8,7 @@ import {
 } from 'class-validator';
 import { Access, ACCESS_LIST } from 'src/users/schemas/user.schema';
 
-export class UpdateUserDto {
+export class UpdateAccessUserDto {
   @IsString()
   @IsMongoId()
   @IsNotEmpty()

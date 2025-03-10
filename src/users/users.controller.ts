@@ -30,7 +30,7 @@ import { CaptchaGuard } from 'src/shared/guards/captcha.guard';
 import { ChangePasswordUserDto } from 'src/users/dto/change-password-user.dto';
 import { EmailUserDto } from 'src/users/dto/email-user.dto';
 import { RecoverUserDto } from 'src/users/dto/recover-user.dto';
-import { UpdateUserDto } from 'src/users/dto/update-user.dto';
+import { UpdateAccessUserDto } from 'src/users/dto/update-user-access.dto';
 import {
   Access,
   ACCESS_LIST,
@@ -39,6 +39,7 @@ import {
 import { UserEntity } from 'src/users/serializers/user.serializer';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UsersService } from './users.service';
+import { UpdateWaiterModeUserDto } from 'src/users/dto/update-user-waiter-mode.dto';
 
 @Controller('users')
 export class UsersController {
@@ -307,10 +308,10 @@ export class UsersController {
   @SerializeOptions({
     groups: ['admin'],
   })
-  @Patch('by-code/:code')
-  async patchRestaurantUser(
+  @Patch('by-code/:code/access')
+  async patchRestaurantUserAccess(
     @Param('code') code: string,
-    @Body() updateUserDto: UpdateUserDto,
+    @Body() updateUserDto: UpdateAccessUserDto,
     @AuthUser() authUser: UserDocument,
   ): Promise<UserEntity> {
     if (authUser.id === updateUserDto.id && !updateUserDto.access.includes('users')) {
@@ -326,6 +327,28 @@ export class UsersController {
       updateUserDto.access,
       restaurantId,
     );
+    return new UserEntity(user.toObject(), restaurantId);
+  }
+
+  @UseGuards(AuthorizationGuard)
+  @Accesses('users')
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
+  @Patch('by-code/:code/waiter-mode')
+  async patchRestaurantUserWaiterMode(
+    @Param('code') code: string,
+    @Body() updateUserDto: UpdateWaiterModeUserDto,
+  ): Promise<UserEntity> {
+    const restaurantId = await this.restaurantsService.findIdByCode(code);
+
+    const user = await this.usersService.updateWaiterMode(
+      updateUserDto.id,
+      updateUserDto.waiterMode,
+      restaurantId,
+    );
+
     return new UserEntity(user.toObject(), restaurantId);
   }
 
@@ -373,23 +396,5 @@ export class UsersController {
     );
 
     return displayDemoResto;
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @UseInterceptors(ClassSerializerInterceptor)
-  @SerializeOptions({
-    groups: ['admin'],
-  })
-  @Patch('waiter-mode')
-  async patcWaiterMode(
-    @AuthUser() authUser: UserDocument,
-    @Body('waiterMode') waiterMode: boolean,
-  ): Promise<boolean> {
-    await this.usersService.setWaiterMode(
-      authUser.id,
-      waiterMode,
-    );
-
-    return waiterMode;
   }
 }

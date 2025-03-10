@@ -75,6 +75,25 @@ export class UsersService {
       .exec();
   }
 
+  async updateWaiterMode(
+    id: string,
+    waiterMode: boolean,
+    restaurantId: string,
+  ): Promise<UserDocument> {
+    return await this.userModel
+      .findByIdAndUpdate(
+        id,
+        {
+          waiterMode: {
+            ...(await this.findCurrentWaiterMode(id)),
+            [restaurantId]: waiterMode,
+          },
+        },
+        { new: true, useFindAndModify: false },
+      )
+      .exec();
+  }
+
   async removeAccessFromRestaurant(
     id: string,
     restaurantId: string,
@@ -129,23 +148,6 @@ export class UsersService {
       .exec();
   }
 
-  async setWaiterMode(
-    userId: string,
-    waiterMode: boolean,
-  ): Promise<UserDocument> {
-    return await this.userModel
-      .findByIdAndUpdate(
-        userId,
-        {
-          $set: {
-            waiterMode,
-          },
-        },
-        { new: true, useFindAndModify: false },
-      )
-      .exec();
-  }
-
   async hasAccess(
     id: string,
     code: string,
@@ -190,6 +192,12 @@ export class UsersService {
     id: string,
   ): Promise<{ [restaurantId: string]: Access[] }> {
     return (await this.userModel.findById(id, { access: 1 }).exec())?.access;
+  }
+
+  private async findCurrentWaiterMode(
+    id: string,
+  ): Promise<{ [restaurantId: string]: boolean }> {
+    return (await this.userModel.findById(id, { waiterMode: 1 }).exec())?.waiterMode;
   }
 
   private async encryptPassword(password: string): Promise<string> {
