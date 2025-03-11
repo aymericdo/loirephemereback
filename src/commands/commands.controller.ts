@@ -340,6 +340,46 @@ export class CommandsController {
   @SerializeOptions({
     groups: ['admin'],
   })
+  @Post('by-code/:code/merge')
+  async mergeCommands(
+    @Param('code') code: string,
+    @Body('commandIds') commandIds: string[],
+  ): Promise<CommandEntity[]> {
+    const commands: CommandDocument[] =
+      await this.commandsService.mergeCommand(
+        code,
+        commandIds,
+      );
+
+    return commands.map((command) => new CommandEntity(command.toObject()));
+  }
+
+  @UseGuards(AuthorizationGuard)
+  @Accesses('commands')
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
+  @Post('by-code/:code/split')
+  async splitCommands(
+    @Param('code') code: string,
+    @Body('commandIds') commandIds: string[],
+  ): Promise<CommandEntity[]> {
+    const commands: CommandDocument[] =
+      await this.commandsService.splitCommand(
+        code,
+        commandIds,
+      );
+
+    return commands.map((command) => new CommandEntity(command.toObject()));
+  }
+
+  @UseGuards(AuthorizationGuard)
+  @Accesses('commands')
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    groups: ['admin'],
+  })
   @Post('by-code/:code/notification')
   async postNotificationSub(
     @Body() body: { sub: PushSubscription },

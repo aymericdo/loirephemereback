@@ -61,6 +61,9 @@ export class CommandEntity {
   @Expose({ groups: ['admin'] })
   discount: Discount | null;
 
+  @Expose({ groups: ['admin'] })
+  mergedCommandIds: string[] | null;
+
   @Expose()
   createdAt: Date;
 

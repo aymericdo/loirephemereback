@@ -106,6 +106,11 @@ export class Command {
   discount: Discount;
 
   @Prop({
+    type: [{ type: String }],
+  })
+  mergedCommandIds: string[];
+
+  @Prop({
     type: String,
   })
   sessionId: string;

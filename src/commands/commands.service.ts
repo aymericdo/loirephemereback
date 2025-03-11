@@ -1,6 +1,6 @@
 import { Injectable, UnprocessableEntityException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { CreateCommandDto } from './dto/create-command.dto';
 import { CancelledByType, Command, CommandDocument, Discount } from './schemas/command.schema';
 import { randomBytes } from 'crypto';
@@ -62,6 +62,54 @@ export class CommandsService extends SharedCommandsService {
     this.socketGateway.alertCloseCommand(command.restaurant.code, command);
 
     return command;
+  }
+
+  async mergeCommand(code: string, commandIds: string[]): Promise<CommandDocument[]> {
+    const restaurantId = await this.restaurantsService.findIdByCode(code);
+    await this.commandModel
+      .updateMany(
+        {
+          restaurant: restaurantId,
+          _id: { $in: commandIds.map((id) => new Types.ObjectId(id)) },
+        }, {
+          $set: {
+            mergedCommandIds: commandIds,
+          },
+        },
+      )
+      .exec();
+
+    return await this.commandModel.find({
+      restaurant: restaurantId,
+      _id: { $in: commandIds.map((id) => new Types.ObjectId(id)) },
+    })
+      .populate('pastries')
+      .populate('restaurant')
+      .exec();
+  }
+
+  async splitCommand(code: string, commandIds: string[]): Promise<CommandDocument[]> {
+    const restaurantId = await this.restaurantsService.findIdByCode(code);
+    await this.commandModel
+      .updateMany(
+        {
+          restaurant: restaurantId,
+          _id: { $in: commandIds.map((id) => new Types.ObjectId(id)) },
+        }, {
+          $unset: {
+            mergedCommandIds: 1,
+          },
+        },
+      )
+      .exec();
+
+    return await this.commandModel.find({
+      restaurant: restaurantId,
+      _id: { $in: commandIds.map((id) => new Types.ObjectId(id)) },
+    })
+      .populate('pastries')
+      .populate('restaurant')
+      .exec();
   }
 
   async cancelCommand(id: string, cancelledBy: CancelledByType): Promise<CommandDocument> {
