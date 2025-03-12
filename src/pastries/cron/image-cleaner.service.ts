@@ -15,6 +15,7 @@ export class ImageCleanerService {
     this.logger.log(`Running...`);
     const folders = [];
     const rootThings = await fs.promises.readdir(IMAGE_URL_PATH);
+    this.logger.log(rootThings)
     for (let i = 0; i < rootThings.length; ++i) {
       const thing = rootThings[i];
       if (
@@ -23,6 +24,9 @@ export class ImageCleanerService {
         folders.push(thing);
       }
     }
+
+    this.logger.log(folders)
+
     folders.forEach(async (code) => {
       const pastries = await fs.promises.readdir(`${IMAGE_URL_PATH}/${code}`);
       pastries.forEach(async (pastry) => {
