@@ -401,28 +401,25 @@ export class PastriesService {
   }
 
   async isImageUrlExists(code: string, imageUrl: string): Promise<boolean> {
-    return (
-      (
-        (await this.pastryModel
-          .aggregate([
-            { ...this.lookupRestaurant },
-            {
-              $match: {
-                'restaurant.code': code,
-                imageUrl: imageUrl,
-              },
-            },
-            {
-              $limit: 1,
-            },
-            {
-              $count: 'totalCount',
-            },
-          ])
-          .collation({ locale: 'fr', strength: 1 })
-          .exec()) as { totalCount: number }[]
-      )[0]?.totalCount !== 0
-    );
+    const totalCounts = (await this.pastryModel
+      .aggregate([
+        { ...this.lookupRestaurant },
+        {
+          $match: {
+            'restaurant.code': code,
+            imageUrl,
+          },
+        },
+        {
+          $limit: 1,
+        },
+        {
+          $count: 'totalCount',
+        },
+      ])
+      .exec()) as { totalCount: number }[]
+
+    return totalCounts.length ? totalCounts[0].totalCount > 0 : false
   }
 
   async sendStockNotification(pastry: PastryDocument): Promise<void> {

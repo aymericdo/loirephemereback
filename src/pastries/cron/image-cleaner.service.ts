@@ -15,7 +15,6 @@ export class ImageCleanerService {
     this.logger.log(`Running...`);
     const folders = [];
     const rootThings = await fs.promises.readdir(IMAGE_URL_PATH);
-    this.logger.log(rootThings)
     for (let i = 0; i < rootThings.length; ++i) {
       const thing = rootThings[i];
       if (
@@ -25,11 +24,9 @@ export class ImageCleanerService {
       }
     }
 
-    this.logger.log(folders)
-
-    folders.forEach(async (code) => {
+    for (let code of folders) {
       const pastries = await fs.promises.readdir(`${IMAGE_URL_PATH}/${code}`);
-      pastries.forEach(async (pastry) => {
+      for (let pastry of pastries) {
         const isValid = await this.pastriesService.isImageUrlExists(
           code,
           `${code}/${pastry}`,
@@ -38,7 +35,7 @@ export class ImageCleanerService {
         if (!isValid) {
           await fs.promises.unlink(`${IMAGE_URL_PATH}/${code}/${pastry}`);
         }
-      });
-    });
+      }
+    }
   }
 }
