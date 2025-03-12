@@ -3,10 +3,10 @@
 /node_modules
 /client/photos/**
 !/client/photos/default.jpg
-# !/client/photos/demo-resto/
-# !/client/photos/demo-resto/**
-# !/client/photos/loirephemere/
-# !/client/photos/loirephemere/**
+!/client/photos/demo-resto/
+!/client/photos/demo-resto/**
+!/client/photos/loirephemere/
+!/client/photos/loirephemere/**
 
 .env
 
