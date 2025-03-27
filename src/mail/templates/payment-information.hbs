@@ -18,12 +18,9 @@
   <style>
     td,th,div,p,a,h1,h2,h3,h4,h5,h6 {font-family: "Segoe UI", sans-serif; mso-line-height-rule: exactly;}
   </style>
-  <![endif]-->    <title>Confirmez votre adresse e-mail</title>
+  <![endif]-->    <title>Information paiement</title>
   <style>:root {
   color-scheme: light dark;
-}
-.hover-bg-indigo-500:hover {
-  background-color: #6366f1 !important;
 }
 .hover-text-decoration-underline:hover {
   text-decoration: underline;
@@ -45,10 +42,10 @@
   }
 }</style></head>
 <body style="word-break: break-word; -webkit-font-smoothing: antialiased; margin: 0; width: 100%; background-color: #f8fafc; padding: 0">    <div style="display: none">
-      Veuillez confirmer votre adresse email afin d'activer votre compte
+      Veuillez trouvez en pièce jointe votre reçu
       &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847;
     </div>
-  <div role="article" aria-roledescription="email" aria-label="Confirmez votre adresse e-mail" lang="en">    <table style="width: 100%; font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" cellpadding="0" cellspacing="0" role="presentation">
+  <div role="article" aria-roledescription="email" aria-label="Information paiement" lang="en">    <table style="width: 100%; font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" cellpadding="0" cellspacing="0" role="presentation">
       <tr>
         <td align="center" style="background-color: #f8fafc">
           <table class="sm-w-full" style="width: 600px" cellpadding="0" cellspacing="0" role="presentation">
@@ -65,24 +62,18 @@
                   <tr>
                     <td class="sm-px-6" style="border-radius: 4px; background-color: #fff; padding: 48px; text-align: left; font-size: 16px; line-height: 24px; color: #334155; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05)">
                       <p>
-                        Hello,
+                        Féliciations,
                       </p>
                       <p class="sm-leading-8" style="margin: 0; margin-bottom: 24px; font-size: 24px; font-weight: 600; color: #000">
-                        Êtes-vous bien la personne que nous recherchons ?
+                        Le paiement a bien été effectué.
                       </p>
                       <p style="margin: 0; margin-bottom: 24px">
-                        Nous avons reçu une demande de réinitialisation de mot de passe pour votre compte.
+                        Le paiement concerne la commande {{ reference }} pour une somme de {{ price }}.
                       </p>
                       <p style="margin: 0; margin-bottom: 24px">
-                        Merci de confirmer votre email en reportant le code ci-dessous dans l'application :
+                        Veuillez trouvez votre reçu de paiement dans <a href="{{ receiptUrl }}" target="_blank">ce lien</a>.
                       </p>
                       <div style="line-height: 100%">
-                        <div class="hover-bg-indigo-500" style="text-decoration: none; margin-bottom: 16px; display: inline-block; border-radius: 4px; background-color: #4338ca; padding-top: 14px; padding-bottom: 14px; padding-left: 16px; padding-right: 16px; text-align: center; font-size: 16px; font-weight: 600; color: #fff">
-                          <span style="mso-text-raise: 16px">{{ code }}</span>
-                        </div>
-                        <span style="margin-left: 16px; text-align: center; font-style: italic">
-                          (ce code est valable 10 minutes)
-                        </span>
                         <table role="separator" style="width: 100%" cellpadding="0" cellspacing="0">
                           <tr>
                             <td style="padding-top: 32px; padding-bottom: 32px">

@@ -7,12 +7,14 @@ import { CommandsController } from './commands.controller';
 import { CommandsService } from './commands.service';
 import { Command, CommandSchema } from './schemas/command.schema';
 import { PaymentRequiredCommandCleanerService } from 'src/commands/cron/payment-required-command-cleaner.service';
+import { MailModule } from 'src/mail/mail.module';
 
 @Module({
   imports: [
     PastriesModule,
     NotificationsModule,
     RestaurantsModule,
+    MailModule,
     MongooseModule.forFeature([{ name: Command.name, schema: CommandSchema }]),
   ],
   controllers: [CommandsController],

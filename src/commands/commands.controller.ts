@@ -36,6 +36,7 @@ import { UserDocument } from 'src/users/schemas/user.schema';
 import { PaymentsService } from 'src/payments/payments.service';
 import { PersonalCommandGuard } from 'src/commands/guards/personal-command.guard';
 import { Throttle } from '@nestjs/throttler';
+import { MailService } from 'src/mail/mail.service';
 
 @Controller('commands')
 export class CommandsController {
@@ -46,6 +47,7 @@ export class CommandsController {
     private readonly commandsService: CommandsService,
     private readonly pastriesService: PastriesService,
     private readonly webPushGateway: WebPushGateway,
+    private readonly mailService: MailService,
   ) {}
 
   @UseInterceptors(ClassSerializerInterceptor)
@@ -160,6 +162,13 @@ export class CommandsController {
       const session = await paymentsService.getSession(sessionId);
       if (session.status === 'complete') {
         const updatedCommand = await this.commandsService.payByInternetCommand(command);
+        const receiptUrl = await paymentsService.getReceiptUrl(session);
+        await this.mailService.sendPaymentInformation(
+          session.customer_details.email,
+          command,
+          receiptUrl,
+        )
+
         return new CommandEntity(updatedCommand.toObject());
       } else {
         throw new Error;

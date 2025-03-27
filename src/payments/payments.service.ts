@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { CommandDocument } from 'src/commands/schemas/command.schema';
 import { StripeService } from 'src/stripe/stripe.service';
+import Stripe from 'stripe';
 
 @Injectable()
 export class PaymentsService {
@@ -48,15 +49,25 @@ export class PaymentsService {
     return (await this.stripeService.stripe.prices.search({ query: `active:'true' AND product:'${productId}'` })).data[0];
   }
 
-  async getSession(sessionId: string) {
+  async getSession(sessionId: string): Promise<Stripe.Response<Stripe.Checkout.Session>> {
     return await this.stripeService.stripe.checkout.sessions.retrieve(sessionId);
+  }
+
+  async getReceiptUrl(session: Stripe.Response<Stripe.Checkout.Session>) {
+    const paymentIntent = await this.stripeService.stripe.paymentIntents.retrieve(session.payment_intent as string);
+
+    const charge = await this.stripeService.stripe.charges.retrieve(paymentIntent.latest_charge as string);
+    
+    console.log('🔗 URL du reçu:', charge.receipt_url);
+
+    return charge.receipt_url
   }
 
   async expireSession(sessionId: string) {
     return await this.stripeService.stripe.checkout.sessions.expire(sessionId);
   }
 
-  async buildSession(command: CommandDocument) {
+  async buildSession(command: CommandDocument): Promise<Stripe.Response<Stripe.Checkout.Session>> {
     const prices = await this.buildPrices(command);
 
     const session = await this.stripeService.stripe.checkout.sessions.create({
