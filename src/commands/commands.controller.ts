@@ -36,7 +36,6 @@ import { UserDocument } from 'src/users/schemas/user.schema';
 import { PaymentsService } from 'src/payments/payments.service';
 import { PersonalCommandGuard } from 'src/commands/guards/personal-command.guard';
 import { Throttle } from '@nestjs/throttler';
-import { MailService } from 'src/mail/mail.service';
 
 @Controller('commands')
 export class CommandsController {
