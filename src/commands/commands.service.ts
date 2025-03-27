@@ -13,6 +13,8 @@ import { PaymentDto } from 'src/commands/dto/command-payment.dto';
 import { SharedCommandsService } from 'src/shared/services/shared-commands.service';
 import { PaymentsService } from 'src/payments/payments.service';
 import { CommandPastryDto } from 'src/pastries/dto/command-pastry.dto';
+import Stripe from 'stripe';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class CommandsService extends SharedCommandsService {
@@ -23,6 +25,7 @@ export class CommandsService extends SharedCommandsService {
     private readonly pastriesService: PastriesService,
     private readonly webPushGateway: WebPushGateway,
     private readonly socketGateway: SocketGateway,
+    private readonly mailService: MailService,
   ) {
     super(commandModel, restaurantsService);
   }
@@ -267,6 +270,8 @@ export class CommandsService extends SharedCommandsService {
         const session = await paymentsService.getSession(sessionId);
         if (session.status === 'complete') {
           await this.payByInternetCommand(currentCommand);
+          await this.sendPaymentSuccessEmail(paymentsService, session, currentCommand);
+
           throw new Error;
         } else {
           await paymentsService.expireSession(sessionId);
@@ -283,6 +288,21 @@ export class CommandsService extends SharedCommandsService {
         error,
       });
     }
+  }
+
+  async sendPaymentSuccessEmail(
+    paymentsService: PaymentsService,
+    session: Stripe.Response<Stripe.Checkout.Session>,
+    command: Command,
+  ): Promise<void> {
+    const receiptUrl = await paymentsService.getReceiptUrl(session);
+    const email = paymentsService.getEmail(session);
+
+    await this.mailService.sendPaymentInformation(
+      email,
+      receiptUrl,
+      command,
+    )
   }
 
   paymentRequiredManagement(command: CommandDocument): void {

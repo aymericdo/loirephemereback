@@ -47,7 +47,6 @@ export class CommandsController {
     private readonly commandsService: CommandsService,
     private readonly pastriesService: PastriesService,
     private readonly webPushGateway: WebPushGateway,
-    private readonly mailService: MailService,
   ) {}
 
   @UseInterceptors(ClassSerializerInterceptor)
@@ -162,12 +161,7 @@ export class CommandsController {
       const session = await paymentsService.getSession(sessionId);
       if (session.status === 'complete') {
         const updatedCommand = await this.commandsService.payByInternetCommand(command);
-        const receiptUrl = await paymentsService.getReceiptUrl(session);
-        await this.mailService.sendPaymentInformation(
-          session.customer_details.email,
-          command,
-          receiptUrl,
-        )
+        await this.commandsService.sendPaymentSuccessEmail(paymentsService, session, command);
 
         return new CommandEntity(updatedCommand.toObject());
       } else {

@@ -55,12 +55,13 @@ export class PaymentsService {
 
   async getReceiptUrl(session: Stripe.Response<Stripe.Checkout.Session>) {
     const paymentIntent = await this.stripeService.stripe.paymentIntents.retrieve(session.payment_intent as string);
-
     const charge = await this.stripeService.stripe.charges.retrieve(paymentIntent.latest_charge as string);
-    
-    console.log('🔗 URL du reçu:', charge.receipt_url);
 
     return charge.receipt_url
+  }
+
+  getEmail(session: Stripe.Response<Stripe.Checkout.Session>): string {
+    return session.customer_details.email;
   }
 
   async expireSession(sessionId: string) {

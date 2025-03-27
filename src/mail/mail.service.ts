@@ -31,7 +31,7 @@ export class MailService {
     });
   }
 
-  async sendPaymentInformation(email: string, command: Command, receiptUrl: string) {
+  async sendPaymentInformation(email: string, receiptUrl: string, command: Command) {
     await this.mailerService.sendMail({
       to: email,
       from: `"Oresto" <${process.env.MAIL_FROM}>`, // override default from

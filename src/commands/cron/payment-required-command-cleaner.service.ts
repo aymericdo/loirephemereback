@@ -24,6 +24,7 @@ export class PaymentRequiredCommandCleanerService {
         const session = await paymentsService.getSession(sessionId);
         if (session.status === 'complete') {
           await this.commandsService.payByInternetCommand(command);
+          await this.commandsService.sendPaymentSuccessEmail(paymentsService, session, command);
         } else {
           throw new Error;
         }
