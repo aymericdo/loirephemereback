@@ -36,6 +36,11 @@ export class PastryEntity {
   @Expose()
   displaySequence: number;
 
+  @Transform(({ obj }) => {
+     return obj.type === 'separator'
+  })
+  isSeparator: boolean;
+
   @Expose({ groups: ['admin'] })
   hidden: boolean;
 
