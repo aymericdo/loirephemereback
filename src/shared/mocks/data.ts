@@ -9,21 +9,12 @@ export const MOCK_PASTRIES: {
   description: string;
 }[] = [
   {
-    name: 'Gaufre',
-    ingredients: ['sucre', 'farine', 'oeufs', 'lait', 'chocolat'],
-    type: 'pastry',
-    imageUrl: 'demo-resto/gaufre.jpg',
-    price: 3,
-    description: 'Une belle gaufre croustillante.',
-  },
-  {
-    name: 'Crêpe',
-    ingredients: ['sucre', 'farine', 'oeufs', 'lait', 'chocolat'],
-    type: 'pastry',
-    imageUrl: 'demo-resto/crepe.jpg',
-    price: 3,
-    description:
-      "Faite minute ! Laissez vous tenter par la spécialité Caro, galette complète de blé noir (farine Bio) à l'emmental, Fourme d'Ambert, fromage de raclette et salade fraîche.",
+    name: '🍽️ Plats',
+    ingredients: [],
+    type: 'separator',
+    imageUrl: '',
+    price: 0,
+    description: 'Savourez des plats délicieux préparés avec soin. Commandez en quelques clics et régalez-vous !',
   },
   {
     name: 'Poké bowl Tofu',
@@ -87,6 +78,14 @@ export const MOCK_PASTRIES: {
       'Frites allumettes maison, pommes de terre en agriculture raisonnée',
   },
   {
+    name: '🥤 Boissons',
+    ingredients: [],
+    type: 'separator',
+    imageUrl: '',
+    price: 0,
+    description: 'Rafraîchissez-vous avec notre sélection de boissons. Du soft au cocktail, il y en a pour tous les goûts !',
+  },
+  {
     name: 'Citronnade',
     ingredients: ['eau', 'sucre', 'jus de citron', 'menthe'],
     type: 'drink',
@@ -109,6 +108,39 @@ export const MOCK_PASTRIES: {
     imageUrl: 'demo-resto/the-glace.jpg',
     price: 3,
     description: 'Thé glacé bien frais.',
+  },
+  {
+    name: '🍰 Desserts',
+    ingredients: [],
+    type: 'separator',
+    imageUrl: '',
+    price: 0,
+    description: 'Terminez sur une note sucrée avec nos desserts gourmands. Un pur plaisir à chaque bouchée !',
+  },
+  {
+    name: 'Gaufre',
+    ingredients: ['sucre', 'farine', 'oeufs', 'lait', 'chocolat'],
+    type: 'pastry',
+    imageUrl: 'demo-resto/gaufre.jpg',
+    price: 3,
+    description: 'Une belle gaufre croustillante.',
+  },
+  {
+    name: 'Crêpe',
+    ingredients: ['sucre', 'farine', 'oeufs', 'lait', 'chocolat'],
+    type: 'pastry',
+    imageUrl: 'demo-resto/crepe.jpg',
+    price: 3,
+    description:
+      "Faite minute ! Laissez vous tenter par la spécialité Caro, galette complète de blé noir (farine Bio) à l'emmental, Fourme d'Ambert, fromage de raclette et salade fraîche.",
+  },
+  {
+    name: '💸 Pourboire',
+    ingredients: [],
+    type: 'separator',
+    imageUrl: '',
+    price: 0,
+    description: 'Soutenez votre restaurant préféré ! Laissez un petit extra pour remercier l\'équipe.',
   },
   {
     name: 'Pourboire',
